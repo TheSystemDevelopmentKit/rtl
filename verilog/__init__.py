@@ -4,10 +4,14 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.01.2018 20:40
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 22.01.2018 12:54
 import os
+import sys
+if not (os.path.abspath('../../thesdk') in sys.path):
+    sys.path.append(os.path.abspath('../../thesdk'))
 import subprocess
 import shlex
+
 from thesdk import *
 
 class verilog(thesdk):
