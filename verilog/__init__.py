@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 22.01.2018 13:22
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:29
 import os
 import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
@@ -26,18 +26,23 @@ class verilog(thesdk):
         self._vlogsrcpath    =[]
         self._vlogsimpath    =[]
         self._vlogworkpath   =[]
+        self._vlogmodulefiles =list([])
         self._vlogparameters =dict([])
         self._infile         =[]
         self._outfile        =[]
         #To define the verilog model and simulation paths
 
-    def def_verilog(self): 
+    def def_verilog(self):
+        if not hasattr(self, '_vlogparameters'):
+            self._vlogparameters =dict([])
+        if not hasattr(self, '_vlogmodulefiles'):
+            self._vlogmodulefiles =list([])
+
         self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         self._entitypath= os.path.dirname(os.path.dirname(self._classfile))
 
         if (self.model is 'sv'):
             self._vlogsrcpath  =  self._entitypath + '/' + self.model 
-            self._rtlsrcpath  =  self._entitypath + '/' + self.model 
         if not (os.path.exists(self._entitypath+'/Simulations')):
             os.mkdir(self._entitypath + '/Simulations')
         
@@ -53,8 +58,9 @@ class verilog(thesdk):
         vloglibcmd =  'vlib ' +  self._vlogworkpath + ' && sleep 2'
         vloglibmapcmd = 'vmap work ' + self._vlogworkpath
         if (self.model is 'sv'):
+            vlogmodulesstring=' '.join([ self._vlogsrcpath + '/'+ str(param) for param in self._vlogmodulefiles])
             vlogcompcmd = ( 'vlog -work work ' + self._vlogsrcpath + '/' + self._name + '.sv '
-                           + self._vlogsrcpath + '/tb_' + self._name +'.sv')
+                           + self._vlogsrcpath + '/tb_' + self._name +'.sv' + ' ' + vlogmodulesstring )
             gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) for param,val in iter(self._vlogparameters.items()) ])
             vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc -g g_infile=' + self._infile
                           + ' -g g_outfile=' + self._outfile + ' ' + gstring 
