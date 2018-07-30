@@ -86,7 +86,7 @@ class verilog(thesdk):
         except:
             pass
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
-        subprocess.call(shlex.split(self._vlogcmd));
+        subprocess.check_output(shlex.split(self._vlogcmd));
         
         count=0
         while not os.path.isfile(self._outfile):
