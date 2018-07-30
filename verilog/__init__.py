@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:29
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:30
 import os
 import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
@@ -74,9 +74,13 @@ class verilog(thesdk):
 
     def run_verilog(self):
         self._vlogcmd=self.get_vlogcmd()
+        filetimeout=30 #File appearance timeout in seconds
+        count=0
         while not os.path.isfile(self._infile):
-            self.print_log({'type':'I', 'msg':"Wait infile to appear"})
-            time.sleep(5)
+            count +=1
+            if count >5:
+                self.print_log({'type':'F', 'msg':"Verilog infile writing timeout"})
+            time.sleep(int(filetimeout/5))
         try:
             os.remove(self._outfile)
         except:
@@ -84,9 +88,12 @@ class verilog(thesdk):
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
         subprocess.call(shlex.split(self._vlogcmd));
         
+        count=0
         while not os.path.isfile(self._outfile):
-            self.print_log({'type':'I', 'msg':"Wait outfile to appear"})
-            time.sleep(5)
+            count +=1
+            if count >5:
+                self.print_log({'type':'F', 'msg':"Verilog outfile timeout"})
+            time.sleep(int(filetimeout/5))
         os.remove(self._infile)
         #This must be in every subclass file. Works also with __init__.py files
         #self._classfile=os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
