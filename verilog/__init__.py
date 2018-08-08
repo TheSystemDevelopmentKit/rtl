@@ -4,17 +4,18 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:32
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:33
 import os
 import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
     sys.path.append(os.path.abspath('../../thesdk'))
 import subprocess
 import shlex
+import abc
 from abc import * 
 from thesdk import *
 
-class verilog(metaclass=abc.ABCMeta):
+class verilog(thesdk):
     #These need to be converted to abstact properties
     def __init__(self):
         self.model           =[]
@@ -77,27 +78,30 @@ class verilog(metaclass=abc.ABCMeta):
         while not os.path.isfile(self._infile):
             count +=1
             if count >5:
-                thesdk.print_log({'type':'F', 'msg':"Verilog infile writing timeout"})
+                self.print_log({'type':'F', 'msg':"Verilog infile writing timeout"})
             time.sleep(int(filetimeout/5))
         try:
-            os.remove(self._outfile)
+            if not self.preserve_iofiles:
+                os.remove(self._outfile)
         except:
             pass
-        thesdk.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
+        self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
         subprocess.check_output(shlex.split(self._vlogcmd));
         
         count=0
         while not os.path.isfile(self._outfile):
             count +=1
             if count >5:
-                thesdk.print_log({'type':'F', 'msg':"Verilog outfile timeout"})
+                self.print_log({'type':'F', 'msg':"Verilog outfile timeout"})
             time.sleep(int(filetimeout/5))
-        os.remove(self._infile)
+        if not self.preserve_iofiles:
+            os.remove(self._infile)
 
-        #This must be in every subclass file. Works also with __init__.py files
-        @property
-        @abstractmethod
-        def _classfile(self):
-            return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
+    #This must be in every subclass file. Works also with __init__.py files
+    #@property
+    #@abstractmethod
+    #def _classfile(self):
+    #    pass
+    #    #return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
