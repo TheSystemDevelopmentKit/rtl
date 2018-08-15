@@ -11,11 +11,10 @@ if not (os.path.abspath('../../thesdk') in sys.path):
     sys.path.append(os.path.abspath('../../thesdk'))
 import subprocess
 import shlex
-import abc
 from abc import * 
 from thesdk import *
 
-class verilog(thesdk):
+class verilog(thesdk,metaclass=abc.ABCMeta):
     #These need to be converted to abstact properties
     def __init__(self):
         self.model           =[]
@@ -29,8 +28,16 @@ class verilog(thesdk):
         self._vlogparameters =dict([])
         self._infile         =[]
         self._outfile        =[]
-        self.preserve_iofiles='False'
-        #To define the verilog model and simulation paths
+    
+    @property
+    def preserve_iofiles(self):
+        if hasattr(self,'_preserve_iofiles'):
+            return self._preserve_iofiles
+        else:
+            return 'False'
+    @preserve_iofiles.setter
+    def preserve_iofiles(self,value):
+        self._preserve_iofiles=value
 
     def def_verilog(self):
         if not hasattr(self, '_vlogparameters'):
