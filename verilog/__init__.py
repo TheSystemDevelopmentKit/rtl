@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:33
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:34
 import os
 import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
@@ -28,7 +28,16 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._vlogparameters =dict([])
         self._infile         =[]
         self._outfile        =[]
-    
+
+    @property
+    @abstractmethod
+    def _classfile(self):
+        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+    #This must be in every subclass file.
+    #@property
+    #def _classfile(self):
+    #    return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+
     @property
     def preserve_iofiles(self):
         if hasattr(self,'_preserve_iofiles'):
@@ -105,9 +114,8 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             os.remove(self._infile)
 
 
-    #This must be in every subclass file. Works also with __init__.py files
+    #This must be in every subclass file.
     #@property
-    #@abstractmethod
     #def _classfile(self):
     #    pass
     #    #return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
