@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:34
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:35
 import os
 import sys
 import subprocess
@@ -13,6 +13,7 @@ from abc import *
 from thesdk import *
 import numpy as np
 import pandas as pd
+from functools import reduce
 
 class verilog_iofile(thesdk):
     def __init__(self,parent=None,**kwargs):
@@ -20,16 +21,22 @@ class verilog_iofile(thesdk):
             self.print_log({'type':'F', 'msg':"Parent of Verilog input file not given"})
         try:  
             rndpart=os.path.basename(tempfile.mkstemp()[1])
-            self.name=parent._vlogsimpath +'/' + kwargs.get('file') + '_' + rndpart +'.txt'
+            self.name=kwargs.get('name') 
+            self.file=parent._vlogsimpath +'/' + self.name + '_' + rndpart +'.txt'
         except:
             self.print_log({'type':'F', 'msg':"Verilog IO file definition failed"})
 
         self.data=kwargs.get('data',[])
-        self.simparam=kwargs.get('param','-g g_file_' + kwargs.get('file') + '=' + self.name)
+        self.simparam=kwargs.get('param','-g g_file_' + kwargs.get('name') + '=' + self.file)
         self.datatype=kwargs.get('datatype',int)
+        self.dir=kwargs.get('dir','out')    #Files are output files by default, and direction is 
+                                            # changed to 'in' when written 
         self.preserve=parent.preserve_iofiles
+        #TODO: Needs a check to eliminate duplicate entries to iofiles
+        parent.iofiles.append(self)
 
     def write(self,**kwargs):
+        self.dir='in'  # Only input files are written
         #Parse the rows to split complex numbers
         data=kwargs.get('data',self.data)
         datatype=kwargs.get('dtype',self.datatype)
@@ -48,10 +55,11 @@ class verilog_iofile(thesdk):
                    parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
 
         df=pd.DataFrame(parsed,dtype=datatype)
-        df.to_csv(path_or_buf=self.name,sep="\t",index=False,header=False)
-
+        df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
+        time.sleep(10)
+        
     def read(self,**kwargs):
-        fid=open(self.name,'r')
+        fid=open(self.file,'r')
         datatype=kwargs.get('dtype',self.datatype)
         readd = pd.read_csv(fid,dtype=object,sep='\t')
         self.data=readd.values
@@ -59,10 +67,9 @@ class verilog_iofile(thesdk):
 
     def remove(self):
         try:
-            os.remove(self._infile)
+            os.remove(self.file)
         except:
             pass
-
 
 
 class verilog(thesdk,metaclass=abc.ABCMeta):
@@ -98,6 +105,20 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     @preserve_iofiles.setter
     def preserve_iofiles(self,value):
         self._preserve_iofiles=value
+    
+    # This property utilises verilog_iofile class to maintain list of io-files
+    # that  are automatically assigned to vlogcmd
+    @property
+    def iofiles(self):
+        if hasattr(self,'_iofiles'):
+            return self._iofiles
+        else:
+            self._iofiles=list([])
+            return self._iofiles
+
+    @iofiles.setter
+    def iofiles(self,value):
+        self._iofiles=list[value]
 
     def def_verilog(self):
         if not hasattr(self, '_vlogparameters'):
@@ -128,10 +149,22 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             vlogcompcmd = ( 'vlog -work work ' + self._vlogsrcpath + '/' + self._name + '.sv '
                            + self._vlogsrcpath + '/tb_' + self._name +'.sv' + ' ' + vlogmodulesstring )
             gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) for param,val in iter(self._vlogparameters.items()) ])
-            vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc -g g_infile=' + self._infile
+            if hasattr(self,'_infile') or hasattr(self,'_outfile'):
+                self.print_log({'type':'W', 'msg':'OBSOLETE CODE: _infile and _outfile properties are\n'                    +'replaced by iofiles property enabling multiple files and '
+                    +'automating the definitions. Use that instead.'})
+
+                vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc -g g_infile=' + self._infile
                           + ' -g g_outfile=' + self._outfile + ' ' + gstring 
                           +' work.tb_' + self._name  + ' -do "run -all; quit;"')
-
+            elif ( not ( hasattr(self,'_infile') or  hasattr(self,'_outfile') )) and hasattr(self,'iofiles'):
+                #fileparams=reduce(lambda x,y:x.simparam+' '+y.simparam,self.iofiles)
+                fileparams=''
+                for file in self.iofiles:
+                    fileparams=fileparams+' '+file.simparam
+                
+                vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc '
+                          + fileparams + ' ' + gstring 
+                          +' work.tb_' + self._name  + ' -do "run -all; quit;"')
             
             vlogcmd =  submission + vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
         else:
@@ -142,25 +175,59 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._vlogcmd=self.get_vlogcmd()
         filetimeout=30 #File appearance timeout in seconds
         count=0
-        while not os.path.isfile(self._infile):
-            count +=1
-            if count >5:
-                self.print_log({'type':'F', 'msg':"Verilog infile writing timeout"})
-            time.sleep(int(filetimeout/5))
-        try:
-            if not self.preserve_iofiles:
+        #This is to ensure operation of obsoleted code, to be removed
+        if hasattr(self,'_infile'):
+            while not os.path.isfile(self._infile):
+                count +=1
+                if count >5:
+                    self.print_log({'type':'F', 'msg':"Verilog infile writing timeout"})
+                time.sleep(int(filetimeout/5))
+        else:
+            files_ok=False
+            while not files_ok:
+                count +=1
+                if count >5:
+                    self.print_log({'type':'F', 'msg':"Verilog infile writing timeout"})
+                for file in list(filter(lambda x:x.dir=='in',self.iofiles)):
+                    files_ok=True
+                    files_ok=files_ok and os.path.isfile(file.file)
+                time.sleep(int(filetimeout/5))
+
+        #Remove existing output files before execution
+        if hasattr(self,'_outfile'):
+            try:
                 os.remove(self._outfile)
-        except:
-            pass
+            except:
+                pass
+        else:
+            for file in list(filter(lambda x:x.dir=='out',self.iofiles)):
+                try:
+                    file.remove()
+                except:
+                    pass
+
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
         subprocess.check_output(shlex.split(self._vlogcmd));
         
         count=0
-        while not os.path.isfile(self._outfile):
-            count +=1
-            if count >5:
-                self.print_log({'type':'F', 'msg':"Verilog outfile timeout"})
-            time.sleep(int(filetimeout/5))
-        if not self.preserve_iofiles:
-            os.remove(self._infile)
+        #This is to ensure operation of obsoleted code, to be removed
+        if hasattr(self,'_outfile'):
+            while not os.path.isfile(self._outfile):
+                count +=1
+                if count >5:
+                    self.print_log({'type':'F', 'msg':"Verilog outfile timeout"})
+                time.sleep(int(filetimeout/5))
+            if not self.preserve_iofiles:
+                os.remove(self._infile)
+        else:
+            files_ok=False
+            while not files_ok:
+                count +=1
+                if count >5:
+                    self.print_log({'type':'F', 'msg':"Verilog outfile timeout"})
+                time.sleep(int(filetimeout/5))
+                for file in list(filter(lambda x:x.dir=='out',self.iofiles)):
+                    files_ok=True
+                    files_ok=files_ok and os.path.isfile(file.file)
+
 
