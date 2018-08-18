@@ -7,12 +7,63 @@
 # Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:34
 import os
 import sys
-if not (os.path.abspath('../../thesdk') in sys.path):
-    sys.path.append(os.path.abspath('../../thesdk'))
 import subprocess
 import shlex
 from abc import * 
 from thesdk import *
+import numpy as np
+import pandas as pd
+
+class verilog_iofile(thesdk):
+    def __init__(self,parent=None,**kwargs):
+        if parent==None:
+            self.print_log({'type':'F', 'msg':"Parent of Verilog input file not given"})
+        try:  
+            rndpart=os.path.basename(tempfile.mkstemp()[1])
+            self.name=parent._vlogsimpath +'/' + kwargs.get('file') + '_' + rndpart +'.txt'
+        except:
+            self.print_log({'type':'F', 'msg':"Verilog IO file definition failed"})
+
+        self.data=kwargs.get('data',[])
+        self.simparam=kwargs.get('param','-g g_file_' + kwargs.get('file') + '=' + self.name)
+        self.datatype=kwargs.get('datatype',int)
+        self.preserve=parent.preserve_iofiles
+
+    def write(self,**kwargs):
+        #Parse the rows to split complex numbers
+        data=kwargs.get('data',self.data)
+        datatype=kwargs.get('dtype',self.datatype)
+        parsed=[]
+        for i in range(data.shape[1]):
+            if i==0:
+               if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
+                   parsed=np.r_['1',np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
+               else:
+                   parsed=np.r_['1',data[:,i].reshape(-1,1)]
+            else:
+               if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
+                   parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
+               else:
+                   parsed=np.r_['1',data[:,i].reshape(-1,1)]
+                   parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
+
+        df=pd.DataFrame(parsed,dtype=datatype)
+        df.to_csv(path_or_buf=self.name,sep="\t",index=False,header=False)
+
+    def read(self,**kwargs):
+        fid=open(self.name,'r')
+        datatype=kwargs.get('dtype',self.datatype)
+        readd = pd.read_csv(fid,dtype=object,sep='\t')
+        self.data=readd.values
+        fid.close()
+
+    def remove(self):
+        try:
+            os.remove(self._infile)
+        except:
+            pass
+
+
 
 class verilog(thesdk,metaclass=abc.ABCMeta):
     #These need to be converted to abstact properties
@@ -112,11 +163,4 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             time.sleep(int(filetimeout/5))
         if not self.preserve_iofiles:
             os.remove(self._infile)
-
-
-    #This must be in every subclass file.
-    #@property
-    #def _classfile(self):
-    #    pass
-    #    #return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
