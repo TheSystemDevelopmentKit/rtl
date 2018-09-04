@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:35
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:36
 import os
 import sys
 import subprocess
@@ -31,7 +31,11 @@ class verilog_iofile(thesdk):
         self.datatype=kwargs.get('datatype',int)
         self.dir=kwargs.get('dir','out')    #Files are output files by default, and direction is 
                                             # changed to 'in' when written 
-        self.preserve=parent.preserve_iofiles
+        if hasattr(parent,'preserve_iofiles'):
+            self.preserve=parent.preserve_iofiles
+        else:
+            self.preserve=False
+
         #TODO: Needs a check to eliminate duplicate entries to iofiles
         parent.iofiles.append(self)
 
@@ -66,10 +70,14 @@ class verilog_iofile(thesdk):
         fid.close()
 
     def remove(self):
-        try:
-            os.remove(self.file)
-        except:
-            pass
+        if self.preserve:
+            self.print_log({'type':"I", 'msg':"Preserve_value is %s" %(self.preserve)})
+            self.print_log({'type':"I", 'msg':"Preserving file %s" %(self.file)})
+        else:
+            try:
+                os.remove(self.file)
+            except:
+                pass
 
 
 class verilog(thesdk,metaclass=abc.ABCMeta):
@@ -101,10 +109,24 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         if hasattr(self,'_preserve_iofiles'):
             return self._preserve_iofiles
         else:
-            return 'False'
+            self._preserve_iofiles=False
+        return self._preserve_iofiles
+
     @preserve_iofiles.setter
     def preserve_iofiles(self,value):
         self._preserve_iofiles=value
+
+    @property
+    def interactive_verilog(self):
+        if hasattr(self,'_interactive_verilog'):
+            return self._interactive_verilog
+        else:
+            self._interactive_verilog=False
+        return self._interactive_verilog
+
+    @interactive_verilog.setter
+    def interactive_verilog(self,value):
+        self._interactive_verilog=value
     
     # This property utilises verilog_iofile class to maintain list of io-files
     # that  are automatically assigned to vlogcmd
@@ -152,21 +174,38 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             if hasattr(self,'_infile') or hasattr(self,'_outfile'):
                 self.print_log({'type':'W', 'msg':'OBSOLETE CODE: _infile and _outfile properties are\n'                    +'replaced by iofiles property enabling multiple files and '
                     +'automating the definitions. Use that instead.'})
+                
+                if not self.interactive_verilog:
+                    vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc -g g_infile=' + self._infile
+                              + ' -g g_outfile=' + self._outfile + ' ' + gstring 
+                              +' work.tb_' + self._name  + ' -do "run -all; quit;"')
+                else:
+                    submission="" #Local execution
+                    vlogsimcmd = ( 'vsim -64 -t 1ps -novopt -g g_infile=' + self._infile
+                              + ' -g g_outfile=' + self._outfile + ' ' + gstring 
+                              +' work.tb_' + self._name)
 
-                vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc -g g_infile=' + self._infile
-                          + ' -g g_outfile=' + self._outfile + ' ' + gstring 
-                          +' work.tb_' + self._name  + ' -do "run -all; quit;"')
+            
             elif ( not ( hasattr(self,'_infile') or  hasattr(self,'_outfile') )) and hasattr(self,'iofiles'):
                 #fileparams=reduce(lambda x,y:x.simparam+' '+y.simparam,self.iofiles)
                 fileparams=''
                 for file in self.iofiles:
                     fileparams=fileparams+' '+file.simparam
-                
-                vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc '
-                          + fileparams + ' ' + gstring 
-                          +' work.tb_' + self._name  + ' -do "run -all; quit;"')
-            
+
+                if not self.interactive_verilog:
+                    vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams + ' ' + gstring
+                              +' work.tb_' + self._name)
+                else:
+                    submission="" #Local execution
+                    vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' + fileparams + ' ' + gstring
+                              +' work.tb_' + self._name  + ' -do "run -all; quit;"')
+
             vlogcmd =  submission + vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
+            if self.interactive_verilog:
+                self.print_log({'type':'F', 'msg':"Interactive verilog not yet supported"})
+                self.print_log({'type':'I', 'msg':"""Running verilog simulation in interactive mode\n
+                    Add the probes in the simulation as you wish.\n
+                    To finish the simulation, run the simulation to end and exit."""})
         else:
             vlogcmd=[]
         return vlogcmd
@@ -208,6 +247,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
         subprocess.check_output(shlex.split(self._vlogcmd));
+        #subprocess.run(shlex.split(self._vlogcmd));
         
         count=0
         #This is to ensure operation of obsoleted code, to be removed
