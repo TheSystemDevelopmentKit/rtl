@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:36
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:37
 import os
 import sys
 import subprocess
@@ -142,6 +142,16 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     def iofiles(self,value):
         self._iofiles=list[value]
 
+    @iofiles.deleter
+    def iofiles(self):
+        for i in self.iofiles:
+            if i.preserve:
+                self.print_log({'type':"I", 'msg':"Preserve_value is %s" %(i.preserve)})
+                self.print_log({'type':"I", 'msg':"Preserving file %s" %(i.file)})
+            else:
+                i.remove()
+                self._iofiles=None
+
     def def_verilog(self):
         if not hasattr(self, '_vlogparameters'):
             self._vlogparameters =dict([])
@@ -193,12 +203,12 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     fileparams=fileparams+' '+file.simparam
 
                 if not self.interactive_verilog:
-                    vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams + ' ' + gstring
-                              +' work.tb_' + self._name)
-                else:
-                    submission="" #Local execution
                     vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' + fileparams + ' ' + gstring
                               +' work.tb_' + self._name  + ' -do "run -all; quit;"')
+                else:
+                    submission="" #Local execution
+                    vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams + ' ' + gstring
+                              +' work.tb_' + self._name)
 
             vlogcmd =  submission + vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
             if self.interactive_verilog:
@@ -241,7 +251,8 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         else:
             for file in list(filter(lambda x:x.dir=='out',self.iofiles)):
                 try:
-                    file.remove()
+                    #Still keep the file in the infiles list
+                    os.remove(file.name)
                 except:
                     pass
 
@@ -270,4 +281,9 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
 
+            for file in list(filter(lambda x:x.dir=='in',self.iofiles)):
+                try:
+                    file.remove()
+                except:
+                    pass
 
