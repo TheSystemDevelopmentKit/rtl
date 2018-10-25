@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:37
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 25.10.2018 16:49
 import os
 import sys
 import subprocess
@@ -173,7 +173,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._vlogworkpath    =  self._vlogsimpath +'/work'
 
     def get_vlogcmd(self):
-        submission = ' bsub -K '  
+        submission = ' bsub '  
         vloglibcmd =  'vlib ' +  self._vlogworkpath + ' && sleep 2'
         vloglibmapcmd = 'vmap work ' + self._vlogworkpath
         if (self.model is 'sv'):
@@ -211,6 +211,8 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                               +' work.tb_' + self._name)
 
             vlogcmd =  submission + vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
+            #vlogcmd =  submission + vloglibcmd 
+            #vlogcmd =  vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
             if self.interactive_verilog:
                 self.print_log({'type':'F', 'msg':"Interactive verilog not yet supported"})
                 self.print_log({'type':'I', 'msg':"""Running verilog simulation in interactive mode\n
@@ -257,8 +259,9 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     pass
 
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
-        subprocess.check_output(shlex.split(self._vlogcmd));
-        #subprocess.run(shlex.split(self._vlogcmd));
+        #subprocess.check_output(shlex.split(self._vlogcmd));
+        subprocess.run(shlex.split(self._vlogcmd));
+        #subprocess.run(shlex.split("which vlib"));
         
         count=0
         #This is to ensure operation of obsoleted code, to be removed
