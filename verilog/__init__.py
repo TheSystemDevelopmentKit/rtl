@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 25.10.2018 23:58
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 30.10.2018 23:18
 import os
 import sys
 import subprocess
@@ -173,7 +173,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._vlogworkpath    =  self._vlogsimpath +'/work'
 
     def get_vlogcmd(self):
-        submission = ' bsub '  
+        submission = ' bsub -K '  
         vloglibcmd =  'vlib ' +  self._vlogworkpath + ' && sleep 2'
         vloglibmapcmd = 'vmap work ' + self._vlogworkpath
         if (self.model is 'sv'):
