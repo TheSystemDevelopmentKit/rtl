@@ -1,8 +1,3 @@
-`timescale 1ns/100ps
-`include "sys_def.vh"
-`define CLOCK_PERIOD 10
-
-module testbench #(
     parameter [100*32-1:0] input_data_file_name[0:`INPUT_DATA_FILE_LEN-1]= `INPUT_DATA_FILE_NAME,
     parameter [100*32-1:0] input_ctrl_file_name [0:`INPUT_CTRL_FILE_LEN-1] = `INPUT_CTRL_FILE_NAME,
     parameter string output_file_name = `OUTPUT_FILE_NAME,

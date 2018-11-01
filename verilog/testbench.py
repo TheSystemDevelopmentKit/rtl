@@ -197,8 +197,12 @@ class testbench(thesdk):
         abspath = os.path.dirname(os.path.abspath(__file__))
         testbench_skeleton_1 = open(abspath + '/../Testbench_skeleton/testbench_skeleton_1.txt','r') # those two skeleton needs to be put in some fixed place
         testbench_skeleton_2 = open(abspath + '/../Testbench_skeleton/testbench_skeleton_2.txt','r')
+        testbench_skeleton_3 = open(abspath + '/../Testbench_skeleton/testbench_skeleton_3.txt','r')
         content_1 = testbench_skeleton_1.read()
         content_2 = testbench_skeleton_2.read()
+        content_3 = testbench_skeleton_3.read()
+        testbench_file.write(content_3)
+        testbench_file.write("module tb_" + self.block_name + " #(\n")
         testbench_file.write(content_1 + "\n\n\n\t")
         testbench_file.write("/**********************************************************/\n\t")
         testbench_file.write("/**********************************************************/\n\t")
