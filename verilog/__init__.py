@@ -65,7 +65,7 @@ class verilog_iofile(thesdk):
     def read(self,**kwargs):
         fid=open(self.file,'r')
         datatype=kwargs.get('dtype',self.datatype)
-        readd = pd.read_csv(fid,dtype=object,sep='\t')
+        readd = pd.read_csv(fid,dtype=object,sep='\t',header=None)
         self.data=readd.values
         fid.close()
 
@@ -162,7 +162,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._entitypath= os.path.dirname(os.path.dirname(self._classfile))
 
         if (self.model is 'sv'):
-            self._vlogsrcpath  =  self._entitypath + '/' + self.model 
+            self._vlogsrcpath  =  self._entitypath + '/' + self.model
         if not (os.path.exists(self._entitypath+'/Simulations')):
             os.mkdir(self._entitypath + '/Simulations')
         
@@ -232,7 +232,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     self.print_log({'type':'F', 'msg':"Verilog infile writing timeout"})
                 time.sleep(int(filetimeout/5))
         else:
-            files_ok=False
+            files_ok=True
             while not files_ok:
                 count +=1
                 if count >5:
@@ -271,7 +271,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             if not self.preserve_iofiles:
                 os.remove(self._infile)
         else:
-            files_ok=False
+            files_ok=True
             while not files_ok:
                 count +=1
                 if count >5:
