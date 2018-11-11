@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:37
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 11.11.2018 12:06
 import os
 import sys
 import subprocess
@@ -151,6 +151,18 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             else:
                 i.remove()
                 self._iofiles=None
+    @property 
+    def verilog_submission(self):
+        if hasattr(self,'_interactive_verilog'):
+            return self._verilog_submission
+        else:
+            #if hasattr(thesdk,'GLOBALS'):
+            try:
+                self._verilog_submission=thesdk.GLOBALS['LSFSUBMISSION']+' '
+            except:
+                self.print_log({'type':'W','msg':'Variable thesdk.GLOBALS incorrectly defined. Implemented in thesdk module, commit  04a3c519eeed995121d764762432ce48b9e1d0f6 _verilog_submission defaults to empty string and simulation is ran in localhost.'})
+                self._verilog_submission=''
+        return self._verilog_submission
 
     def def_verilog(self):
         if not hasattr(self, '_vlogparameters'):
@@ -173,16 +185,19 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._vlogworkpath    =  self._vlogsimpath +'/work'
 
     def get_vlogcmd(self):
-        submission = ' bsub -K '  
+        submission = self.verilog_submission  
         vloglibcmd =  'vlib ' +  self._vlogworkpath + ' && sleep 2'
         vloglibmapcmd = 'vmap work ' + self._vlogworkpath
         if (self.model is 'sv'):
             vlogmodulesstring=' '.join([ self._vlogsrcpath + '/'+ str(param) for param in self._vlogmodulefiles])
             vlogcompcmd = ( 'vlog -work work ' + self._vlogsrcpath + '/' + self._name + '.sv '
                            + self._vlogsrcpath + '/tb_' + self._name +'.sv' + ' ' + vlogmodulesstring )
+
             gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) for param,val in iter(self._vlogparameters.items()) ])
+            
             if hasattr(self,'_infile') or hasattr(self,'_outfile'):
-                self.print_log({'type':'W', 'msg':'OBSOLETE CODE: _infile and _outfile properties are\n'                    +'replaced by iofiles property enabling multiple files and '
+                self.print_log({'type':'W', 'msg':'OBSOLETE CODE: _infile and _outfile properties are\n'                    
+                    +'replaced by iofiles property enabling multiple files and '
                     +'automating the definitions. Use that instead.'})
                 
                 if not self.interactive_verilog:
@@ -211,6 +226,8 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                               +' work.tb_' + self._name)
 
             vlogcmd =  submission + vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
+            #vlogcmd =  vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
+            #vlogcmd = vlogsimcmd
             if self.interactive_verilog:
                 self.print_log({'type':'F', 'msg':"Interactive verilog not yet supported"})
                 self.print_log({'type':'I', 'msg':"""Running verilog simulation in interactive mode\n
@@ -257,8 +274,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     pass
 
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
-        subprocess.check_output(shlex.split(self._vlogcmd));
-        #subprocess.run(shlex.split(self._vlogcmd));
+        subprocess.check_output(self._vlogcmd,shell=True);
         
         count=0
         #This is to ensure operation of obsoleted code, to be removed
