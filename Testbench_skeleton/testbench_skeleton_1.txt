@@ -1,0 +1,29 @@
+    parameter [100*32-1:0] input_data_file_name[0:`INPUT_DATA_FILE_LEN-1]= `INPUT_DATA_FILE_NAME,
+    parameter [100*32-1:0] input_ctrl_file_name [0:`INPUT_CTRL_FILE_LEN-1] = `INPUT_CTRL_FILE_NAME,
+    parameter string output_file_name = `OUTPUT_FILE_NAME,
+    parameter int input_data_num[0:`INPUT_DATA_FILE_LEN-1] = `DATA_NUM_PER_FILE,
+    parameter int input_ctrl_num[0:`INPUT_CTRL_FILE_LEN-1] = `CTRL_NUM_PER_FILE
+);
+    logic clock, reset;
+
+    logic [31:0] cycle_count;
+    int  input_data_file[`INPUT_DATA_FILE_LEN-1:0];
+    int  input_ctrl_file[`INPUT_CTRL_FILE_LEN-1:0];
+    int output_file, status, status_ctrl;
+    string line;
+
+    logic [31:0] input_change_timestamp [0:`INPUT_CTRL_FILE_LEN-1]; 
+    logic [`INPUT_CTRL_FILE_LEN-1:0] wait_for_change_input;
+    logic [`DATA_BITWIDTH-1:0] data_input_port [0:`INPUT_DATA_FILE_LEN-1][0:`DATA_NUM-1];
+    logic [`CTRL_BITWIDTH-1:0] ctrl_input_port [0:`INPUT_CTRL_FILE_LEN-1][0:`CTRL_NUM-1];
+    
+    always begin
+        #(`CLOCK_PERIOD/2.0);
+        clock = ~clock;
+    end
+
+    always @(posedge clock) begin
+        if(reset) cycle_count <= #1 32'd0;
+        else cycle_count <= #1 cycle_count + 32'd1;
+
+    end

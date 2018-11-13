@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 11.11.2018 12:06
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.11.2018 09:53
 import os
 import sys
 import subprocess
@@ -65,7 +65,7 @@ class verilog_iofile(thesdk):
     def read(self,**kwargs):
         fid=open(self.file,'r')
         datatype=kwargs.get('dtype',self.datatype)
-        readd = pd.read_csv(fid,dtype=object,sep='\t')
+        readd = pd.read_csv(fid,dtype=object,sep='\t',header=None)
         self.data=readd.values
         fid.close()
 
@@ -174,7 +174,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._entitypath= os.path.dirname(os.path.dirname(self._classfile))
 
         if (self.model is 'sv'):
-            self._vlogsrcpath  =  self._entitypath + '/' + self.model 
+            self._vlogsrcpath  =  self._entitypath + '/' + self.model
         if not (os.path.exists(self._entitypath+'/Simulations')):
             os.mkdir(self._entitypath + '/Simulations')
         
@@ -198,8 +198,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             if hasattr(self,'_infile') or hasattr(self,'_outfile'):
                 self.print_log({'type':'W', 'msg':'OBSOLETE CODE: _infile and _outfile properties are\n'                    
                     +'replaced by iofiles property enabling multiple files and '
-                    +'automating the definitions. Use that instead.'})
-                
+                    +'automating the definitions. Use that instead. Will be removed in Jan 2019'})
                 if not self.interactive_verilog:
                     vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc -g g_infile=' + self._infile
                               + ' -g g_outfile=' + self._outfile + ' ' + gstring 
@@ -212,7 +211,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
             
             elif ( not ( hasattr(self,'_infile') or  hasattr(self,'_outfile') )) and hasattr(self,'iofiles'):
-                #fileparams=reduce(lambda x,y:x.simparam+' '+y.simparam,self.iofiles)
                 fileparams=''
                 for file in self.iofiles:
                     fileparams=fileparams+' '+file.simparam
@@ -226,8 +224,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                               +' work.tb_' + self._name)
 
             vlogcmd =  submission + vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
-            #vlogcmd =  vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
-            #vlogcmd = vlogsimcmd
             if self.interactive_verilog:
                 self.print_log({'type':'F', 'msg':"Interactive verilog not yet supported"})
                 self.print_log({'type':'I', 'msg':"""Running verilog simulation in interactive mode\n
