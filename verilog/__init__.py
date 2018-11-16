@@ -5,7 +5,6 @@
 # subclasses
 ##############################################################################
 # Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:37
-# Testing
 import os
 import sys
 import subprocess
