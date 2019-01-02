@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 15.09.2018 19:37
+
 import os
 import sys
 import subprocess
@@ -151,6 +151,18 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             else:
                 i.remove()
                 self._iofiles=None
+    @property 
+    def verilog_submission(self):
+        if hasattr(self,'_interactive_verilog'):
+            return self._verilog_submission
+        else:
+            #if hasattr(thesdk,'GLOBALS'):
+            try:
+                self._verilog_submission=thesdk.GLOBALS['LSFSUBMISSION']+' '
+            except:
+                self.print_log({'type':'W','msg':'Variable thesdk.GLOBALS incorrectly defined. Implemented in thesdk module, commit  04a3c519eeed995121d764762432ce48b9e1d0f6 _verilog_submission defaults to empty string and simulation is ran in localhost.'})
+                self._verilog_submission=''
+        return self._verilog_submission
 
     def def_verilog(self):
         if not hasattr(self, '_vlogparameters'):
@@ -173,18 +185,20 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._vlogworkpath    =  self._vlogsimpath +'/work'
 
     def get_vlogcmd(self):
-        submission = ' bsub -K '  
+        submission = self.verilog_submission  
         vloglibcmd =  'vlib ' +  self._vlogworkpath + ' && sleep 2'
         vloglibmapcmd = 'vmap work ' + self._vlogworkpath
         if (self.model is 'sv'):
             vlogmodulesstring=' '.join([ self._vlogsrcpath + '/'+ str(param) for param in self._vlogmodulefiles])
             vlogcompcmd = ( 'vlog -work work ' + self._vlogsrcpath + '/' + self._name + '.sv '
                            + self._vlogsrcpath + '/tb_' + self._name +'.sv' + ' ' + vlogmodulesstring )
+
             gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) for param,val in iter(self._vlogparameters.items()) ])
+            
             if hasattr(self,'_infile') or hasattr(self,'_outfile'):
-                self.print_log({'type':'W', 'msg':'OBSOLETE CODE: _infile and _outfile properties are\n'                    +'replaced by iofiles property enabling multiple files and '
-                    +'automating the definitions. Use that instead.'})
-                
+                self.print_log({'type':'W', 'msg':'OBSOLETE CODE: _infile and _outfile properties are\n'                    
+                    +'replaced by iofiles property enabling multiple files and '
+                    +'automating the definitions. Use that instead. Will be removed in Jan 2019'})
                 if not self.interactive_verilog:
                     vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc -g g_infile=' + self._infile
                               + ' -g g_outfile=' + self._outfile + ' ' + gstring 
@@ -197,7 +211,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
             
             elif ( not ( hasattr(self,'_infile') or  hasattr(self,'_outfile') )) and hasattr(self,'iofiles'):
-                #fileparams=reduce(lambda x,y:x.simparam+' '+y.simparam,self.iofiles)
                 fileparams=''
                 for file in self.iofiles:
                     fileparams=fileparams+' '+file.simparam
@@ -222,7 +235,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
     def run_verilog(self):
         self._vlogcmd=self.get_vlogcmd()
-        filetimeout=30 #File appearance timeout in seconds
+        filetimeout=60 #File appearance timeout in seconds
         count=0
         #This is to ensure operation of obsoleted code, to be removed
         if hasattr(self,'_infile'):
@@ -232,7 +245,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     self.print_log({'type':'F', 'msg':"Verilog infile writing timeout"})
                 time.sleep(int(filetimeout/5))
         else:
-            files_ok=True
+            files_ok=False
             while not files_ok:
                 count +=1
                 if count >5:
@@ -257,9 +270,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     pass
 
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
-        subprocess.check_output(shlex.split(self._vlogcmd));
-        #subprocess.run(shlex.split(self._vlogcmd));
-        
+        subprocess.check_output(self._vlogcmd,shell=True);
         count=0
         #This is to ensure operation of obsoleted code, to be removed
         if hasattr(self,'_outfile'):
@@ -271,7 +282,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             if not self.preserve_iofiles:
                 os.remove(self._infile)
         else:
-            files_ok=True
+            files_ok=False
             while not files_ok:
                 count +=1
                 if count >5:
