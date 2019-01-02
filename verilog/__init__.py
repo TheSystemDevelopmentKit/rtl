@@ -56,14 +56,19 @@ class verilog_iofile(thesdk):
                 if i==0:
                    if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
                        parsed=np.r_['1',np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
+                       header_line.append(self.name+'_'+k+'_'+'Real')
+                       header_line.append(self.name+'_'+k+'_'+'Imag')
                    else:
                        parsed=np.r_['1',data[:,i].reshape(-1,1)]
+                       header_line.append(self.name+'_'+k)
                 else:
                    if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
                        parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
+                       header_line.append(self.name+'_'+k+'_'+'Real')
+                       header_line.append(self.name+'_'+k+'_'+'Imag')
                    else:
-                       parsed=np.r_['1',data[:,i].reshape(-1,1)]
                        parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
+                       header_line.append(self.name+'_'+k)
 
             df=pd.DataFrame(parsed,dtype=datatype)
             if self.hasheader:
@@ -78,7 +83,7 @@ class verilog_iofile(thesdk):
                     header_line.append('Timestamp')
                 else:
                     parsed = np.r_['1', parsed, self.data[:,k].reshape(-1,1)]
-                    header_line.append(self.name[k-1])
+                    header_line.append(self.name+'_'+(k-1))
 
             df = pd.DataFrame(parsed,dtype=int)
             if self.hasheader:
