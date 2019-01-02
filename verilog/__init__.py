@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.11.2018 09:53
+
 import os
 import sys
 import subprocess
@@ -235,7 +235,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
     def run_verilog(self):
         self._vlogcmd=self.get_vlogcmd()
-        filetimeout=30 #File appearance timeout in seconds
+        filetimeout=60 #File appearance timeout in seconds
         count=0
         #This is to ensure operation of obsoleted code, to be removed
         if hasattr(self,'_infile'):
@@ -271,7 +271,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
         subprocess.check_output(self._vlogcmd,shell=True);
-        
         count=0
         #This is to ensure operation of obsoleted code, to be removed
         if hasattr(self,'_outfile'):
