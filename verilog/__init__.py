@@ -1,4 +1,4 @@
-# RTL class 
+#RTL class 
 # Provides verilog-related properties and methods for other classes TheSDK
 #
 # Adding this class as a superclass enforces the definitions for verilog in the
@@ -22,7 +22,7 @@ class verilog_iofile(thesdk):
         try:  
             rndpart=os.path.basename(tempfile.mkstemp()[1])
             self.name=kwargs.get('name') 
-            self.file=parent._vlogsimpath +'/' + self.name + '_' + rndpart +'.txt'
+            self.file=parent.vlogsimpath +'/' + self.name + '_' + rndpart +'.txt'
         except:
             self.print_log({'type':'F', 'msg':"Verilog IO file definition failed"})
 
@@ -125,13 +125,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     def __init__(self):
         self.model           =[]
         self._vlogcmd        =[]
-        self._name           =[]
-        self._entitypath     =[] 
-        self._vlogsrcpath    =[]
-        self._vlogsimpath    =[]
-        self._vlogworkpath   =[]
-        self._vlogmodulefiles =list([])
-        self._vlogparameters =dict([])
         self._infile         =[]
         self._outfile        =[]
 
@@ -193,47 +186,99 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 self._iofiles=None
     @property 
     def verilog_submission(self):
-        if hasattr(self,'_interactive_verilog'):
-            return self._verilog_submission
-        else:
-            #if hasattr(thesdk,'GLOBALS'):
+        if not hasattr(self, '_verilog_submission'):
             try:
                 self._verilog_submission=thesdk.GLOBALS['LSFSUBMISSION']+' '
             except:
                 self.print_log({'type':'W','msg':'Variable thesdk.GLOBALS incorrectly defined. Implemented in thesdk module, commit  04a3c519eeed995121d764762432ce48b9e1d0f6 _verilog_submission defaults to empty string and simulation is ran in localhost.'})
                 self._verilog_submission=''
+
+        if hasattr(self,'_interactive_verilog'):
+            return self._verilog_submission
+
         return self._verilog_submission
 
-    def def_verilog(self):
-        if not hasattr(self, '_vlogparameters'):
-            self._vlogparameters =dict([])
-        if not hasattr(self, '_vlogmodulefiles'):
-            self._vlogmodulefiles =list([])
+    @property
+    def name(self):
+        if not hasattr(self, '_name'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._name=os.path.splitext(os.path.basename(self._classfile))[0]
+        return self._name
+    #No setter, no deleter.
 
-        self._name=os.path.splitext(os.path.basename(self._classfile))[0]
-        self._entitypath= os.path.dirname(os.path.dirname(self._classfile))
+    @property
+    def entitypath(self):
+        if not hasattr(self, '_entitypath'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._entitypath= os.path.dirname(os.path.dirname(self._classfile))
+        return self._entitypath
+    #No setter, no deleter.
 
-        if (self.model is 'sv'):
-            self._vlogsrcpath  =  self._entitypath + '/' + self.model
-        if not (os.path.exists(self._entitypath+'/Simulations')):
-            os.mkdir(self._entitypath + '/Simulations')
-        
-        self._vlogsimpath  = self._entitypath +'/Simulations/verilogsim'
+    @property
+    def vlogsrcpath(self):
+        if not hasattr(self, '_vlogsrcpath'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._vlogsrcpath  =  self.entitypath + '/sv'
+        return self._vlogsrcpath
+    #No setter, no deleter.
 
+    @property
+    def vlogsimpath(self):
+        if not hasattr(self, '_vlogsimpath'):
+            #_classfile is an abstract property that must be defined in the class.
+            if not (os.path.exists(self.entitypath+'/Simulations')):
+                os.mkdir(self.entitypath + '/Simulations')
+        self._vlogsimpath  = self.entitypath +'/Simulations/verilogsim'
         if not (os.path.exists(self._vlogsimpath)):
             os.mkdir(self._vlogsimpath)
-        self._vlogworkpath    =  self._vlogsimpath +'/work'
+        return self._vlogsimpath
+    #No setter, no deleter.
 
-    def get_vlogcmd(self):
-        submission = self.verilog_submission  
-        vloglibcmd =  'vlib ' +  self._vlogworkpath + ' && sleep 2'
-        vloglibmapcmd = 'vmap work ' + self._vlogworkpath
-        if (self.model is 'sv'):
-            vlogmodulesstring=' '.join([ self._vlogsrcpath + '/'+ str(param) for param in self._vlogmodulefiles])
-            vlogcompcmd = ( 'vlog -work work ' + self._vlogsrcpath + '/' + self._name + '.sv '
-                           + self._vlogsrcpath + '/tb_' + self._name +'.sv' + ' ' + vlogmodulesstring )
+    @property
+    def vlogworkpath(self):
+        if not hasattr(self, '_vlogworkpath'):
+            self._vlogworkpath    =  self.vlogsimpath +'/work'
+        return self._vlogworkpath
 
-            gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) for param,val in iter(self._vlogparameters.items()) ])
+    @property
+    def vlogparameters(self): 
+        if not hasattr(self, '_vlogparameters'):
+            self._vlogparameters =dict([])
+        return self._vlogparameters
+    @vlogparameters.setter
+    def vlogparameters(self,value): 
+            self._vlogparameters = value
+    @vlogparameters.deleter
+    def vlogparameters(self): 
+            self._vlogparameters = None
+
+    @property
+    def vlogmodulefiles(self):
+        if not hasattr(self, '_vlogmodulefiles'):
+            self._vlogmodulefiles =list([])
+        return self._vlogmodulefiles
+    @vlogmodulefiles.setter
+    def vlogmodulefiles(self,value): 
+            self._vlogmodulefiles = value
+    @vlogmodulefiles.deleter
+    def vlogmodulefiles(self): 
+            self._vlogmodulefiles = None 
+
+    #This is obsoleted
+    def def_verilog(self):
+        self.print_log({'type':'I','msg':'Command def_verilog() is obsoleted. It does nothing. \nWill be removed in future releases'})
+
+    @property
+    def vlogcmd(self):
+        submission=self.verilog_submission
+        if not hasattr(self, '_vlogcmd'):
+            vloglibcmd =  'vlib ' +  self.vlogworkpath + ' && sleep 2'
+            vloglibmapcmd = 'vmap work ' + self.vlogworkpath
+            vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ str(param) for param in self.vlogmodulefiles])
+            vlogcompcmd = ( 'vlog -work work ' + self.vlogsrcpath + '/' + self.name + '.sv '
+                           + self.vlogsrcpath + '/tb_' + self.name +'.sv' + ' ' + vlogmodulesstring )
+
+            gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) for param,val in iter(self.vlogparameters.items()) ])
             
             if hasattr(self,'_infile') or hasattr(self,'_outfile'):
                 self.print_log({'type':'W', 'msg':'OBSOLETE CODE: _infile and _outfile properties are\n'                    
@@ -242,14 +287,13 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 if not self.interactive_verilog:
                     vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc -g g_infile=' + self._infile
                               + ' -g g_outfile=' + self._outfile + ' ' + gstring 
-                              +' work.tb_' + self._name  + ' -do "run -all; quit;"')
+                              +' work.tb_' + self.name  + ' -do "run -all; quit;"')
                 else:
                     submission="" #Local execution
                     vlogsimcmd = ( 'vsim -64 -t 1ps -novopt -g g_infile=' + self._infile
                               + ' -g g_outfile=' + self._outfile + ' ' + gstring 
-                              +' work.tb_' + self._name)
+                              +' work.tb_' + self.name)
 
-            
             elif ( not ( hasattr(self,'_infile') or  hasattr(self,'_outfile') )) and hasattr(self,'iofiles'):
                 fileparams=''
                 for file in self.iofiles:
@@ -257,24 +301,23 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
                 if not self.interactive_verilog:
                     vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' + fileparams + ' ' + gstring
-                              +' work.tb_' + self._name  + ' -do "run -all; quit;"')
+                              +' work.tb_' + self.name  + ' -do "run -all; quit;"')
                 else:
                     submission="" #Local execution
                     vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams + ' ' + gstring
-                              +' work.tb_' + self._name)
+                              +' work.tb_' + self.name)
 
-            vlogcmd =  submission + vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
-            if self.interactive_verilog:
-                self.print_log({'type':'F', 'msg':"Interactive verilog not yet supported"})
-                self.print_log({'type':'I', 'msg':"""Running verilog simulation in interactive mode\n
-                    Add the probes in the simulation as you wish.\n
-                    To finish the simulation, run the simulation to end and exit."""})
-        else:
-            vlogcmd=[]
-        return vlogcmd
+            self._vlogcmd =  submission + vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + vlogsimcmd
+        return self._vlogcmd
+    # Just to give the freedom to set this if needed
+    @vlogcmd.setter
+    def vlogcmd(self,value):
+        self._vlogcmd=value
+    @vlogcmd.deleter
+    def vlogcmd(self):
+        self._vlogcmd=None
 
     def run_verilog(self):
-        self._vlogcmd=self.get_vlogcmd()
         filetimeout=60 #File appearance timeout in seconds
         count=0
         #This is to ensure operation of obsoleted code, to be removed
@@ -309,8 +352,15 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 except:
                     pass
 
-        self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vlogcmd) })
-        subprocess.check_output(self._vlogcmd,shell=True);
+        self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self.vlogcmd) })
+
+        if self.interactive_verilog:
+            self.print_log({'type':'I', 'msg':"""Running verilog simulation in interactive mode.
+                Add the probes in the simulation as you wish.
+                To finish the simulation, run the simulation to end and exit."""})
+
+        subprocess.check_output(self.vlogcmd, shell=True);
+
         count=0
         #This is to ensure operation of obsoleted code, to be removed
         if hasattr(self,'_outfile'):
