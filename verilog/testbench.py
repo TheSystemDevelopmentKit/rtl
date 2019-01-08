@@ -70,6 +70,7 @@ class testbench(thesdk):
         self.testbench_generator()
 
     
+    #[TODO] move this to __init__.py and verify
     def write_data_file(self):
         for i in range(len(self.data)):
             parsed = []
@@ -93,6 +94,7 @@ class testbench(thesdk):
             df.to_csv(path_or_buf=self.data_file[i], sep="\t", index=False, header=header_line)
             time.sleep(2)
     
+    #[TODO] move this to __init__.py and verify
     def write_ctrl_file(self):
         for i in range(len(self.ctrl)):
             parsed = []

@@ -31,6 +31,10 @@ class verilog_iofile(thesdk):
         self.datatype=kwargs.get('datatype',int)
         self.dir=kwargs.get('dir','out')    #Files are output files by default, and direction is 
                                             # changed to 'in' when written 
+        self.iotype=kwargs.get('iotype','data') # The file is a data file by default 
+                                                # Option data,ctrl
+        self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
+                                                     # Do not generate things just to remove them in the next step
         if hasattr(parent,'preserve_iofiles'):
             self.preserve=parent.preserve_iofiles
         else:
@@ -39,27 +43,64 @@ class verilog_iofile(thesdk):
         #TODO: Needs a check to eliminate duplicate entries to iofiles
         parent.iofiles.append(self)
 
+    #default is the data file
     def write(self,**kwargs):
         self.dir='in'  # Only input files are written
         #Parse the rows to split complex numbers
         data=kwargs.get('data',self.data)
         datatype=kwargs.get('dtype',self.datatype)
+        iotype=kwargs.get('iotype',self.iotype)
+        header_line = []
         parsed=[]
-        for i in range(data.shape[1]):
-            if i==0:
-               if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                   parsed=np.r_['1',np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
-               else:
-                   parsed=np.r_['1',data[:,i].reshape(-1,1)]
-            else:
-               if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                   parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
-               else:
-                   parsed=np.r_['1',data[:,i].reshape(-1,1)]
-                   parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
+        if iotype=='data':
+            for i in range(data.shape[1]):
+                if i==0:
+                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
+                       parsed=np.r_['1',np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
+                       header_line.append('%s_%s_Real' %(self.name,i))
+                       header_line.append('%s_%s_Imag' %(self.name,i))
+                   else:
+                       parsed=np.r_['1',data[:,i].reshape(-1,1)]
+                       header_line.append('%s_%s' %(self.name,i))
+                else:
+                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
+                       parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
+                       header_line.append('%s_%s_Real' %(self.name,i))
+                       header_line.append('%s_%s_Imag' %(self.name,i))
+                   else:
+                       parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
+                       header_line.append('%s_%s' %(self.name,i))
 
-        df=pd.DataFrame(parsed,dtype=datatype)
-        df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
+            df=pd.DataFrame(parsed,dtype=datatype)
+            if self.hasheader:
+                print(self.hasheader)
+                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
+            else:
+                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
+        elif iotype=='ctrl':
+            for i in range(data.shape[1]):
+                if i==0:
+                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
+                       self.print_log({'type':'F', 'msg':'Timestamp can not be complex.'})
+                   else:
+                       parsed=np.r_['1',data[:,i].reshape(-1,1)]
+                       header_line.append('Timestamp')
+                else:
+                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
+                       parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
+                       header_line.append('%s_%s_Real' %(self.name,i))
+                       header_line.append('%s_%s_Imag' %(self.name,i))
+                   else:
+                       parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
+                       header_line.append('%s_%s' %(self.name,i))
+
+            df=pd.DataFrame(parsed,dtype=datatype)
+            if self.hasheader:
+                print(self.hasheader)
+                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
+            else:
+                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
+
         time.sleep(10)
         
     def read(self,**kwargs):
@@ -78,7 +119,6 @@ class verilog_iofile(thesdk):
                 os.remove(self.file)
             except:
                 pass
-
 
 class verilog(thesdk,metaclass=abc.ABCMeta):
     #These need to be converted to abstact properties
