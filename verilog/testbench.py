@@ -72,6 +72,7 @@ class testbench(thesdk):
     
     #[TODO] move this to __init__.py and verify
     def write_data_file(self):
+        self.print_log('type':'W','msg':'[OBSOLETE]: write_file is implemented in verilog_iofile class.\n Will be removed in future releases. '})    
         for i in range(len(self.data)):
             parsed = []
             header_line = []
@@ -96,6 +97,7 @@ class testbench(thesdk):
     
     #[TODO] move this to __init__.py and verify
     def write_ctrl_file(self):
+        self.print_log('type':'W','msg':'[OBSOLETE]: write_ctrl_file is implemented in verilog_iofile class.\n Will be removed in future releases. '})    
         for i in range(len(self.ctrl)):
             parsed = []
             header_line = []
