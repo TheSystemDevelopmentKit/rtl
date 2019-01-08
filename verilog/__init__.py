@@ -33,7 +33,8 @@ class verilog_iofile(thesdk):
                                             # changed to 'in' when written 
         self.iotype=kwargs.get('iotype','data') # The file is a data file by default 
                                                 # Option data,ctrl
-        self.hasheader=kwargs.get('hasheader','True')
+        self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
+                                                     # Do not generate things just to remove them in the next step
         if hasattr(parent,'preserve_iofiles'):
             self.preserve=parent.preserve_iofiles
         else:
@@ -56,40 +57,50 @@ class verilog_iofile(thesdk):
                 if i==0:
                    if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
                        parsed=np.r_['1',np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
-                       header_line.append(self.name+'_'+k+'_'+'Real')
-                       header_line.append(self.name+'_'+k+'_'+'Imag')
+                       header_line.append('%s_%s_Real' %(self.name,i))
+                       header_line.append('%s_%s_Imag' %(self.name,i))
                    else:
                        parsed=np.r_['1',data[:,i].reshape(-1,1)]
-                       header_line.append(self.name+'_'+k)
+                       header_line.append('%s_%s' %(self.name,i))
                 else:
                    if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
                        parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
-                       header_line.append(self.name+'_'+k+'_'+'Real')
-                       header_line.append(self.name+'_'+k+'_'+'Imag')
+                       header_line.append('%s_%s_Real' %(self.name,i))
+                       header_line.append('%s_%s_Imag' %(self.name,i))
                    else:
                        parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
-                       header_line.append(self.name+'_'+k)
+                       header_line.append('%s_%s' %(self.name,i))
 
             df=pd.DataFrame(parsed,dtype=datatype)
             if self.hasheader:
+                print(self.hasheader)
                 df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
             else:
                 df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
         elif iotype=='ctrl':
-            for k in range(self.data.shape[1]):
-                #First column is the timestamp
-                if k == 0:
-                    parsed = np.r_['1', self.data[:,k].reshape(-1,1)]
-                    header_line.append('Timestamp')
+            for i in range(data.shape[1]):
+                if i==0:
+                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
+                       self.print_log({'type':'F', 'msg':'Timestamp can not be complex.'})
+                   else:
+                       parsed=np.r_['1',data[:,i].reshape(-1,1)]
+                       header_line.append('Timestamp')
                 else:
-                    parsed = np.r_['1', parsed, self.data[:,k].reshape(-1,1)]
-                    header_line.append(self.name+'_'+(k-1))
+                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
+                       parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
+                       header_line.append('%s_%s_Real' %(self.name,i))
+                       header_line.append('%s_%s_Imag' %(self.name,i))
+                   else:
+                       parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
+                       header_line.append('%s_%s' %(self.name,i))
 
-            df = pd.DataFrame(parsed,dtype=int)
+            df=pd.DataFrame(parsed,dtype=datatype)
             if self.hasheader:
-                df.to_csv(path_or_buf=self.ctrl_file[i], sep="\t", index=False, header=header_line)
+                print(self.hasheader)
+                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
             else:
-                df.to_csv(path_or_buf=self.ctrl_file[i], sep="\t", index=False, header=False)
+                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
+
         time.sleep(10)
         
     def read(self,**kwargs):
