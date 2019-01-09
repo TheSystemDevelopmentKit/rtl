@@ -19,5 +19,11 @@ class verilog_signal(thesdk):
         self.ll=0   # Signal bus range left limit 0 by default
         self.rl=0   # Signal bus range right limit 0 by default
 
+    @property
+    def width(self):
+        if not hasattr(self,'_width'):
+            self._width=self.ll-self.rl+1
+        return self._width
+
 if __name__=="__main__":
     pass
