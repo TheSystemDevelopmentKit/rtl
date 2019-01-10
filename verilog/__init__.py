@@ -124,9 +124,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     #These need to be converted to abstact properties
     def __init__(self):
         self.model           =[]
-        self._vlogcmd        =[]
-        self._infile         =[]
-        self._outfile        =[]
 
     @property
     @abstractmethod

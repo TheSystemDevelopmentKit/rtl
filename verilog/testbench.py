@@ -6,6 +6,10 @@ import shlex
 from abc import * 
 from thesdk import *
 from verilog import *
+from verilog.signal import verilog_signal
+from verilog.module import verilog_module
+from verilog.instance import verilog_instance
+
 import numpy as np
 import pandas as pd
 from functools import reduce
@@ -84,41 +88,15 @@ class testbench(thesdk):
         self._reg.content='reg %s;\n' %(value)
 
     @property
-    def dut(self):
-        if hasattr(self,'_dut'):
-            return self._dut.content
-        else:
-            self._dut=section(self,name='dut')
-            if os.path.isfile(self._dutfile):
-             #re.match('from bag.design.module import Module',line)
-             mod=''
-
-            #I really could not match the parens
-            #startmatch=re.compile(r"module *(?="+self.parent.name+r")\s*"+r"\(.*$")
-            startmatch=re.compile(r"module *(?="+self.parent.name+r")\s*"+r".*.+$")
-            stopmatch=re.compile(r'.*\);\s*$')
-            dut=''
-            with open(self._dutfile) as infile: 
-                wholefile=infile.readlines()
-                printing=False
-                for line in wholefile:
-                    if (not printing and startmatch.match(line)):
-                        printing=True
-                    elif ( printing and stopmatch.match(line)):
-                        printing=False
-                        #Inclusive
-                        dut=dut+line
-                    if printing:
-                        dut=dut+line
-            self._dut.content=dut
-            return self._dut.content
+    def dut_instance(self):
+        if not hasattr(self,'_dut_instance'):
+            self._dut_instance=verilog_module(**{'file':self._dutfile})
+        return self._dut_instance
 
     #We should not need this, but it is wise to enable override
-    @dut.setter
-    def dut(self, value):
-        if not hasattr(self,'_dut'):
-            self._dut=section(self,name='dut')
-        self._dut.content='dut %s;\n' %(value)
+    @dut_instance.setter
+    def dut_instance(self,value):
+        self._dut_instance=value
 
 # This might be an overkill, but it makes it possible to have
 # section attributes
@@ -139,6 +117,10 @@ class section(thesdk):
     @content.setter
     def content(self,value):
         self._content=textwrap.dedent(value)
+
+class tb_signal_db(thesdk):
+        def __init_(self,**kwargs):
+            self.members=[];
 
 if __name__=="__main__":
     pass
