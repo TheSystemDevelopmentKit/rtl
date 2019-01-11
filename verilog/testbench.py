@@ -84,15 +84,10 @@ class testbench(thesdk):
         self._reg.content='reg %s;\n' %(value)
 
 
-    @parameters.setter
-    def parameters(self,value):
-        self._parameters=value
-
     @property
     def dut_instance(self):
         if not hasattr(self,'_dut_instance'):
             self._dut_instance=verilog_module(**{'file':self._dutfile})
-        self._dut_instance.parameters=self.parameters
         return self._dut_instance
 
     #We should not need this, but it is wise to enable override
