@@ -7,15 +7,22 @@ from copy import deepcopy
 from verilog.signal import verilog_signal
 
 class verilog_module(thesdk):
-    # Idea  1) Collect IO's to database
-    #       3) Reconstruct the module definition
+    # Idea  1) a) Collect IO's to database
+    #          b) collect parameters to dict
+    #       2) Reconstruct the module definition
+    #       3) a) Implement methods provide sinal connections
+    #          b) Implement methods to provide parameter assingments   
     #       4) Create a method to create assigned module
     #          definition, where signals are
     #          a) assigned by name
     #          b) to arbitrary name vector
+    #       5) Add contents, if required, and include that to definition
     def __init__(self, **kwargs):
+        # No need to propertize these yet
         self.file=kwargs.get('file','')
-
+        self.parameters=dict([])
+        self.contents=''
+    
     @property
     def name(self):
         if not hasattr(self,'_name'):
@@ -102,7 +109,23 @@ class verilog_module(thesdk):
     @property
     def definition(self):
         if not hasattr(self,'_definition'):
-            self._definition='module %s ( ' %(self.name)
+            #First we parse the parameter section
+            print(self.parameters)
+            if self.parameters :
+                parameters=''
+                first=True
+                for name, val in self.parameters.items():
+                    print(name)
+                    print(val)
+                    if first:
+                        parameters='#(\n    %s = %s' %(name,val)
+                        first=False
+                    else:
+                        parameters=parameters+',\n    %s = %s' %(name,val)
+                parameters=parameters+'\n)'
+                self._definition='module %s  %s ( ' %(self.name, parameters)
+            else:
+                self._definition='module %s ( ' %(self.name)
             first=True
             for io in self.ios:
                 if first:
@@ -120,13 +143,31 @@ class verilog_module(thesdk):
                 else:
                     self.print_log({'type':'F', 'msg':'Assigning signal direction %s to verilog module IO.' %(io.dir)})
             self._definition=self._definition+('\n);')
+            if self.contents:
+                self.definition=self.definition+self.contents+'\nendmodule;'
         return self._definition
 
     # Instance is defined through the io_signals
     # Therefore it is always regenerated
     @property
     def instance(self):
-        self._instance='%s %s ( ' %(self.name, self.instname)
+        #First we parse the parameter section
+        print(self.parameters)
+        if self.parameters :
+            parameters=''
+            first=True
+            for name, val in self.parameters.items():
+                print(name)
+                print(val)
+                if first:
+                    parameters='#(\n    .%s(%s)' %(name,val)
+                    first=False
+                else:
+                    parameters=parameters+',\n    .%s(%s)' %(name,val)
+            parameters=parameters+'\n)'
+            self._instance='%s  %s %s ( ' %(self.name,self.instname, parameters)
+        else:
+            self._instance='%s %s ( ' %(self.name, self.instname)
         first=True
         for i in range(len(self.ios)):
             if first:

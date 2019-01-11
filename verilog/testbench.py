@@ -40,21 +40,17 @@ class testbench(thesdk):
             self.print_log({'type':'F', 'msg':"Verilog Testbench file definition failed"})
     
     @property
-    def name(self):
-        if hasattr(self,'_name'):
-            return self._name
-    @property
-    def file(self):
-        if hasattr(self,'_file'):
-            return self._file
+    def parameters(self):
+        if not hasattr(self,'_parameters'):
+            self._parameters=dict([])
+        return self._parameters
     
     @property
     def header(self):
-        if hasattr(self,'_header'):
-            return self._header.content
-        else:
+        if not hasattr(self,'_header'):
             self._header=section(self,name='header')
-            return self._header.content
+        return self._header.content
+
     @header.setter
     def header(self, value):
         if not hasattr(self,'_header'):
@@ -87,10 +83,16 @@ class testbench(thesdk):
             self._reg=section(self,name='reg')
         self._reg.content='reg %s;\n' %(value)
 
+
+    @parameters.setter
+    def parameters(self,value):
+        self._parameters=value
+
     @property
     def dut_instance(self):
         if not hasattr(self,'_dut_instance'):
             self._dut_instance=verilog_module(**{'file':self._dutfile})
+        self._dut_instance.parameters=self.parameters
         return self._dut_instance
 
     #We should not need this, but it is wise to enable override
@@ -117,10 +119,6 @@ class section(thesdk):
     @content.setter
     def content(self,value):
         self._content=textwrap.dedent(value)
-
-class tb_signal_db(thesdk):
-        def __init_(self,**kwargs):
-            self.members=[];
 
 if __name__=="__main__":
     pass
