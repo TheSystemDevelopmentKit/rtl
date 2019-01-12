@@ -130,6 +130,7 @@ class verilog_module(thesdk):
                         #Inclusive
                         parablock=parablock+line +'\n'
                     elif modfind and parafind:
+                        line=re.sub(r"//.*$","",line)
                         parablock=parablock+line
                 if parablock:
                     #Generate lambda functions for pattern filtering
