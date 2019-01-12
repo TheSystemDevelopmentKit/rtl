@@ -45,7 +45,7 @@ class verilog_module(thesdk):
         if not hasattr(self,'_ios'):
             startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
             iomatch=re.compile(r".*(?<!#)\(.*$")
-            iostopmatch=re.compile(r'.*\);\s*$')
+            iostopmatch=re.compile(r'.*\);.*$')
             dut=''
             # Extract the module definition
             with open(self.file) as infile:
@@ -61,9 +61,11 @@ class verilog_module(thesdk):
                         modfind=False
                         iofind=False
                         #Inclusive
-                        dut=dut+line +'\n'
+                        dut=dut+re.sub(r"//.*;.*$","\);",line) +'\n'
                     elif modfind and iofind:
-                        dut=dut+line
+                        dut=dut+re.sub(r"//.*$","",line)
+                #Remove the scala comments
+                dut=re.sub(r",.*$",",",dut)
                 dut=dut.replace("\n","")
                 #Generate lambda functions for pattern filtering
                 fils=[
@@ -72,7 +74,7 @@ class verilog_module(thesdk):
                     re.compile(r"\)"),
                     re.compile(r"^\s*"),
                     re.compile(r"\s*(?=> )"),
-                    re.compile(r";.*"),
+                    re.compile(r"////.*$"),
                     re.compile(r";.*")
                   ]
                 func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
@@ -108,6 +110,7 @@ class verilog_module(thesdk):
             parammatch=re.compile(r".*(?<=#)\(.*$")
             paramstopmatch=re.compile(r".*\).*$")
             parablock=''
+            self._parameters=''
             # Extract the module definition
             with open(self.file) as infile:
                 wholefile=infile.readlines()
@@ -122,27 +125,30 @@ class verilog_module(thesdk):
                         modfind=False
                         parafind=False
                         line=re.sub(r"\).*$","",line)
+                        line=re.sub(r"//.*$","",line)
+                        print(line)
                         #Inclusive
                         parablock=parablock+line +'\n'
                     elif modfind and parafind:
                         parablock=parablock+line
-                #Generate lambda functions for pattern filtering
-                parablock.replace("\n","")
-                fils=[
-                    re.compile(r"module\s*"+self.name+r"\s*"),
-                    re.compile(r"#"),
-                    re.compile(r"\(*"),
-                    re.compile(r"\)*"),
-                    re.compile(r"\s*"),
-                    re.compile(r";*")
-                  ]
-                func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
-                parablock=reduce(lambda s, func: func(s), func_list, parablock)
-                parablock=parablock.split(',')
-                self._parameters=dict([])
-                for param in parablock:
-                        extr=param.split('=')
-                        self._parameters[extr[0]]=extr[1]
+                if parablock:
+                    #Generate lambda functions for pattern filtering
+                    parablock.replace("\n","")
+                    fils=[
+                        re.compile(r"module\s*"+self.name+r"\s*"),
+                        re.compile(r"#"),
+                        re.compile(r"\(*"),
+                        re.compile(r"\)*"),
+                        re.compile(r"\s*"),
+                        re.compile(r";*")
+                      ]
+                    func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
+                    parablock=reduce(lambda s, func: func(s), func_list, parablock)
+                    parablock=parablock.split(',')
+                    self._parameters=dict([])
+                    for param in parablock:
+                            extr=param.split('=')
+                            self._parameters[extr[0]]=extr[1]
         return self._parameters
 
     # Setting principle, assign a dict
@@ -205,7 +211,6 @@ class verilog_module(thesdk):
     def definition(self):
         if not hasattr(self,'_definition'):
             #First we print the parameter section
-            print(self.parameters)
             if self.parameters :
                 parameters=''
                 first=True

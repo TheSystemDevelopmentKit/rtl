@@ -28,7 +28,7 @@ class testbench(thesdk):
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
-    def __init__(self,parent=None, **kwargs):
+    def __init__(self, parent=None, **kwargs):
         if parent==None:
             self.print_log({'type':'F', 'msg':"Parent of Verilog testbench not given"})
         else:
