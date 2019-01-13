@@ -6,7 +6,8 @@ import shlex
 from abc import * 
 from thesdk import *
 from verilog import *
-from verilog.signal import verilog_signal
+from verilog.connector import verilog_connector
+from verilog.connector import verilog_connector_bundle
 from verilog.module import verilog_module
 from verilog.instance import verilog_instance
 
@@ -22,8 +23,9 @@ import textwrap
 ## at least between blocks
 ## Default structure during initialization?
 
-#Utilizes logging method from thesdk
-class testbench(thesdk):
+# Utilizes logging method from thesdk
+# Is extendsd verilog module with some additional properties
+class testbench(verilog_module):
     @property
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
@@ -34,55 +36,14 @@ class testbench(thesdk):
         else:
             self.parent=parent
         try:  
-            self._file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '_test.sv'
+            self.file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '_test.sv'
             self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
         except:
             self.print_log({'type':'F', 'msg':"Verilog Testbench file definition failed"})
-    
-    @property
-    def parameters(self):
-        if not hasattr(self,'_parameters'):
-            self._parameters=dict([])
-        return self._parameters
-    
-    @property
-    def header(self):
-        if not hasattr(self,'_header'):
-            self._header=section(self,name='header')
-        return self._header.content
-
-    @header.setter
-    def header(self, value):
-        if not hasattr(self,'_header'):
-            self._header=section(self,name='header')
-        self._header.content=value
-
-    @property
-    def wire(self):
-        if hasattr(self,'_wire'):
-            return self._wire.content
-        else:
-            self._wire=section(self,name='wire')
-            return self._wire.content
-    @wire.setter
-    def wire(self, value):
-        if not hasattr(self,'_wire'):
-            self._wire=section(self,name='wire')
-        self._wire.content='wire %s;\n' %(value)
-
-    @property
-    def reg(self):
-        if hasattr(self,'_reg'):
-            return self._reg.content
-        else:
-            self._reg=section(self,name='reg')
-            return self._reg.content
-    @reg.setter
-    def reg(self, value):
-        if not hasattr(self,'_reg'):
-            self._reg=section(self,name='reg')
-        self._reg.content='reg %s;\n' %(value)
-
+        
+        #The methods for these are derived from verilog_module
+        self._name=''
+        self._parameters=verilog_connector_bundle()
 
     @property
     def dut_instance(self):
@@ -97,23 +58,11 @@ class testbench(thesdk):
 
 # This might be an overkill, but it makes it possible to have
 # section attributes
-class section(thesdk):
-    def __init__(self,parent=None,**kwargs):
-        if parent==None:
-            self.print_log({'type':'F', 'msg':"Parent of Verilog section not given"})
-        self.name=kwargs.get('name')
-
-    @property
-    def content(self):
-        if hasattr(self,'_content'):
-            return self._content
-        else:
-            self._content=''
-        return self._content
-
-    @content.setter
-    def content(self,value):
-        self._content=textwrap.dedent(value)
+#class section(thesdk):
+#    def __init__(self,parent=None,**kwargs):
+#        if parent==None:
+#            self.print_log({'type':'F', 'msg':"Parent of Verilog section not given"})
+#        self.name=kwargs.get('name')
 
 if __name__=="__main__":
     pass

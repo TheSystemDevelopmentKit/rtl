@@ -4,7 +4,8 @@ import os
 from thesdk import *
 from verilog import *
 from copy import deepcopy
-from verilog.signal import verilog_signal
+from verilog.connector import verilog_connector
+from verilog.connector import verilog_connector_bundle
 
 class verilog_module(thesdk):
     # Idea  1) a) Collect IO's to database
@@ -21,6 +22,7 @@ class verilog_module(thesdk):
         # No need to propertize these yet
         self.file=kwargs.get('file','')
         self._name=kwargs.get('name','')
+        self._instname=kwargs.get('instname','')
         if not self.file and not self._name:
             self.print_log({'type':'F', 'msg':'Either name or file must be defined'})
     
@@ -48,53 +50,61 @@ class verilog_module(thesdk):
             iostopmatch=re.compile(r'.*\);.*$')
             dut=''
             # Extract the module definition
-            with open(self.file) as infile:
-                wholefile=infile.readlines()
-                modfind=False
-                iofind=False
-                for line in wholefile:
-                    if (not modfind and startmatch.match(line)):
-                        modfind=True
-                    if modfind and iomatch.match(line):
-                            iofind=True
-                    if ( modfind and iofind and iostopmatch.match(line)):
-                        modfind=False
-                        iofind=False
-                        #Inclusive
-                        dut=dut+re.sub(r"//.*;.*$","\);",line) +'\n'
-                    elif modfind and iofind:
-                        dut=dut+re.sub(r"//.*$","",line)
-                #Remove the scala comments
-                dut=re.sub(r",.*$",",",dut)
-                dut=dut.replace("\n","")
-                #Generate lambda functions for pattern filtering
-                fils=[
-                    re.compile(r"module\s*"+self.name+r"\s*"),
-                    re.compile(r"\("),
-                    re.compile(r"\)"),
-                    re.compile(r"^\s*"),
-                    re.compile(r"\s*(?=> )"),
-                    re.compile(r"////.*$"),
-                    re.compile(r";.*")
-                  ]
-                func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
-                self._ios=[]
-                dut=reduce(lambda s, func: func(s), func_list, dut)
-                dut=re.sub(r",\s*",",",dut)
-                for ioline in dut.split(','):
-                    extr=ioline.split()
-                    signal=verilog_signal()
-                    signal.dir=extr[0]
-                    if len(extr)==2:
-                        signal.name=extr[1]
-                    elif len(extr)==3:
-                        signal.name=extr[2]
-                        busdef=re.match(r"^.*\[(\d+):(\d+)\]",extr[1])
-                        signal.ll=int(busdef.group(1))
-                        signal.rl=int(busdef.group(2))
-                    #By default, we connect to the wire of same name than the input
-                    signal.connect=signal.name
-                    self._ios.append(signal)
+            self._ios=verilog_connector_bundle()
+            if os.path.isfile(self.file):
+                with open(self.file) as infile:
+                    wholefile=infile.readlines()
+                    modfind=False
+                    iofind=False
+                    for line in wholefile:
+                        if (not modfind and startmatch.match(line)):
+                            modfind=True
+                        if modfind and iomatch.match(line):
+                                iofind=True
+                        if ( modfind and iofind and iostopmatch.match(line)):
+                            modfind=False
+                            iofind=False
+                            #Inclusive
+                            dut=dut+re.sub(r"//.*;.*$","\);",line) +'\n'
+                        elif modfind and iofind:
+                            dut=dut+re.sub(r"//.*$","",line)
+                    #Remove the scala comments
+                    dut=re.sub(r",.*$",",",dut)
+                    dut=dut.replace("\n","")
+                    #Generate lambda functions for pattern filtering
+                    fils=[
+                        re.compile(r"module\s*"+self.name+r"\s*"),
+                        re.compile(r"\("),
+                        re.compile(r"\)"),
+                        re.compile(r"^\s*"),
+                        re.compile(r"\s*(?=> )"),
+                        re.compile(r"////.*$"),
+                        re.compile(r";.*")
+                      ]
+                    func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
+                    dut=reduce(lambda s, func: func(s), func_list, dut)
+                    dut=re.sub(r",\s*",",",dut)
+                    for ioline in dut.split(','):
+                        extr=ioline.split()
+                        signal=verilog_connector()
+                        signal.cls=extr[0]
+                        if len(extr)==2:
+                            signal.name=extr[1]
+                        elif len(extr)==3:
+                            signal.name=extr[2]
+                            busdef=re.match(r"^.*\[(\d+):(\d+)\]",extr[1])
+                            signal.ll=int(busdef.group(1))
+                            signal.rl=int(busdef.group(2))
+
+                        #By default, we create a connecttor that is cross connected to the input
+                        signal.connect=deepcopy(signal)
+                        if signal.cls=='input':
+                            signal.connect.cls='reg'
+                        if signal.cls=='output':
+                            signal.connect.cls='wire'
+                        signal.connect.connect=signal
+
+                        self._ios.Members[signal.name]=signal
         return self._ios
 
     # Setting principle, assign a dict
@@ -110,53 +120,52 @@ class verilog_module(thesdk):
             parammatch=re.compile(r".*(?<=#)\(.*$")
             paramstopmatch=re.compile(r".*\).*$")
             parablock=''
-            self._parameters=''
+            self._parameters=Bundle()
             # Extract the module definition
-            with open(self.file) as infile:
-                wholefile=infile.readlines()
-                modfind=False
-                parafind=False
-                for line in wholefile:
-                    if (not modfind and startmatch.match(line)):
-                        modfind=True
-                    if modfind and parammatch.match(line):
-                            parafind=True
-                    if ( modfind and parafind and paramstopmatch.match(line)):
-                        modfind=False
-                        parafind=False
-                        line=re.sub(r"\).*$","",line)
-                        line=re.sub(r"//.*$","",line)
-                        print(line)
-                        #Inclusive
-                        parablock=parablock+line +'\n'
-                    elif modfind and parafind:
-                        line=re.sub(r"//.*$","",line)
-                        parablock=parablock+line
-                if parablock:
-                    #Generate lambda functions for pattern filtering
-                    parablock.replace("\n","")
-                    fils=[
-                        re.compile(r"module\s*"+self.name+r"\s*"),
-                        re.compile(r"#"),
-                        re.compile(r"\(*"),
-                        re.compile(r"\)*"),
-                        re.compile(r"\s*"),
-                        re.compile(r";*")
-                      ]
-                    func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
-                    parablock=reduce(lambda s, func: func(s), func_list, parablock)
-                    parablock=parablock.split(',')
-                    self._parameters=dict([])
-                    for param in parablock:
-                            extr=param.split('=')
-                            self._parameters[extr[0]]=extr[1]
+            if os.path.isfile(self.file):
+                with open(self.file) as infile:
+                    wholefile=infile.readlines()
+                    modfind=False
+                    parafind=False
+                    for line in wholefile:
+                        if (not modfind and startmatch.match(line)):
+                            modfind=True
+                        if modfind and parammatch.match(line):
+                                parafind=True
+                        if ( modfind and parafind and paramstopmatch.match(line)):
+                            modfind=False
+                            parafind=False
+                            line=re.sub(r"\).*$","",line)
+                            line=re.sub(r"//.*$","",line)
+                            #Inclusive
+                            parablock=parablock+line +'\n'
+                        elif modfind and parafind:
+                            line=re.sub(r"//.*$","",line)
+                            parablock=parablock+line
+                    if parablock:
+                        #Generate lambda functions for pattern filtering
+                        parablock.replace("\n","")
+                        fils=[
+                            re.compile(r"module\s*"+self.name+r"\s*"),
+                            re.compile(r"#"),
+                            re.compile(r"\(*"),
+                            re.compile(r"\)*"),
+                            re.compile(r"\s*"),
+                            re.compile(r";*")
+                          ]
+                        func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
+                        parablock=reduce(lambda s, func: func(s), func_list, parablock)
+                        parablock=parablock.split(',')
+                        for param in parablock:
+                                extr=param.split('=')
+                                self._parameters.Members[extr[0]]=extr[1]
         return self._parameters
 
     # Setting principle, assign a dict
     # individual parameters can be set externally
     @parameters.setter
     def parameters(self,value):
-        self._parameters=deepcopy(value)
+        self._parameters.Members=deepcopy(value)
 
     @property
     def contents(self):
@@ -166,21 +175,22 @@ class verilog_module(thesdk):
             modulestopmatch=re.compile(r"\s*endmodule\s*$")
             self._contents='\n'
             # Extract the module definition
-            with open(self.file) as infile:
-                wholefile=infile.readlines()
-                modfind=False
-                headers=False
-                for line in wholefile:
-                    if (not modfind and startmatch.match(line)):
-                        modfind=True
-                    if modfind and headerstopmatch.match(line):
-                            headers=True
-                    elif ( modfind and headers and modulestopmatch.match(line)):
-                        modfind=False
-                        headers=False
-                        #exclusive
-                    elif modfind and headers:
-                        self._contents=self._contents+line
+            if os.path.isfile(self.file):
+                with open(self.file) as infile:
+                    wholefile=infile.readlines()
+                    modfind=False
+                    headers=False
+                    for line in wholefile:
+                        if (not modfind and startmatch.match(line)):
+                            modfind=True
+                        if modfind and headerstopmatch.match(line):
+                                headers=True
+                        elif ( modfind and headers and modulestopmatch.match(line)):
+                            modfind=False
+                            headers=False
+                            #exclusive
+                        elif modfind and headers:
+                            self._contents=self._contents+line
         return self._contents
     @contents.setter
     def contents(self,value):
@@ -189,59 +199,58 @@ class verilog_module(thesdk):
     def contents(self,value):
         self._contents=None
 
-
-        
-
     @property
     def io_signals(self):
         if not hasattr(self,'_io_signals'):
-            self._io_signals=deepcopy(self.ios)
-            for io in self._io_signals:
-                if io.dir=='input':
-                    io.dir='reg'
-                if io.dir=='output':
-                    io.dir='wire'
+            self._io_signals=verilog_connector_bundle()
+            for ioname, io in self.ios.Members.items():
+                # Connectior is created already in io definitio
+                # just point to it  
+                self._io_signals.Members[ioname]=io.connect
         return self._io_signals
+
     @io_signals.setter
     def io_signals(self,value):
-        for i in range(len(self._io_signals)):
-            self._io_signals[i].connect=value[i].connect
+        for conn in value.Members :
+            self._io_signals.Members[conn.name].connect=conn
         return self._io_signals
 
     @property
     def definition(self):
         if not hasattr(self,'_definition'):
             #First we print the parameter section
-            if self.parameters :
+            if self.parameters.Members:
                 parameters=''
                 first=True
-                for name, val in self.parameters.items():
+                for name, val in self.parameters.Members.items():
                     if first:
                         parameters='#(\n    %s = %s' %(name,val)
                         first=False
                     else:
                         parameters=parameters+',\n    %s = %s' %(name,val)
                 parameters=parameters+'\n)'
-                self._definition='module %s  %s ( ' %(self.name, parameters)
+                self._definition='module %s  %s' %(self.name, parameters)
             else:
-                self._definition='module %s ( ' %(self.name)
+                self._definition='module %s ' %(self.name)
             first=True
-            for io in self.ios:
-                if first:
-                    self._definition=self._definition+'\n'
-                    first=False
-                else:
-                    self._definition=self._definition+',\n'
-                if io.dir in [ 'input', 'output', 'inout' ]:
-                    if io.width==1:
-                        self._definition=(self._definition+
-                                ('    %s %s' %(io.dir, io.name)))
+            if self.ios.Members:
+                for ioname, io in self.ios.Members.items():
+                    if first:
+                        self._definition=self._definition+'(\n'
+                        first=False
                     else:
-                        self._definition=(self._definition+
-                                ('    %s [%s:%s] %s' %(io.dir, io.ll, io.rl, io.name)))
-                else:
-                    self.print_log({'type':'F', 'msg':'Assigning signal direction %s to verilog module IO.' %(io.dir)})
-            self._definition=self._definition+('\n);')
+                        self._definition=self._definition+',\n'
+                    if io.cls in [ 'input', 'output', 'inout' ]:
+                        if io.width==1:
+                            self._definition=(self._definition+
+                                    ('    %s %s' %(io.cls, io.name)))
+                        else:
+                            self._definition=(self._definition+
+                                    ('    %s [%s:%s] %s' %(io.cls, io.ll, io.rl, io.name)))
+                    else:
+                        self.print_log({'type':'F', 'msg':'Assigning signal direction %s to verilog module IO.' %(io.cls)})
+                self._definition=self._definition+'\n)'
+            self._definition=self._definition+';'
             if self.contents:
                 self._definition=self._definition+self.contents+'\nendmodule'
         return self._definition
@@ -251,34 +260,65 @@ class verilog_module(thesdk):
     @property
     def instance(self):
         #First we write the parameter section
-        if self.parameters :
+        #print(self.parameters)
+        if self.parameters.Members:
             parameters=''
             first=True
-            for name, val in self.parameters.items():
+            for name, val in self.parameters.Members.items():
                 if first:
                     parameters='#(\n    .%s(%s)' %(name,val)
                     first=False
                 else:
                     parameters=parameters+',\n    .%s(%s)' %(name,val)
             parameters=parameters+'\n)'
-            self._instance='%s  %s %s ( ' %(self.name,self.instname, parameters)
+            self._instance='%s  %s %s' %(self.name,self.instname, parameters)
         else:
-            self._instance='%s %s ( ' %(self.name, self.instname)
+            self._instance='%s %s ' %(self.name, self.instname)
         first=True
         # Then we write the IOs
-        for i in range(len(self.ios)):
-            if first:
-                self._instance=self._instance+'\n'
-                first=False
-            else:
-                self._instance=self._instance+',\n'
-            if self.ios[i].dir in [ 'input', 'output', 'inout' ]:
-                    self._instance=(self._instance+
-                            ('    .%s(%s)' %(self.ios[i].name, self.ios[i].connect)))
-            else:
-                self.print_log({'type':'F', 'msg':'Assigning signal direction %s to verilog module IO.' %(io.dir)})
-        self._instance=self._instance+('\n);')
+        if self.ios.Members:
+            for ioname, io in self.ios.Members.items():
+                if first:
+                    self._instance=self._instance+'(\n'
+                    first=False
+                else:
+                    self._instance=self._instance+',\n'
+                if io.cls in [ 'input', 'output', 'inout' ]:
+                        self._instance=(self._instance+
+                                ('    .%s(%s)' %(io.name, io.connect.name)))
+                else:
+                    self.print_log({'type':'F', 'msg':'Assigning signal direction %s to verilog module IO.' %(io.cls)})
+            self._instance=self._instance+('\n)')
+        self._instance=self._instance+(';')
         return self._instance
 
 if __name__=="__main__":
     pass
+
+##Some definitions generally present in verilog_modules
+    @property
+    def wire(self):
+        if hasattr(self,'_wire'):
+            return self._wire.content
+        else:
+            self._wire=section(self,name='wire')
+            return self._wire.content
+    @wire.setter
+    def wire(self, value):
+        if not hasattr(self,'_wire'):
+            self._wire=section(self,name='wire')
+        self._wire.content='wire %s;\n' %(value)
+
+    @property
+    def reg(self):
+        if hasattr(self,'_reg'):
+            return self._reg.content
+        else:
+            self._reg=section(self,name='reg')
+            return self._reg.content
+    @reg.setter
+    def reg(self, value):
+        if not hasattr(self,'_reg'):
+            self._reg=section(self,name='reg')
+        self._reg.content='reg %s;\n' %(value)
+
