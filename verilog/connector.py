@@ -59,38 +59,62 @@ class verilog_connector_bundle(Bundle):
 
     def new(self,**kwargs):
         name=kwargs.get('name','')
-        cls=kwargs.get('cls','')   # Input,output,inout,reg,wire,reg,wire
-        type=kwargs.get('type','') # signed
-        ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
-        rl=kwargs.get('ll',0)      # Bus bus range right limit 0 by default
-        init=kwargs.get('init','') # Initial value
-        connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
+        cls=kwargs.get('cls','')           # Input,output,inout,reg,wire,reg,wire
+        type=kwargs.get('type','')         # signed
+        ll=kwargs.get('ll',0)              # Bus range left limit 0 by default
+        rl=kwargs.get('ll',0)              # Bus bus range right limit 0 by default
+        init=kwargs.get('init','')         # Initial value
+        connect=kwargs.get('connect',None) # Can't be verilog connector by default. Would be recursive
         self.Members[name]=verilog_connector(name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
 
     def update(self,**kwargs):
+        #[TODO]: Write sanity checks
         bundle=kwargs.get('bundle',None)
         self.Members.update(bundle)
     
     def mv(self,**kwargs):
+        #[TODO]: Write sanity checks
         fro=kwargs.get('fro')
         to=kwargs.get('to')
         self.Members[to]=self.Members.pop(fro)
         self.Members[to].name=to
 
     def connect(self,**kwargs):
-        match=kwargs.get('match')
+        #[TODO]: Write sanity checks
+        fro=kwargs.get('fro')
+        match=kwargs.get('match',r".*")  #By default, connect all
         conname=kwargs.get('connect')
         for name, value in self.Members.items():
             if re.match(match,name):
                 value.connect=self.Members[conname]
 
     def assign(self,**kwargs):
-        match=kwargs.get('match')
+        #[TODO]: Write sanity checks
+        match=kwargs.get('match',r".*") #By default, assign all
         assignments=''
         for name, value in self.Members.items():
             if re.match(match,name):
                 assignments=assignments+value.assignment
-        return assignments
+        return intend(text=assignments, level=kwargs.get('level',0))
+
+    def init(self,**kwargs):
+        #[TODO]: Write sanity checks
+        inits=''
+        match=kwargs.get('match',r".*") #By default, assign all
+        for name, val in self.Members.items():
+            if re.match(match,name) and val.init:
+                inits=inits+'%s = %s;\n' %(val.name,val.init)
+        return intend(text=inits, level=kwargs.get('level',0))
+
+#Helper to intend text blocks
+def intend(**kwargs):
+    textout=''
+    nspaces=4
+    for line in (kwargs.get('text')).splitlines():
+        for _ in range(nspaces*kwargs.get('level')):
+            line=line+' '
+        textout=textout+line+'\n'
+    return textout
 
 if __name__=="__main__":
     pass

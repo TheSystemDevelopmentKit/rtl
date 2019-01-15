@@ -86,27 +86,25 @@ class verilog_module(thesdk):
                     dut=re.sub(r",\s*",",",dut)
                     for ioline in dut.split(','):
                         extr=ioline.split()
-                        io=verilog_connector()
-                        io.cls=extr[0]
+                        signal=verilog_connector()
+                        signal.cls=extr[0]
                         if len(extr)==2:
-                            io.name=extr[1]
+                            signal.name=extr[1]
                         elif len(extr)==3:
-                            io.name=extr[2]
+                            signal.name=extr[2]
                             busdef=re.match(r"^.*\[(\d+):(\d+)\]",extr[1])
-                            io.ll=int(busdef.group(1))
-                            io.rl=int(busdef.group(2))
+                            signal.ll=int(busdef.group(1))
+                            signal.rl=int(busdef.group(2))
 
                         #By default, we create a connecttor that is cross connected to the input
-                        connsig=deepcopy(io)
-                        if io.cls=='input':
-                            connsig.cls='reg'
-                        if io.cls=='output':
-                            connsig.cls='wire'
-                        connsig.connect=verilog_connector_bundle()
-                        connsig.connect.Members[io.name]=io
-                        io.connect=verilog_connector_bundle()
-                        io.connect.Members['pin']=connsig
-                        self._ios.Members[io.name]=io
+                        signal.connect=deepcopy(signal)
+                        if signal.cls=='input':
+                            signal.connect.cls='reg'
+                        if signal.cls=='output':
+                            signal.connect.cls='wire'
+                        signal.connect.connect=signal
+
+                        self._ios.Members[signal.name]=signal
         return self._ios
 
     # Setting principle, assign a dict
@@ -208,13 +206,14 @@ class verilog_module(thesdk):
             for ioname, io in self.ios.Members.items():
                 # Connectior is created already in io definitio
                 # just point to it  
-                self._io_signals.Members[ioname]=io.connect.Members['pin']
+                self._io_signals.Members[ioname]=io.connect
         return self._io_signals
 
     @io_signals.setter
     def io_signals(self,value):
-        for name, conn in value.Members.items() :
-            self._io_signals.Members[name].connect.Members[name]=conn
+        for conn in value.Members :
+            self._io_signals.Members[conn.name].connect=conn
+        return self._io_signals
 
     @property
     def definition(self):

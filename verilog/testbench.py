@@ -8,6 +8,7 @@ from thesdk import *
 from verilog import *
 from verilog.connector import verilog_connector
 from verilog.connector import verilog_connector_bundle
+from verilog.connector import intend 
 from verilog.module import verilog_module
 from verilog.instance import verilog_instance
 
@@ -83,12 +84,11 @@ class testbench(verilog_module):
         return inits
 
     def assignments(self,**kwargs):
-        intend=4*kwargs.get('level',0)
         matchlist=kwargs.get('matchlist',[])
         assigns='\n//Assignments\n'
         for match in matchlist:
             assigns=assigns+self.connectors.assign(match=match)
-        return assigns
+        return intend(text=assigns,level=kwargs.get('level',0))
 
                 
                 
