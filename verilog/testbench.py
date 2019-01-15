@@ -44,6 +44,7 @@ class testbench(verilog_module):
         #The methods for these are derived from verilog_module
         self._name=''
         self._parameters=verilog_connector_bundle()
+        self.connectors=verilog_connector_bundle()
 
     @property
     def dut_instance(self):
@@ -55,7 +56,42 @@ class testbench(verilog_module):
     @dut_instance.setter
     def dut_instance(self,value):
         self._dut_instance=value
+    
+    
+    @property
+    def connector_definitions(self):
+        # Registers first
+        definitions='//Register definitions\n'
+        for name, val in self.connectors.Members.items():
+            if val.cls=='reg':
+                definitions=definitions+val.definition
 
+        definitions=definitions+'\n//Wire definitions\n'
+        for name, val in self.connectors.Members.items():
+            if val.cls=='wire':
+                definitions=definitions+val.definition
+        return definitions
+
+    def connector_inits(self,**kwargs):
+        intend=4*kwargs.get('level',0)
+        inits=''
+        for name, val in self.connectors.Members.items():
+            if val.init:
+                for i in range(intend):
+                    inits=inits+' '
+                inits=inits+'%s = %s;\n' %(val.name,val.init)
+        return inits
+
+    def assignments(self,**kwargs):
+        intend=4*kwargs.get('level',0)
+        matchlist=kwargs.get('matchlist',[])
+        assigns='\n//Assignments\n'
+        for match in matchlist:
+            assigns=assigns+self.connectors.assign(match=match)
+        return assigns
+
+                
+                
 # This might be an overkill, but it makes it possible to have
 # section attributes
 #class section(thesdk):
