@@ -1,4 +1,5 @@
 # Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
+
 import os
 from thesdk import *
 from verilog import *
@@ -15,6 +16,7 @@ class verilog_connector(thesdk):
         self.connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
         self._assignment=''
         self._definition=''
+
     @property
     def width(self):
         self._width=self.ll-self.rl+1
