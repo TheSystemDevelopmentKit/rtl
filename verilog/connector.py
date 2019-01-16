@@ -14,6 +14,7 @@ class verilog_connector(thesdk):
         self.rl=kwargs.get('ll',0)      # Bus bus range right limit 0 by default
         self.init=kwargs.get('init','') # Initial value
         self.connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
+        self.ioformat=kwargs.get('ioformat','%d')# By default, connectors are handles as integers in file io.
         self._assignment=''
         self._definition=''
 
@@ -105,6 +106,15 @@ class verilog_connector_bundle(Bundle):
             if re.match(match,name) and val.init:
                 inits=inits+'%s = %s;\n' %(val.name,val.init)
         return intend(text=inits, level=kwargs.get('level',0))
+
+    def list(self,**kwargs):
+        #[TODO]: Write sanity checks
+        names=kwargs.get('names','')
+        connectors=[]
+        if names:
+            for name in names:
+                connectors.append(self.Members[name])
+        return connectors
 
 #Helper to intend text blocks
 def intend(**kwargs):

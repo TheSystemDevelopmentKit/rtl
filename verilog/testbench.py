@@ -46,6 +46,7 @@ class testbench(verilog_module):
         self._name=''
         self._parameters=verilog_connector_bundle()
         self.connectors=verilog_connector_bundle()
+        self.iofiles=Bundle()
 
     @property
     def dut_instance(self):
@@ -89,9 +90,27 @@ class testbench(verilog_module):
         for match in matchlist:
             assigns=assigns+self.connectors.assign(match=match)
         return intend(text=assigns,level=kwargs.get('level',0))
+     
+    @property
+    def iofile_definitions(self):
+        iofile_defs='//Variables for the io_files\n'
+        for name, val in self.iofiles.Members.items():
+            iofile_defs=iofile_defs+val.verilog_fptrdef
+            iofile_defs=iofile_defs+val.verilog_statdef
+            iofile_defs=iofile_defs+val.verilog_fopen
+        iofile_defs=iofile_defs+'\n'
+        return iofile_defs 
 
-                
-                
+    @property
+    def iofile_close(self):
+        iofile_close='\n//Close the io_files\n'
+        for name, val in self.iofiles.Members.items():
+            iofile_close=iofile_close+val.verilog_fclose
+        iofile_close=iofile_close+'\n'
+        return iofile_close 
+            
+
+
 # This might be an overkill, but it makes it possible to have
 # section attributes
 #class section(thesdk):
