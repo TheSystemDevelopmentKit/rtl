@@ -29,8 +29,8 @@ class verilog_iofile(thesdk):
         self.data=kwargs.get('data',[])
         self.simparam=kwargs.get('param','-g g_file_' + kwargs.get('name') + '=' + self.file)
         self.datatype=kwargs.get('datatype',int)
-        self.dir=kwargs.get('dir','out')    #Files are output files by default, and direction is 
-                                            # changed to 'in' when written 
+        self.dir=kwargs.get('dir','out')        #Files are output files by default, and direction is 
+                                                # changed to 'in' when written 
         self.iotype=kwargs.get('iotype','data') # The file is a data file by default 
                                                 # Option data,ctrl
         self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
@@ -42,6 +42,119 @@ class verilog_iofile(thesdk):
 
         #TODO: Needs a check to eliminate duplicate entries to iofiles
         parent.iofiles.append(self)
+        self.print_log({'type':'O','msg':"Attribute iofiles has been replaced by _iofile_bundle.\nSupport will be removed in the future"})
+
+        if hasattr(parent,'_iofile_bundle'):
+            parent._iofile_bundle.new(name=self.name,val=self)
+
+    @property
+    def verilog_stat(self):
+        if not hasattr(self,'_verilog_stat'):
+            self._verilog_stat='status_%s' %(self.name)
+        return self._verilog_stat
+    
+    @verilog_stat.setter
+    def verilog_stat(self,value):
+        self._verilog_stat=value
+
+    @property
+    def verilog_statdef(self):
+        self._verilog_statdef='integer %s;\n' %(self.verilog_stat)
+        return self._verilog_statdef
+
+    @property
+    def verilog_fptr(self):
+        self._verilog_fptr='f_%s' %(self.name)
+        return self._verilog_fptr
+    
+    @verilog_fptr.setter
+    def verilog_fptr(self,value):
+        self._verilog_fptr=value
+
+    @property
+    def verilog_fptrdef(self):
+        self._verilog_fptrdef='integer %s;\n' %(self.verilog_fptr)
+        return self._verilog_fptrdef
+
+    @property
+    def verilog_fopen(self):
+        if self.dir=='in':
+            self._verilog_fopen='initial %s = $fopen(g_file_%s,\"r\");\n' %(self.verilog_fptr,self.name)
+        if self.dir=='out':
+            self._verilog_fopen='initial %s = $fopen(g_file_%s,\"w\");\n' %(self.verilog_fptr,self.name)
+        return self._verilog_fopen
+
+    @property
+    def verilog_fclose(self):
+        self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
+        return self._verilog_fclose
+    
+    @property
+    def verilog_connectors(self):
+        if not hasattr(self,'_verilog_connectors'):
+            self._verilog_connectors=[]
+        return self._verilog_connectors
+
+    @verilog_connectors.setter
+    def verilog_connectors(self,value):
+        #Ordered list.
+        self._verilog_connectors=value
+        
+
+    @property 
+    def verilog_io_condition(self):
+        if not hasattr(self,'_verilog_io_condition'):
+            first=True
+            for connector in self.verilog_connectors:
+                if first:
+                    self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
+                    first=False
+                else:
+                    self._verilog_io_condition='%s \n&& ~$isunknown(%s)' %(self._verilog_io_condition,connector.name)
+        return self._verilog_io_condition
+
+    @verilog_io_condition.setter
+    def verilog_io_condition(self,value):
+        self._verilog_io_condition=value
+
+    @property
+    def verilog_io(self):
+        first=True
+        if self.dir=='out':
+            self._verilog_io='$fwrite(%s, ' %(self.verilog_fptr)
+        elif self.dir=='in':
+            self._verilog_io='%s = $fscanf(%s, ' %(self.verilog_stat,self.verilog_fptr)
+        for connector in self.verilog_connectors:
+            if first:
+                iolines='    %s' %(connector.name)
+                format='\"%s' %(connector.ioformat)
+                first=False
+            else:
+                iolines='%s,\n    %s' %(iolines,connector.name)
+                format='%s\\t%s' %(format,connector.ioformat)
+        format=format+'\",\n'
+        self._verilog_io=self._verilog_io+format+iolines+'\n);'
+        return self._verilog_io
+
+    @property
+    def verilog_condio(self):
+        first=True
+        if self.dir=='out':
+            self._verilog_io='$fwrite(%s, ' %(self.verilog_fptr)
+        elif self.dir=='out':
+            self._verilog_io='%s = $fscanf(%s, ' %(self.verilog_stat,self.verilog_fptr)
+        for connector in self.verilog_connectors:
+            if first:
+                iolines='    %s' %(connector.name)
+                format='\"%s' %(connector.ioformat)
+                first=False
+            else:
+                iolines='%s,\n    %s' %(iolines,connector.name)
+                format='%s\\t%s' %(format,connector.ioformat)
+        format=format+'\",\n'
+        self._verilog_io=self._verilog_io+format+iolines+'\n);'
+        return self._verilog_io
+
 
     #default is the data file
     def write(self,**kwargs):
@@ -100,7 +213,6 @@ class verilog_iofile(thesdk):
                 df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
             else:
                 df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
-
         time.sleep(10)
         
     def read(self,**kwargs):
@@ -124,9 +236,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     #These need to be converted to abstact properties
     def __init__(self):
         self.model           =[]
-        self._vlogcmd        =[]
-        self._infile         =[]
-        self._outfile        =[]
 
     @property
     @abstractmethod
@@ -294,10 +403,16 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                               + ' -g g_outfile=' + self._outfile + ' ' + gstring 
                               +' work.tb_' + self.name)
 
-            elif ( not ( hasattr(self,'_infile') or  hasattr(self,'_outfile') )) and hasattr(self,'iofiles'):
-                fileparams=''
-                for file in self.iofiles:
-                    fileparams=fileparams+' '+file.simparam
+            elif ( not ( hasattr(self,'_infile') or  hasattr(self,'_outfile') )): 
+                if hasattr(self,'iofiles'):
+                    fileparams=''
+                    for file in self.iofiles:
+                        fileparams=fileparams+' '+file.simparam
+
+                if hasattr(self,'_iofile_bundle'):
+                    fileparams=''
+                    for name, file in self._iofile_bundle.Members.items():
+                        fileparams=fileparams+' '+file.simparam
 
                 if not self.interactive_verilog:
                     vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' + fileparams + ' ' + gstring
