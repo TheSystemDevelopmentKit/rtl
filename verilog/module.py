@@ -24,7 +24,7 @@ class verilog_module(thesdk):
         self._name=kwargs.get('name','')
         self._instname=kwargs.get('instname','')
         if not self.file and not self._name:
-            self.print_log({'type':'F', 'msg':'Either name or file must be defined'})
+            self.print_log(type='F', msg='Either name or file must be defined')
     
     #Name derived from the file
     @property
@@ -248,7 +248,7 @@ class verilog_module(thesdk):
                             self._definition=(self._definition+
                                     ('    %s [%s:%s] %s' %(io.cls, io.ll, io.rl, io.name)))
                     else:
-                        self.print_log({'type':'F', 'msg':'Assigning signal direction %s to verilog module IO.' %(io.cls)})
+                        self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
                 self._definition=self._definition+'\n)'
             self._definition=self._definition+';'
             if self.contents:
@@ -287,7 +287,7 @@ class verilog_module(thesdk):
                         self._instance=(self._instance+
                                 ('    .%s(%s)' %(io.name, io.connect.name)))
                 else:
-                    self.print_log({'type':'F', 'msg':'Assigning signal direction %s to verilog module IO.' %(io.cls)})
+                    self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
             self._instance=self._instance+('\n)')
         self._instance=self._instance+(';')
         return self._instance

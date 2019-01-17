@@ -10,7 +10,7 @@ from verilog.connector import verilog_connector
 from verilog.connector import verilog_connector_bundle
 from verilog.connector import intend 
 from verilog.module import verilog_module
-from verilog.instance import verilog_instance
+#from verilog.instance import verilog_instance
 
 import numpy as np
 import pandas as pd
@@ -33,14 +33,14 @@ class testbench(verilog_module):
 
     def __init__(self, parent=None, **kwargs):
         if parent==None:
-            self.print_log({'type':'F', 'msg':"Parent of Verilog testbench not given"})
+            self.print_log(type='F', msg="Parent of Verilog testbench not given")
         else:
             self.parent=parent
         try:  
             self.file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '_test.sv'
             self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
         except:
-            self.print_log({'type':'F', 'msg':"Verilog Testbench file definition failed"})
+            self.print_log(type='F', msg="Verilog Testbench file definition failed")
         
         #The methods for these are derived from verilog_module
         self._name=''
@@ -116,7 +116,7 @@ class testbench(verilog_module):
 #class section(thesdk):
 #    def __init__(self,parent=None,**kwargs):
 #        if parent==None:
-#            self.print_log({'type':'F', 'msg':"Parent of Verilog section not given"})
+#            self.print_log(type='F', msg="Parent of Verilog section not given")
 #        self.name=kwargs.get('name')
 
 if __name__=="__main__":

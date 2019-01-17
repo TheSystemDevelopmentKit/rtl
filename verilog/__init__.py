@@ -288,7 +288,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type="I", msg="Preserving file %s" %(val.file))
             else:
                 val.remove()
-                _=self.iofile_bundle.Members.pop(name)
         self._iofile_bundle=None
 
     @property 
