@@ -233,7 +233,7 @@ class verilog_iofile(thesdk):
 class verilog(thesdk,metaclass=abc.ABCMeta):
     #These need to be converted to abstact properties
     def __init__(self):
-        self.model           =[]
+        self.model=[]
 
     @property
     @abstractmethod
@@ -329,6 +329,19 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     #No setter, no deleter.
 
     @property
+    def vlogsrc(self):
+        if not hasattr(self, '_vlogsrc'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._vlogsrc=self.vlogsrcpath + '/' + self.name + '.sv'
+        return self._vlogsrc
+    @property
+    def vlogtbsrc(self):
+        if not hasattr(self, '_vlogtbsrc'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._vlogtbsrc=self.vlogsrcpath + '/tb_' + self.name + '.sv'
+        return self._vlogtbsrc
+
+    @property
     def vlogsimpath(self):
         if not hasattr(self, '_vlogsimpath'):
             #_classfile is an abstract property that must be defined in the class.
@@ -381,8 +394,8 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             vloglibcmd =  'vlib ' +  self.vlogworkpath + ' && sleep 2'
             vloglibmapcmd = 'vmap work ' + self.vlogworkpath
             vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ str(param) for param in self.vlogmodulefiles])
-            vlogcompcmd = ( 'vlog -work work ' + self.vlogsrcpath + '/' + self.name + '.sv '
-                           + self.vlogsrcpath + '/tb_' + self.name +'.sv' + ' ' + vlogmodulesstring )
+            vlogcompcmd = ( 'vlog -work work ' + self.vlogsrc + ' ' +
+                           + self.vlogtbsrc + ' ' + vlogmodulesstring )
 
             gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) for param,val in iter(self.vlogparameters.items()) ])
 
