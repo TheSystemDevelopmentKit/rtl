@@ -13,6 +13,7 @@ from thesdk import *
 import numpy as np
 import pandas as pd
 from functools import reduce
+from verilog.connector import intend
 
 class verilog_iofile(thesdk):
     def __init__(self,parent=None,**kwargs):
@@ -143,7 +144,7 @@ class verilog_iofile(thesdk):
         self._verilog_io_condition=value
 
     @property
-    def verilog_io(self):
+    def verilog_io(self,**kwargs):
         first=True
         if self.iotype=='data':
             if self.dir=='out':
@@ -166,7 +167,7 @@ class verilog_iofile(thesdk):
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.dir=='in':
                 self._verilog_io='\nwhile(!$feof(%s)) begin\n    ' %(self.verilog_fptr)
-                self._verilog_io=self._verilog_io+'%s = %s-%s;\n    #diff begin \n     ' %(self.verilog_tdiff,
+                self._verilog_io=self._verilog_io+'%s = %s-%s;\n    #diff begin\n    ' %(self.verilog_tdiff,
                         self.verilog_ctstamp, self.verilog_ptstamp)    
                 #Every conntrol file requires status, diff, current_timestamp and past timestamp
                 self._verilog_io=self._verilog_io+'%s = %s;\n    ' %(self.verilog_ptstamp, self.verilog_ctstamp)
