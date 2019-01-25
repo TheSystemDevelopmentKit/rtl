@@ -4,7 +4,6 @@
 # Adding this class as a superclass enforces the definitions for verilog in the
 # subclasses
 ##############################################################################
-
 import os
 import sys
 import subprocess
@@ -52,14 +51,40 @@ class verilog_iofile(thesdk):
         if not hasattr(self,'_verilog_stat'):
             self._verilog_stat='status_%s' %(self.name)
         return self._verilog_stat
-    
+
     @verilog_stat.setter
     def verilog_stat(self,value):
         self._verilog_stat=value
 
+    #Timestamp integers for control files
+    @property
+    def verilog_ctstamp(self):
+        if not hasattr(self,'_verilog_ctstamp'):
+            self._verilog_ctstamp='ctstamp_%s' %(self.name)
+        return self._verilog_ctstamp
+    @property
+    def verilog_ptstamp(self):
+        if not hasattr(self,'_verilog_ptstamp'):
+            self._verilog_ptstamp='ptstamp_%s' %(self.name)
+        return self._verilog_ptstamp
+    @property
+    def verilog_tdiff(self):
+        if not hasattr(self,'_verilog_diff'):
+            self._verilog_tdiff='tdiff_%s' %(self.name)
+        return self._verilog_tdiff
+    
+
     @property
     def verilog_statdef(self):
-        self._verilog_statdef='integer %s;\n' %(self.verilog_stat)
+        if self.iotype=='data':
+            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
+            print(self._verilog_statdef)
+        elif self.iotype=='ctrl':
+            self._verilog_statdef='integer %s, %s, %s, %s, %s;\n' %(self.verilog_stat, 
+                    self.verilog_fptr, self.verilog_ctstamp, self.verilog_ptstamp, 
+                    self.verilog_tdiff)
+            for connector in self.verilog_connectors:
+                self._verilog_statdef=self._verilog_statdef+'integer buffer_%s;\n' %(connector.name)
         return self._verilog_statdef
 
     @property
@@ -120,20 +145,45 @@ class verilog_iofile(thesdk):
     @property
     def verilog_io(self):
         first=True
-        if self.dir=='out':
-            self._verilog_io='$fwrite(%s, ' %(self.verilog_fptr)
-        elif self.dir=='in':
-            self._verilog_io='%s = $fscanf(%s, ' %(self.verilog_stat,self.verilog_fptr)
-        for connector in self.verilog_connectors:
-            if first:
-                iolines='    %s' %(connector.name)
-                format='\"%s' %(connector.ioformat)
-                first=False
-            else:
-                iolines='%s,\n    %s' %(iolines,connector.name)
-                format='%s\\t%s' %(format,connector.ioformat)
-        format=format+'\",\n'
-        self._verilog_io=self._verilog_io+format+iolines+'\n);'
+        if self.iotype=='data':
+            if self.dir=='out':
+                self._verilog_io='%s = $fwrite(%s, ' %(self.verilog_stat, self.verilog_fptr)
+            elif self.dir=='in':
+                self._verilog_io='%s = $fscanf(%s, ' %(self.verilog_stat, self.verilog_fptr)
+            for connector in self.verilog_connectors:
+                if first:
+                    iolines='    %s' %(connector.name)
+                    format='\"%s' %(connector.ioformat)
+                    first=False
+                else:
+                    iolines='%s,\n    %s' %(iolines,connector.name)
+                    format='%s\\t%s' %(format,connector.ioformat)
+            format=format+'\",\n'
+            self._verilog_io=self._verilog_io+format+iolines+'\n);'
+        elif self.iotype=='ctrl':
+            print(self.name)
+            if self.dir=='out':
+                self.print_log(type='F', msg='Output writing for control files not supported')
+            elif self.dir=='in':
+                self._verilog_io='\nwhile(!$feof(%s)) begin\n    ' %(self.verilog_fptr)
+                self._verilog_io=self._verilog_io+'%s = %s-%s;\n    #diff begin \n     ' %(self.verilog_tdiff,
+                        self.verilog_ctstamp, self.verilog_ptstamp)    
+                #Every conntrol file requires status, diff, current_timestamp and past timestamp
+                self._verilog_io=self._verilog_io+'%s = %s;\n    ' %(self.verilog_ptstamp, self.verilog_ctstamp)
+                for connector in self.verilog_connectors:
+                    self._verilog_io=self._verilog_io+'%s = buffer_%s;\n    ' %(connector.name,connector.name)
+                first=True            
+                self._verilog_io=self._verilog_io+'%s = $fscanf(%s, ' %(self.verilog_stat,self.verilog_fptr)
+            for connector in self.verilog_connectors:
+                if first:
+                    iolines='    buffer_%s' %(connector.name)
+                    format='\"%s' %(connector.ioformat)
+                    first=False
+                else:
+                    iolines='%s,\n    buffer_%s' %(iolines,connector.name)
+                    format='%s\\t%s' %(format,connector.ioformat)
+            format=format+'\",\n'
+            self._verilog_io=self._verilog_io+format+iolines+'\n);\nend'
         return self._verilog_io
 
     @property
@@ -141,7 +191,7 @@ class verilog_iofile(thesdk):
         first=True
         if self.dir=='out':
             self._verilog_io='$fwrite(%s, ' %(self.verilog_fptr)
-        elif self.dir=='out':
+        elif self.dir=='in':
             self._verilog_io='%s = $fscanf(%s, ' %(self.verilog_stat,self.verilog_fptr)
         for connector in self.verilog_connectors:
             if first:

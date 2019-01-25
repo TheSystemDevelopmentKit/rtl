@@ -108,7 +108,6 @@ class testbench(verilog_module):
             iofile_close=iofile_close+val.verilog_fclose
         iofile_close=iofile_close+'\n'
         return iofile_close 
-            
 
 
 # This might be an overkill, but it makes it possible to have
