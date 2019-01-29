@@ -445,9 +445,11 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             vloglibcmd =  'vlib ' +  self.vlogworkpath + ' && sleep 2'
             vloglibmapcmd = 'vmap work ' + self.vlogworkpath
             vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ str(param) for param in self.vlogmodulefiles])
+            print(self.vlogsrc)
+            print(self.vlogtbsrc)
             vlogcompcmd = ( 'vlog -work work ' + self.vlogsrc + ' ' +
-                           + self.vlogtbsrc + ' ' + vlogmodulesstring )
-
+                           self.vlogtbsrc + ' ' + vlogmodulesstring )
+            
             gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) for param,val in iter(self.vlogparameters.items()) ])
 
             fileparams=''
