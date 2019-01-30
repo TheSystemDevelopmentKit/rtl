@@ -22,7 +22,7 @@ class verilog_module(thesdk):
         # No need to propertize these yet
         self.file=kwargs.get('file','')
         self._name=kwargs.get('name','')
-        self._instname=kwargs.get('instname','')
+        self._instname=kwargs.get('instname',self.name)
         if not self.file and not self._name:
             self.print_log(type='F', msg='Either name or file must be defined')
     

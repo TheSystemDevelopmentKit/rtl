@@ -15,8 +15,6 @@ class verilog_connector(thesdk):
         self.init=kwargs.get('init','') # Initial value
         self.connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
         self.ioformat=kwargs.get('ioformat','%d')# By default, connectors are handles as integers in file io.
-        self._assignment=''
-        self._definition=''
 
     @property
     def width(self):
@@ -26,7 +24,7 @@ class verilog_connector(thesdk):
     @property
     def definition(self):
         if self.width==1:
-            self._defininition='%s %s;\n' %(self.cls, self.name)
+            self._definition='%s %s;\n' %(self.cls, self.name)
         elif self.type:
             self._definition='%s %s [%s:%s] %s;\n' %(self.cls, self.type, self.ll, self.rl, self.name)
         else:
@@ -82,12 +80,19 @@ class verilog_connector_bundle(Bundle):
 
     def connect(self,**kwargs):
         #[TODO]: Write sanity checks
-        fro=kwargs.get('fro')
         match=kwargs.get('match',r".*")  #By default, connect all
         conname=kwargs.get('connect')
         for name, value in self.Members.items():
             if re.match(match,name):
                 value.connect=self.Members[conname]
+
+    def init(self,**kwargs):
+        #[TODO]: Write sanity checks
+        match=kwargs.get('match',r".*")  #By default, connect all
+        initval=kwargs.get('init','')
+        for name, value in self.Members.items():
+            if re.match(match,name):
+                value.init=initval
 
     def assign(self,**kwargs):
         #[TODO]: Write sanity checks
@@ -98,7 +103,7 @@ class verilog_connector_bundle(Bundle):
                 assignments=assignments+value.assignment
         return intend(text=assignments, level=kwargs.get('level',0))
 
-    def init(self,**kwargs):
+    def verilog_inits(self,**kwargs):
         #[TODO]: Write sanity checks
         inits=''
         match=kwargs.get('match',r".*") #By default, assign all

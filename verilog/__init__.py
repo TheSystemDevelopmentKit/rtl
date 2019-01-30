@@ -48,6 +48,14 @@ class verilog_iofile(thesdk):
             parent.iofile_bundle.new(name=self.name,val=self)
 
     @property
+    def vlogparam(self):
+        if not hasattr(self,'_vlogparam'):
+            key=re.sub(r"-g ",'',self.simparam).split('=')[0]
+            val=re.sub(r"-g ",'',self.simparam).split('=')[1]
+            self._vlogparam={key:'\"%s\"'%(val)}
+        return self._vlogparam
+    
+    @property
     def verilog_stat(self):
         if not hasattr(self,'_verilog_stat'):
             self._verilog_stat='status_%s' %(self.name)
@@ -79,7 +87,6 @@ class verilog_iofile(thesdk):
     def verilog_statdef(self):
         if self.iotype=='data':
             self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
-            print(self._verilog_statdef)
         elif self.iotype=='ctrl':
             self._verilog_statdef='integer %s, %s, %s, %s, %s;\n' %(self.verilog_stat, 
                     self.verilog_fptr, self.verilog_ctstamp, self.verilog_ptstamp, 
@@ -98,16 +105,11 @@ class verilog_iofile(thesdk):
         self._verilog_fptr=value
 
     @property
-    def verilog_fptrdef(self):
-        self._verilog_fptrdef='integer %s;\n' %(self.verilog_fptr)
-        return self._verilog_fptrdef
-
-    @property
     def verilog_fopen(self):
         if self.dir=='in':
-            self._verilog_fopen='initial %s = $fopen(g_file_%s,\"r\");\n' %(self.verilog_fptr,self.name)
+            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
         if self.dir=='out':
-            self._verilog_fopen='initial %s = $fopen(g_file_%s,\"w\");\n' %(self.verilog_fptr,self.name)
+            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
         return self._verilog_fopen
 
     @property
@@ -148,7 +150,7 @@ class verilog_iofile(thesdk):
         first=True
         if self.iotype=='data':
             if self.dir=='out':
-                self._verilog_io='%s = $fwrite(%s, ' %(self.verilog_stat, self.verilog_fptr)
+                self._verilog_io='$fwrite(%s, ' %(self.verilog_fptr)
             elif self.dir=='in':
                 self._verilog_io='%s = $fscanf(%s, ' %(self.verilog_stat, self.verilog_fptr)
             for connector in self.verilog_connectors:
@@ -159,7 +161,7 @@ class verilog_iofile(thesdk):
                 else:
                     iolines='%s,\n    %s' %(iolines,connector.name)
                     format='%s\\t%s' %(format,connector.ioformat)
-            format=format+'\",\n'
+            format=format+'\\n\",\n'
             self._verilog_io=self._verilog_io+format+iolines+'\n);'
         elif self.iotype=='ctrl':
             print(self.name)
@@ -167,8 +169,8 @@ class verilog_iofile(thesdk):
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.dir=='in':
                 self._verilog_io='\nwhile(!$feof(%s)) begin\n    ' %(self.verilog_fptr)
-                self._verilog_io=self._verilog_io+'%s = %s-%s;\n    #diff begin\n    ' %(self.verilog_tdiff,
-                        self.verilog_ctstamp, self.verilog_ptstamp)    
+                self._verilog_io=self._verilog_io+'%s = %s-%s;\n    #%s begin\n    ' %(self.verilog_tdiff,
+                        self.verilog_ctstamp, self.verilog_ptstamp,self.verilog_tdiff)    
                 #Every conntrol file requires status, diff, current_timestamp and past timestamp
                 self._verilog_io=self._verilog_io+'%s = %s;\n    ' %(self.verilog_ptstamp, self.verilog_ctstamp)
                 for connector in self.verilog_connectors:

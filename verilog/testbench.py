@@ -44,7 +44,7 @@ class testbench(verilog_module):
         
         #The methods for these are derived from verilog_module
         self._name=''
-        self._parameters=verilog_connector_bundle()
+        self._parameters=Bundle()
         self.connectors=verilog_connector_bundle()
         self.iofiles=Bundle()
 
@@ -74,16 +74,6 @@ class testbench(verilog_module):
                 definitions=definitions+val.definition
         return definitions
 
-    def connector_inits(self,**kwargs):
-        intend=4*kwargs.get('level',0)
-        inits=''
-        for name, val in self.connectors.Members.items():
-            if val.init:
-                for i in range(intend):
-                    inits=inits+' '
-                inits=inits+'%s = %s;\n' %(val.name,val.init)
-        return inits
-
     def assignments(self,**kwargs):
         matchlist=kwargs.get('matchlist',[])
         assigns='\n//Assignments\n'
@@ -95,7 +85,6 @@ class testbench(verilog_module):
     def iofile_definitions(self):
         iofile_defs='//Variables for the io_files\n'
         for name, val in self.iofiles.Members.items():
-            iofile_defs=iofile_defs+val.verilog_fptrdef
             iofile_defs=iofile_defs+val.verilog_statdef
             iofile_defs=iofile_defs+val.verilog_fopen
         iofile_defs=iofile_defs+'\n'
