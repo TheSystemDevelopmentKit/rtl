@@ -22,7 +22,7 @@ class verilog_module(thesdk):
         # No need to propertize these yet
         self.file=kwargs.get('file','')
         self._name=kwargs.get('name','')
-        self._instname=kwargs.get('instname','')
+        self._instname=kwargs.get('instname',self.name)
         if not self.file and not self._name:
             self.print_log(type='F', msg='Either name or file must be defined')
     
@@ -47,6 +47,7 @@ class verilog_module(thesdk):
         if not hasattr(self,'_ios'):
             startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
             iomatch=re.compile(r".*(?<!#)\(.*$")
+            parammatch=re.compile(r".*#\(.*$")
             iostopmatch=re.compile(r'.*\);.*$')
             dut=''
             # Extract the module definition
@@ -55,15 +56,19 @@ class verilog_module(thesdk):
                 with open(self.file) as infile:
                     wholefile=infile.readlines()
                     modfind=False
+                    paramfind=False
                     iofind=False
                     for line in wholefile:
                         if (not modfind and startmatch.match(line)):
                             modfind=True
+                        if modfind and parammatch.match(line):
+                                paramfind=True
                         if modfind and iomatch.match(line):
                                 iofind=True
-                        if ( modfind and iofind and iostopmatch.match(line)):
+                        if ( modfind and (iofind or paramfind) and iostopmatch.match(line)):
                             modfind=False
                             iofind=False
+                            paramfind=False
                             #Inclusive
                             dut=dut+re.sub(r"//.*;.*$","\);",line) +'\n'
                         elif modfind and iofind:
@@ -84,27 +89,28 @@ class verilog_module(thesdk):
                     func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
                     dut=reduce(lambda s, func: func(s), func_list, dut)
                     dut=re.sub(r",\s*",",",dut)
-                    for ioline in dut.split(','):
-                        extr=ioline.split()
-                        signal=verilog_connector()
-                        signal.cls=extr[0]
-                        if len(extr)==2:
-                            signal.name=extr[1]
-                        elif len(extr)==3:
-                            signal.name=extr[2]
-                            busdef=re.match(r"^.*\[(\d+):(\d+)\]",extr[1])
-                            signal.ll=int(busdef.group(1))
-                            signal.rl=int(busdef.group(2))
+                    if dut:
+                        for ioline in dut.split(','):
+                            extr=ioline.split()
+                            signal=verilog_connector()
+                            signal.cls=extr[0]
+                            if len(extr)==2:
+                                signal.name=extr[1]
+                            elif len(extr)==3:
+                                signal.name=extr[2]
+                                busdef=re.match(r"^.*\[(\d+):(\d+)\]",extr[1])
+                                signal.ll=int(busdef.group(1))
+                                signal.rl=int(busdef.group(2))
 
-                        #By default, we create a connecttor that is cross connected to the input
-                        signal.connect=deepcopy(signal)
-                        if signal.cls=='input':
-                            signal.connect.cls='reg'
-                        if signal.cls=='output':
-                            signal.connect.cls='wire'
-                        signal.connect.connect=signal
+                            #By default, we create a connecttor that is cross connected to the input
+                            signal.connect=deepcopy(signal)
+                            if signal.cls=='input':
+                                signal.connect.cls='reg'
+                            if signal.cls=='output':
+                                signal.connect.cls='wire'
+                            signal.connect.connect=signal
 
-                        self._ios.Members[signal.name]=signal
+                            self._ios.Members[signal.name]=signal
         return self._ios
 
     # Setting principle, assign a dict
@@ -229,7 +235,7 @@ class verilog_module(thesdk):
                     else:
                         parameters=parameters+',\n    %s = %s' %(name,val)
                 parameters=parameters+'\n)'
-                self._definition='module %s  %s' %(self.name, parameters)
+                self._definition='module %s %s' %(self.name, parameters)
             else:
                 self._definition='module %s ' %(self.name)
             first=True
@@ -292,33 +298,50 @@ class verilog_module(thesdk):
         self._instance=self._instance+(';')
         return self._instance
 
+    #Methods
+    def export(self,**kwargs):
+        if not os.path.isfile(self.file):
+            print('Exporting verilog_module to %s.' %(self.file))
+            print('printing')
+            with open(self.file, "w") as module_file:
+                module_file.write(self.definition)
+
+        elif os.path.isfile(self.file) and not kwargs.get('force'):
+            self.print_log(type='F', msg=('Export target file %s exists.\n Force overwrite with force=True.' %(self.file)))
+
+        elif kwargs.get('force'):
+            print('Forcing overwrite of verilog_module to %s.' %(self.file))
+            with open(self.file, "w") as module_file:
+                module_file.write(self.definition)
+
+
 if __name__=="__main__":
     pass
 
 ##Some definitions generally present in verilog_modules
-    @property
-    def wire(self):
-        if hasattr(self,'_wire'):
-            return self._wire.content
-        else:
-            self._wire=section(self,name='wire')
-            return self._wire.content
-    @wire.setter
-    def wire(self, value):
-        if not hasattr(self,'_wire'):
-            self._wire=section(self,name='wire')
-        self._wire.content='wire %s;\n' %(value)
-
-    @property
-    def reg(self):
-        if hasattr(self,'_reg'):
-            return self._reg.content
-        else:
-            self._reg=section(self,name='reg')
-            return self._reg.content
-    @reg.setter
-    def reg(self, value):
-        if not hasattr(self,'_reg'):
-            self._reg=section(self,name='reg')
-        self._reg.content='reg %s;\n' %(value)
+#    @property
+#    def wire(self):
+#        if hasattr(self,'_wire'):
+#            return self._wire.content
+#        else:
+#            self._wire=section(self,name='wire')
+#            return self._wire.content
+#    @wire.setter
+#    def wire(self, value):
+#        if not hasattr(self,'_wire'):
+#            self._wire=section(self,name='wire')
+#        self._wire.content='wire %s;\n' %(value)
+#
+#    @property
+#    def reg(self):
+#        if hasattr(self,'_reg'):
+#            return self._reg.content
+#        else:
+#            self._reg=section(self,name='reg')
+#            return self._reg.content
+#    @reg.setter
+#    def reg(self, value):
+#        if not hasattr(self,'_reg'):
+#            self._reg=section(self,name='reg')
+#        self._reg.content='reg %s;\n' %(value)
 

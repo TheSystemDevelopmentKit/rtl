@@ -1,4 +1,0 @@
-`timescale 1ns/100ps
-`include "sys_def.vh"
-`define CLOCK_PERIOD 10
-
