@@ -1,18 +1,16 @@
-#Verilog class 
-# Provides verilog-related properties and methods for other classes TheSDK
+# Verilog_iofile class 
+# Provides verilog- file-io related properties and methods for TheSDK verilog
 #
-# Adding this class as a superclass enforces the definitions for verilog in the
-# subclasses
+# Initially written by Marko Kosunen, marko.kosunen@aalto.fi, 
+#                      Yue Dai, 
+# 2018
 ##############################################################################
 import os
 import sys
-import subprocess
-import shlex
 from abc import * 
 from thesdk import *
 import numpy as np
 import pandas as pd
-from functools import reduce
 from verilog.connector import intend
 
 class verilog_iofile(thesdk):
@@ -26,15 +24,20 @@ class verilog_iofile(thesdk):
         except:
             self.print_log(type='F', msg="Verilog IO file definition failed")
 
-        self.data=kwargs.get('data',[])
-        self.simparam=kwargs.get('param','-g g_file_' + kwargs.get('name') + '=' + self.file)
+        self.data=kwargs.get('data',np.array([]))
+        self.simparam=kwargs.get('param','-g g_file_' 
+                + kwargs.get('name') + '=' + self.file)
         self.datatype=kwargs.get('datatype',int)
-        self.dir=kwargs.get('dir','out')        #Files are output files by default, and direction is 
-                                                # changed to 'in' when written 
-        self.iotype=kwargs.get('iotype','data') # The file is a data file by default 
-                                                # Option data,ctrl
+        self.dir=kwargs.get('dir','out')             # Files are output files by default, 
+                                                     # and direction is 
+                                                     # changed to 'in' when written 
+
+        self.iotype=kwargs.get('iotype','data')      # The file is a data file by default 
+                                                     # Option data,ctrl
+
         self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
-                                                     # Do not generate things just to remove them in the next step
+                                                     # Do not generate things just 
+                                                     # to remove them in the next step
         if hasattr(parent,'preserve_iofiles'):
             self.preserve=parent.preserve_iofiles
         else:
@@ -47,6 +50,8 @@ class verilog_iofile(thesdk):
         if hasattr(parent,'iofile_bundle'):
             parent.iofile_bundle.new(name=self.name,val=self)
 
+    # Parameters for the verilog testbench estracted from
+    # Simulation parameters
     @property
     def vlogparam(self):
         if not hasattr(self,'_vlogparam'):
@@ -55,6 +60,7 @@ class verilog_iofile(thesdk):
             self._vlogparam={key:'\"%s\"'%(val)}
         return self._vlogparam
     
+    # Status parameter
     @property
     def verilog_stat(self):
         if not hasattr(self,'_verilog_stat'):
@@ -83,6 +89,7 @@ class verilog_iofile(thesdk):
         return self._verilog_tdiff
     
 
+    # Status integer verilog definitions
     @property
     def verilog_statdef(self):
         if self.iotype=='data':
@@ -97,15 +104,17 @@ class verilog_iofile(thesdk):
                 self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
         return self._verilog_statdef
 
+    # File pointer
     @property
     def verilog_fptr(self):
         self._verilog_fptr='f_%s' %(self.name)
         return self._verilog_fptr
-    
+
     @verilog_fptr.setter
     def verilog_fptr(self,value):
         self._verilog_fptr=value
 
+    # File opening, direction dependent 
     @property
     def verilog_fopen(self):
         if self.dir=='in':
@@ -114,11 +123,14 @@ class verilog_iofile(thesdk):
             self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
         return self._verilog_fopen
 
+    # File close
     @property
     def verilog_fclose(self):
         self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
         return self._verilog_fclose
     
+    # List for verilog connectors.
+    # These are the verilog signals/regs associated with this file
     @property
     def verilog_connectors(self):
         if not hasattr(self,'_verilog_connectors'):
@@ -129,8 +141,52 @@ class verilog_iofile(thesdk):
     def verilog_connectors(self,value):
         #Ordered list.
         self._verilog_connectors=value
-        
 
+    # Verilog_connectors is an ordered list Because order is important in file
+    # IO. However, we need a mapping from name to value to assing data to 
+    # correct columns of data. Less use for data files, more for controls
+    def connector_datamap(self,**kwargs):
+        name=kwargs.get('name')
+        if not self._verilog_connectors:
+            self.print_log(type='F', msg='Connector undefined, can\'t access.')
+        else:
+            if self.iotype=='data':
+                self._verilog_connector_datamap=dict()
+            elif self.iotype=='ctrl':
+                self._verilog_connector_datamap={'time':0}
+            index=0
+            for val in self.verilog_connectors:
+                index+=1
+                self._verilog_connector_datamap.update({'%s' %(val.name): index})
+        return self._verilog_connector_datamap[name]
+
+    def set_control_data(self,**kwargs):
+        time=kwargs.get('time',int(0))
+        name=kwargs.get('name')
+        val=kwargs.get('val')
+        init=kwargs.get('init',int(0))
+        
+        # First, we initialize the data
+        if self.data.shape[0] == 0:
+            if np.isscalar(init):
+                self.data=(np.ones((1,len(self._verilog_connectors)+1))*init).astype(int)
+                self.data[0,0]=int(time)
+            elif init.shape[1]==len(self._verilog_connectors)+1:
+                self.data=init.astype(int)
+        else: #Lets manipulate
+            index=np.where(self.data[:,0]==time)[0]
+            if index.size > 0:
+                # Alter existing value
+                self.data[index[-1],self.connector_datamap(name=name)]=int(val)
+            else:
+                # Find the previous time, duplicate the row and alter the value
+                previndex=np.where(self.data[:,0]<time)[0][-1]
+                self.data=np.r_['0', self.data[0:previndex+1,:], self.data[previndex::,:]]
+                self.data[previndex+1,0]=time
+                self.data[previndex+1,self.connector_datamap(name=name)]=val
+
+
+    # Condition string for monitoring if the signals are unknown
     @property 
     def verilog_io_condition(self):
         if not hasattr(self,'_verilog_io_condition'):
@@ -140,13 +196,15 @@ class verilog_iofile(thesdk):
                     self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
                     first=False
                 else:
-                    self._verilog_io_condition='%s \n&& ~$isunknown(%s)' %(self._verilog_io_condition,connector.name)
+                    self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
+                            %(self._verilog_io_condition,connector.name)
         return self._verilog_io_condition
 
     @verilog_io_condition.setter
     def verilog_io_condition(self,value):
         self._verilog_io_condition=value
 
+    # Write or read construct for file IO
     @property
     def verilog_io(self,**kwargs):
         first=True
@@ -154,7 +212,8 @@ class verilog_iofile(thesdk):
             if self.dir=='out':
                 self._verilog_io='$fwrite(%s, ' %(self.verilog_fptr)
             elif self.dir=='in':
-                self._verilog_io='%s = $fscanf(%s, ' %(self.verilog_stat, self.verilog_fptr)
+                self._verilog_io='%s = $fscanf(%s, ' \
+                        %(self.verilog_stat, self.verilog_fptr)
             for connector in self.verilog_connectors:
                 if first:
                     iolines='    %s' %(connector.name)
@@ -163,64 +222,56 @@ class verilog_iofile(thesdk):
                 else:
                     iolines='%s,\n    %s' %(iolines,connector.name)
                     format='%s\\t%s' %(format,connector.ioformat)
+
             format=format+'\\n\",\n'
-            self._verilog_io=self._verilog_io+format+iolines+'\n);'
+            self._verilog_io+=format+iolines+'\n);'
 
         #Control files are handled differently
         elif self.iotype=='ctrl':
             if self.dir=='out':
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.dir=='in':
-                self._verilog_io='\nwhile(!$feof(%s)) begin\n    ' %(self.verilog_fptr)
-                self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' %(self.verilog_tdiff,
-                        self.verilog_ctstamp, self.verilog_ptstamp,self.verilog_tdiff)    
-                #Every conntrol file requires status, diff, current_timestamp and past timestamp
-                self._verilog_io+='    %s = %s;\n    ' %(self.verilog_ptstamp,
-                        self.verilog_ctstamp)
+                self._verilog_io='\nwhile(!$feof(%s)) begin\n    ' \
+                        %(self.verilog_fptr)
+                self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
+                        %(self.verilog_tdiff,
+                        self.verilog_ctstamp, self.verilog_ptstamp,
+                        self.verilog_tdiff)    
+
+                # Every control file requires status, diff, current_timestamp 
+                # and past timestamp
+                self._verilog_io+='    %s = %s;\n    ' \
+                        %(self.verilog_ptstamp, self.verilog_ctstamp)
+
                 for connector in self.verilog_connectors:
-                    self._verilog_io+='    %s = buffer_%s;\n    ' %(connector.name,connector.name)
+                    self._verilog_io+='    %s = buffer_%s;\n    ' \
+                            %(connector.name,connector.name)
 
-                self._verilog_io+='    %s = $fscanf(%s, ' %(self.verilog_stat,self.verilog_fptr)
+                self._verilog_io+='    %s = $fscanf(%s, ' \
+                        %(self.verilog_stat,self.verilog_fptr)
 
-            iolines='            %s' %(self.verilog_ctstamp) #The first column is timestap
+            #The first column is timestap
+            iolines='            %s' %(self.verilog_ctstamp) 
             format='\"%d'
             for connector in self.verilog_connectors:
-                    iolines='%s,\n            buffer_%s' %(iolines,connector.name)
-                    format='%s\\t%s' %(format,connector.ioformat)
+                iolines='%s,\n            buffer_%s' \
+                        %(iolines,connector.name)
+                format='%s\\t%s' %(format,connector.ioformat)
             format=format+'\\n\",\n'
             self._verilog_io+=format+iolines+'\n        );\n    end\nend\n'
+
             #Repeat the last assignment outside the loop
             self._verilog_io+='%s = %s-%s;\n#%s begin\n' %(self.verilog_tdiff,
                     self.verilog_ctstamp, self.verilog_ptstamp,self.verilog_tdiff)    
-            #Every conntrol file requires status, diff, current_timestamp and past timestamp
             self._verilog_io+='    %s = %s;\n' %(self.verilog_ptstamp,
                     self.verilog_ctstamp)
             for connector in self.verilog_connectors:
-                self._verilog_io+='    %s = buffer_%s;\n' %(connector.name,connector.name)
+                self._verilog_io+='    %s = buffer_%s;\n' \
+                %(connector.name,connector.name)
             self._verilog_io+='end\n'
         return self._verilog_io
 
-    @property
-    def verilog_condio(self):
-        first=True
-        if self.dir=='out':
-            self._verilog_io='$fwrite(%s, ' %(self.verilog_fptr)
-        elif self.dir=='in':
-            self._verilog_io='%s = $fscanf(%s, ' %(self.verilog_stat,self.verilog_fptr)
-        for connector in self.verilog_connectors:
-            if first:
-                iolines='    %s' %(connector.name)
-                format='\"%s' %(connector.ioformat)
-                first=False
-            else:
-                iolines='%s,\n    %s' %(iolines,connector.name)
-                format='%s\\t%s' %(format,connector.ioformat)
-        format+='\",\n'
-        self._verilog_io+=format+iolines+'\n);'
-        return self._verilog_io
-
-
-    #default is the data file
+    # File writing
     def write(self,**kwargs):
         self.dir='in'  # Only input files are written
         #Parse the rows to split complex numbers
@@ -229,6 +280,8 @@ class verilog_iofile(thesdk):
         iotype=kwargs.get('iotype',self.iotype)
         header_line = []
         parsed=[]
+
+        # Default is the data file
         if iotype=='data':
             for i in range(data.shape[1]):
                 if i==0:
@@ -257,6 +310,7 @@ class verilog_iofile(thesdk):
             else:
                 df.to_csv(path_or_buf=self.file,sep="\t",
                         index=False,header=False)
+        # Control file is a different thing
         elif iotype=='ctrl':
             for i in range(data.shape[1]):
                 if i==0:
@@ -280,8 +334,10 @@ class verilog_iofile(thesdk):
                 df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
             else:
                 df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
+        # This is to compensate filesystem delays
         time.sleep(10)
         
+    # Reading
     def read(self,**kwargs):
         fid=open(self.file,'r')
         datatype=kwargs.get('dtype',self.datatype)
@@ -289,6 +345,7 @@ class verilog_iofile(thesdk):
         self.data=readd.values
         fid.close()
 
+    # Remove the file when no longer needed
     def remove(self):
         if self.preserve:
             self.print_log(type="I", msg="Preserve_value is %s" %(self.preserve))
@@ -298,4 +355,5 @@ class verilog_iofile(thesdk):
                 os.remove(self.file)
             except:
                 pass
+
 
