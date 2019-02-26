@@ -176,8 +176,8 @@ class verilog_iofile(thesdk):
         else: #Lets manipulate
             index=np.where(self.data[:,0]==time)[0]
             if index.size > 0:
-                # Alter existing value
-                self.data[index[-1],self.connector_datamap(name=name)]=int(val)
+                # Alter existing value onwards from given time
+                self.data[index[-1]:,self.connector_datamap(name=name)]=int(val)
             else:
                 # Find the previous time, duplicate the row and alter the value
                 previndex=np.where(self.data[:,0]<time)[0][-1]
@@ -269,6 +269,8 @@ class verilog_iofile(thesdk):
                 self._verilog_io+='    %s = buffer_%s;\n' \
                 %(connector.name,connector.name)
             self._verilog_io+='end\n'
+        else:
+            self.print_log(type='F', msg='Iotype not defined')
         return self._verilog_io
 
     # File writing
