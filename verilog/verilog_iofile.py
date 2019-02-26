@@ -18,40 +18,50 @@ class verilog_iofile(thesdk):
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog input file not given")
         try:  
-            rndpart=os.path.basename(tempfile.mkstemp()[1])
+            self.parent=parent
+            self.rndpart=os.path.basename(tempfile.mkstemp()[1])
             self.name=kwargs.get('name') 
-            self.file=parent.vlogsimpath +'/' + self.name + '_' + rndpart +'.txt'
+            self.data=kwargs.get('data',np.array([]))
+            self.paramname=kwargs.get('param','-g g_file_')
+            self.datatype=kwargs.get('datatype',int)
+            self.dir=kwargs.get('dir','out')             # Files are output files by default, 
+                                                         # and direction is 
+                                                         # changed to 'in' when written 
+
+            self.iotype=kwargs.get('iotype','data')      # The file is a data file by default 
+                                                         # Option data,ctrl
+
+            self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
+                                                         # Do not generate things just 
+                                                         # to remove them in the next step
+            if hasattr(self.parent,'preserve_iofiles'):
+                self.preserve=parent.preserve_iofiles
+            else:
+                self.preserve=False
         except:
             self.print_log(type='F', msg="Verilog IO file definition failed")
 
-        self.data=kwargs.get('data',np.array([]))
-        self.simparam=kwargs.get('param','-g g_file_' 
-                + kwargs.get('name') + '=' + self.file)
-        self.datatype=kwargs.get('datatype',int)
-        self.dir=kwargs.get('dir','out')             # Files are output files by default, 
-                                                     # and direction is 
-                                                     # changed to 'in' when written 
-
-        self.iotype=kwargs.get('iotype','data')      # The file is a data file by default 
-                                                     # Option data,ctrl
-
-        self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
-                                                     # Do not generate things just 
-                                                     # to remove them in the next step
-        if hasattr(parent,'preserve_iofiles'):
-            self.preserve=parent.preserve_iofiles
-        else:
-            self.preserve=False
 
         #TODO: Needs a check to eliminate duplicate entries to iofiles
-        if hasattr(parent,'iofiles'):
+        if hasattr(self.parent,'iofiles'):
             self.print_log(type='O',msg="Attribute iofiles has been replaced by iofile_bundle")
 
-        if hasattr(parent,'iofile_bundle'):
-            parent.iofile_bundle.new(name=self.name,val=self)
+        if hasattr(self.parent,'iofile_bundle'):
+            self.parent.iofile_bundle.new(name=self.name,val=self)
 
     # Parameters for the verilog testbench estracted from
     # Simulation parameters
+    @property
+    def file(self):
+        self._file=self.parent.vlogsimpath +'/' + self.name \
+                + '_' + self.rndpart +'.txt'
+        return self._file
+
+    @property
+    def simparam(self):
+        self._simparam=self.paramname \
+            + self.name + '=' + self.file
+        return self._simparam
     @property
     def vlogparam(self):
         if not hasattr(self,'_vlogparam'):
@@ -272,6 +282,16 @@ class verilog_iofile(thesdk):
         else:
             self.print_log(type='F', msg='Iotype not defined')
         return self._verilog_io
+
+    # Relocate i.e. change parent. 
+    # probably this could be automated
+    # by using properties
+    def adopt(self,parent=None,**kwargs):
+        if parent==None:
+            self.print_log(type='F', msg='Parent must be given for relocation')
+        self.parent=parent
+        if hasattr(self.parent,'iofile_bundle'):
+            self.parent.iofile_bundle.new(name=self.name,val=self)
 
     # File writing
     def write(self,**kwargs):
