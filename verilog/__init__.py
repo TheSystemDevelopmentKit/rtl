@@ -195,14 +195,20 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 fileparams+=' '+file.simparam
 
             if not self.interactive_verilog:
+                dostring=' -do "run -all; quit;"'
                 vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' 
                         + fileparams + ' ' + gstring
                         +' work.tb_' + self.name  
-                        + ' -do "run -all; quit;"')
+                        + dostring)
             else:
+                dofile=self.vlogsimpath+'/dofile.do'
+                if os.path.isfile(dofile):
+                    dostring=' -do "'+dofile+'"'
+                else:
+                    dostring=''
                 submission="" #Local execution
                 vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
-                        + ' ' + gstring +' work.tb_' + self.name)
+                        + ' ' + gstring +' work.tb_' + self.name + dostring)
 
             self._vlogcmd =  vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + submission + vlogsimcmd
         return self._vlogcmd
