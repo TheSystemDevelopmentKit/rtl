@@ -298,7 +298,7 @@ class verilog_iofile(thesdk):
         self.dir='in'  # Only input files are written
         #Parse the rows to split complex numbers
         data=kwargs.get('data',self.data)
-        datatype=kwargs.get('dtype',self.datatype)
+        datatype=kwargs.get('datatype',self.datatype)
         iotype=kwargs.get('iotype',self.iotype)
         header_line = []
         parsed=[]
@@ -362,9 +362,23 @@ class verilog_iofile(thesdk):
     # Reading
     def read(self,**kwargs):
         fid=open(self.file,'r')
-        datatype=kwargs.get('dtype',self.datatype)
-        readd = pd.read_csv(fid,dtype=object,sep='\t',header=None)
-        self.data=readd.values
+        self.datatype=kwargs.get('datatype',self.datatype)
+        dtype=kwargs.get('dtype',object)
+        readd = pd.read_csv(fid,dtype=dtype,sep='\t',header=None).astype('int')
+        #read method for complex signal matrix
+        if self.datatype=='complex':
+            print("Reading complex")
+            rows=int(readd.values.shape[0])
+            cols=int(readd.values.shape[1]/2)
+            for i in range(cols):
+                if i==0:
+                    self.data=np.zeros((rows, cols),dtype=complex)
+                    self.data[:,i]=readd.values[:,2*i]+1j*readd.values[:,2*i+1]
+                else:
+                    self.data[:,i]=readd.values[:,2*i]+1j*readd.values[:,2*i+1]
+
+        else:
+            self.data=readd.values
         fid.close()
 
     # Remove the file when no longer needed
