@@ -364,7 +364,7 @@ class verilog_iofile(thesdk):
         fid=open(self.file,'r')
         self.datatype=kwargs.get('datatype',self.datatype)
         dtype=kwargs.get('dtype',object)
-        readd = pd.read_csv(fid,dtype=dtype,sep='\t',header=None).astype('int')
+        readd = pd.read_csv(fid,dtype=dtype,sep='\t',header=None)
         #read method for complex signal matrix
         if self.datatype=='complex':
             print("Reading complex")
@@ -373,9 +373,11 @@ class verilog_iofile(thesdk):
             for i in range(cols):
                 if i==0:
                     self.data=np.zeros((rows, cols),dtype=complex)
-                    self.data[:,i]=readd.values[:,2*i]+1j*readd.values[:,2*i+1]
+                    self.data[:,i]=readd.values[:,2*i].astype('int')\
+                            +1j*readd.values[:,2*i+1].astype('int')
                 else:
-                    self.data[:,i]=readd.values[:,2*i]+1j*readd.values[:,2*i+1]
+                    self.data[:,i]=readd.values[:,2*i].astype('int')\
+                            +1j*readd.values[:,2*i+1].astype('int')
 
         else:
             self.data=readd.values
