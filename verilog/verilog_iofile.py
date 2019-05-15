@@ -221,7 +221,6 @@ class verilog_iofile(thesdk):
         return self._verilog_io_sync
 
     @verilog_io_sync.setter
-    @property 
     def verilog_io_sync(self,value):
         self._verilog_io_sync=value
 
