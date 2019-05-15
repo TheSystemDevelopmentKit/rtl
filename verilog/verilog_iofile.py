@@ -41,7 +41,6 @@ class verilog_iofile(thesdk):
         except:
             self.print_log(type='F', msg="Verilog IO file definition failed")
 
-
         #TODO: Needs a check to eliminate duplicate entries to iofiles
         if hasattr(self.parent,'iofiles'):
             self.print_log(type='O',msg="Attribute iofiles has been replaced by iofile_bundle")
@@ -62,6 +61,7 @@ class verilog_iofile(thesdk):
         self._simparam=self.paramname \
             + self.name + '=' + self.file
         return self._simparam
+
     @property
     def vlogparam(self):
         if not hasattr(self,'_vlogparam'):
@@ -200,15 +200,41 @@ class verilog_iofile(thesdk):
     @property 
     def verilog_io_condition(self):
         if not hasattr(self,'_verilog_io_condition'):
-            first=True
-            for connector in self.verilog_connectors:
-                if first:
-                    self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
-                    first=False
-                else:
-                    self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
-                            %(self._verilog_io_condition,connector.name)
+            if self.dir=='out':
+                first=True
+                for connector in self.verilog_connectors:
+                    if first:
+                        self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
+                        first=False
+                    else:
+                        self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
+                                %(self._verilog_io_condition,connector.name)
+            elif self.dir=='in':
+                self._verilog_io_condition= ' true '
         return self._verilog_io_condition
+
+    @property 
+    def verilog_io_sync(self):
+        if not hasattr(self,'_verilog_io_sync'):
+            if self.iotype=='data':
+                self._verilog_io_sync= '@(posedge clock)\n'
+        return self._verilog_io_sync
+
+    @verilog_io_sync.setter
+    @property 
+    def verilog_io_sync(self,value):
+        self._verilog_io_sync=value
+
+    @verilog_io_condition.setter
+    @property 
+    def verilog_io_condition(self,value):
+                self._verilog_io_condition= value
+
+    def verilog_io_condition_append(self,**kwargs ):
+        cond=kwargs.get('cond', '')
+        if not (not cond ):
+            self._verilog_io_condition='%s \n%s' \
+            %(self.verilog_io_condition,cond)
 
     @verilog_io_condition.setter
     def verilog_io_condition(self,value):
@@ -220,9 +246,14 @@ class verilog_iofile(thesdk):
         first=True
         if self.iotype=='data':
             if self.dir=='out':
-                self._verilog_io='$fwrite(%s, ' %(self.verilog_fptr)
+                self._verilog_io=' always '+self.verilog_io_sync +'begin\n'
+                self._verilog_io+='if ( %s ) begin\n' %(self.verilog_io_condition)
+                self._verilog_io+='$fwrite(%s, ' %(self.verilog_fptr)
             elif self.dir=='in':
-                self._verilog_io='%s = $fscanf(%s, ' \
+                self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
+                self._verilog_io+='   %s' %self.verilog_io_sync
+                self._verilog_io+='        if ( %s ) begin\n' %self.verilog_io_condition      
+                self._verilog_io+='        %s = $fscanf(%s, ' \
                         %(self.verilog_stat, self.verilog_fptr)
             for connector in self.verilog_connectors:
                 if first:
@@ -234,14 +265,14 @@ class verilog_iofile(thesdk):
                     format='%s\\t%s' %(format,connector.ioformat)
 
             format=format+'\\n\",\n'
-            self._verilog_io+=format+iolines+'\n);'
+            self._verilog_io+=format+iolines+'\n);\n        end\n    end\n'
 
         #Control files are handled differently
         elif self.iotype=='ctrl':
             if self.dir=='out':
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.dir=='in':
-                self._verilog_io='\nwhile(!$feof(%s)) begin\n    ' \
+                self._verilog_io='begin\nwhile(!$feof(%s)) begin\n    ' \
                         %(self.verilog_fptr)
                 self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
                         %(self.verilog_tdiff,
@@ -278,7 +309,7 @@ class verilog_iofile(thesdk):
             for connector in self.verilog_connectors:
                 self._verilog_io+='    %s = buffer_%s;\n' \
                 %(connector.name,connector.name)
-            self._verilog_io+='end\n'
+            self._verilog_io+='end\nend\n'
         else:
             self.print_log(type='F', msg='Iotype not defined')
         return self._verilog_io

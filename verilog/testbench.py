@@ -47,6 +47,9 @@ class testbench(verilog_module):
         self._parameters=Bundle()
         self.connectors=verilog_connector_bundle()
         self.iofiles=Bundle()
+        self.content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
+        print(self.content_parameters)
+        
 
     @property
     def dut_instance(self):
@@ -59,6 +62,13 @@ class testbench(verilog_module):
     def dut_instance(self,value):
         self._dut_instance=value
     
+    @property
+    def parameter_definitions(self):
+        # Registers first
+        definitions='//Parameter definitions\n'
+        for name, val in self.content_parameters.items():
+                definitions+='parameter '+ val[0]+' '+name+'='+ val[1]+';\n'
+        return definitions
     
     @property
     def connector_definitions(self):
@@ -98,6 +108,47 @@ class testbench(verilog_module):
         iofile_close=iofile_close+'\n'
         return iofile_close 
 
+# This is the method to generate testbench contents. override if needed
+    def generate_contents(self):
+    # Start the testbench contents
+        contents="""
+//timescale 1ps this should probably be a global model parameter
+"""+self.parameter_definitions+\
+self.connector_definitions+\
+self.iofile_definitions+\
+"""
+
+//DUT definition
+"""+\
+self.dut_instance.instance+\
+"""
+
+//Master clock is omnipresent
+always #(c_Ts/2.0) clock = !clock;
+//io_out
+        """
+        for key, member in self.iofiles.Members.items():
+            if member.dir=='out':
+                contents+=member.verilog_io
+        contents+="""
+
+//Execution with parallel fork-join and sequential begin-end sections
+initial #0 begin
+fork
+""" + \
+self.connectors.verilog_inits(level=1)+\
+"""
+
+    // Sequences enabled by initdone
+    $display("Ready to read"); 
+    """
+
+        for key, member in self.iofiles.Members.items():
+            if member.dir=='in':
+                contents+=member.verilog_io
+
+        contents+='\njoin\n'+self.iofile_close+'\n$finish;\nend\n'
+        self.contents=contents
 
 # This might be an overkill, but it makes it possible to have
 # section attributes
