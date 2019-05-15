@@ -48,7 +48,6 @@ class testbench(verilog_module):
         self.connectors=verilog_connector_bundle()
         self.iofiles=Bundle()
         self.content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
-        print(self.content_parameters)
         
 
     @property
