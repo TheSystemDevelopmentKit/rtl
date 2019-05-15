@@ -210,7 +210,7 @@ class verilog_iofile(thesdk):
                         self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
                                 %(self._verilog_io_condition,connector.name)
             elif self.dir=='in':
-                self._verilog_io_condition= ' true '
+                self._verilog_io_condition= ' 1 '
         return self._verilog_io_condition
 
     @property 

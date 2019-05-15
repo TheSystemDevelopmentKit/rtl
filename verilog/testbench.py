@@ -48,6 +48,7 @@ class testbench(verilog_module):
         self.connectors=verilog_connector_bundle()
         self.iofiles=Bundle()
         self.content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
+        self.assignment_matchlist=[]
         
 
     @property
@@ -56,10 +57,22 @@ class testbench(verilog_module):
             self._dut_instance=verilog_module(**{'file':self._dutfile})
         return self._dut_instance
 
+    
     #We should not need this, but it is wise to enable override
     @dut_instance.setter
     def dut_instance(self,value):
         self._dut_instance=value
+
+    @property
+    def verilog_instances(self):
+        if not hasattr(self,'_verilog_instances'):
+            self._verilog_instances=Bundle()
+        return self._verilog_instances
+
+    def verilog_instance_add(self,**kwargs):
+        name=kwargs.get('name')
+        file=kwargs.get('file')
+        self.verilog_instances.Members[name]=verilog_module(file=file,instname=name)
     
     @property
     def parameter_definitions(self):
@@ -84,7 +97,7 @@ class testbench(verilog_module):
         return definitions
 
     def assignments(self,**kwargs):
-        matchlist=kwargs.get('matchlist',[])
+        matchlist=kwargs.get('matchlist',self.assignment_matchlist)
         assigns='\n//Assignments\n'
         for match in matchlist:
             assigns=assigns+self.connectors.assign(match=match)
@@ -114,13 +127,18 @@ class testbench(verilog_module):
 //timescale 1ps this should probably be a global model parameter
 """+self.parameter_definitions+\
 self.connector_definitions+\
+self.assignments() +\
 self.iofile_definitions+\
 """
 
 //DUT definition
 """+\
-self.dut_instance.instance+\
-"""
+self.dut_instance.instance
+
+        for inst, module in self.verilog_instances.Members.items():
+            contents+=module.instance
+
+        contents+="""
 
 //Master clock is omnipresent
 always #(c_Ts/2.0) clock = !clock;
