@@ -173,46 +173,50 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
     #This is obsoleted
     def def_verilog(self):
-        self.print_log(type='I', msg='Command def_verilog() is obsoleted. It does nothing. \nWill be removed in future releases')
+        self.print_log(type='I', 
+                msg='Command def_verilog() is obsoleted. \
+                        It does nothing. \nWill be removed in future releases')
 
     @property
     def vlogcmd(self):
         submission=self.verilog_submission
-        if not hasattr(self, '_vlogcmd'):
-            vloglibcmd =  'vlib ' +  self.vlogworkpath + ' && sleep 2'
-            vloglibmapcmd = 'vmap work ' + self.vlogworkpath
-            vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ 
-                str(param) for param in self.vlogmodulefiles])
-            print(self.vlogsrc)
-            print(self.vlogtbsrc)
-            vlogcompcmd = ( 'vlog -work work ' + self.vlogsrc + ' ' +
-                           self.vlogtbsrc + ' ' + vlogmodulesstring )
-            
-            gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-                for param,val in iter(self.vlogparameters.items()) ])
+        vloglibcmd =  'vlib ' +  self.vlogworkpath + ' && sleep 2'
+        vloglibmapcmd = 'vmap work ' + self.vlogworkpath
+        vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ 
+            str(param) for param in self.vlogmodulefiles])
+        vlogcompcmd = ( 'vlog -work work ' + self.vlogsrc + ' ' +
+                       self.vlogtbsrc + ' ' + vlogmodulesstring )
+        
+        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
+            for param,val in iter(self.vlogparameters.items()) ])
 
-            fileparams=''
-            for name, file in self.iofile_bundle.Members.items():
-                fileparams+=' '+file.simparam
+        fileparams=''
+        for name, file in self.iofile_bundle.Members.items():
+            fileparams+=' '+file.simparam
 
-            if not self.interactive_verilog:
-                dostring=' -do "run -all; quit;"'
-                vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' 
-                        + fileparams + ' ' + gstring
-                        +' work.tb_' + self.name  
-                        + dostring)
+        if not self.interactive_verilog:
+            dostring=' -do "run -all; quit;"'
+            vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' 
+                    + fileparams + ' ' + gstring
+                    +' work.tb_' + self.name  
+                    + dostring)
+        else:
+            dofile=self.vlogsimpath+'/dofile.do'
+            if os.path.isfile(dofile):
+                dostring=' -do "'+dofile+'"'
             else:
-                dofile=self.vlogsimpath+'/dofile.do'
-                if os.path.isfile(dofile):
-                    dostring=' -do "'+dofile+'"'
-                else:
-                    dostring=''
-                submission="" #Local execution
-                vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
-                        + ' ' + gstring +' work.tb_' + self.name + dostring)
+                dostring=''
+            submission="" #Local execution
+            vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
+                    + ' ' + gstring +' work.tb_' + self.name + dostring)
 
-            self._vlogcmd =  vloglibcmd  +  ' && ' + vloglibmapcmd + ' && ' + vlogcompcmd +  ' && ' + submission + vlogsimcmd
+        self._vlogcmd =  vloglibcmd  +\
+                ' && ' + vloglibmapcmd +\
+                ' && ' + vlogcompcmd +\
+                ' && ' + submission +\
+                vlogsimcmd
         return self._vlogcmd
+
     # Just to give the freedom to set this if needed
     @vlogcmd.setter
     def vlogcmd(self,value):
@@ -247,7 +251,8 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self.print_log(type='I', msg="Running external command %s\n" %(self.vlogcmd) )
 
         if self.interactive_verilog:
-            self.print_log(type='I', msg="""Running verilog simulation in interactive mode.
+            self.print_log(type='I', msg="""
+                Running verilog simulation in interactive mode.
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
@@ -264,11 +269,4 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 if file.dir=='out':
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
-
-        #for name, file in self.iofile_bundle.Members.items(): 
-        #    if file.dir=='in':
-        #        try:
-        #            file.remove()
-        #        except:
-        #            pass
 
