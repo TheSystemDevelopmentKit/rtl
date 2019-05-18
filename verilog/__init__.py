@@ -21,6 +21,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     #These need to be converted to abstact properties
     def __init__(self):
         self.model=[]
+        self.iofile_bundle=Bundle()
 
     @property
     @abstractmethod
@@ -75,7 +76,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type="I", msg="Preserving file %s" %(val.file))
             else:
                 val.remove()
-        self._iofile_bundle=None
+        #self._iofile_bundle=None
 
     @property 
     def verilog_submission(self):
