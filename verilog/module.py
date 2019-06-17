@@ -18,6 +18,10 @@ class verilog_module(thesdk):
     #          a) assigned by name
     #          b) to arbitrary name vector
     #       5) Add contents, if required, and include that to definition
+    @property
+    def _classfile(self):
+        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+
     def __init__(self, **kwargs):
         # No need to propertize these yet
         self.file=kwargs.get('file','')

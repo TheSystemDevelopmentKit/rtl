@@ -13,23 +13,17 @@ import numpy as np
 import pandas as pd
 from verilog.connector import intend
 
-class verilog_iofile(thesdk):
+class verilog_iofile(IO):
     def __init__(self,parent=None,**kwargs):
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog input file not given")
         try:  
+            super(verilog_iofile,self).__init__(**kwargs)
             self.parent=parent
             self.rndpart=os.path.basename(tempfile.mkstemp()[1])
             self.name=kwargs.get('name') 
-            self.data=kwargs.get('data',np.array([]))
             self.paramname=kwargs.get('param','-g g_file_')
             self.datatype=kwargs.get('datatype',int)
-            self.dir=kwargs.get('dir','out')             # Files are output files by default, 
-                                                         # and direction is 
-                                                         # changed to 'in' when written 
-
-            self.iotype=kwargs.get('iotype','data')      # The file is a data file by default 
-                                                         # Option data,ctrl
 
             self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
                                                          # Do not generate things just 
@@ -102,9 +96,9 @@ class verilog_iofile(thesdk):
     # Status integer verilog definitions
     @property
     def verilog_statdef(self):
-        if self.iotype=='data':
+        if self.iotype=='sample':
             self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
-        elif self.iotype=='ctrl':
+        elif self.iotype=='event':
             self._verilog_statdef='integer %s, %s, %s, %s, %s;\n' %(self.verilog_stat, 
                     self.verilog_fptr, self.verilog_ctstamp, self.verilog_ptstamp, 
                     self.verilog_tdiff)
@@ -160,9 +154,9 @@ class verilog_iofile(thesdk):
         if not self._verilog_connectors:
             self.print_log(type='F', msg='Connector undefined, can\'t access.')
         else:
-            if self.iotype=='data':
+            if self.iotype=='sample':
                 self._verilog_connector_datamap=dict()
-            elif self.iotype=='ctrl':
+            elif self.iotype=='event':
                 self._verilog_connector_datamap={'time':0}
             index=0
             for val in self.verilog_connectors:
@@ -177,23 +171,23 @@ class verilog_iofile(thesdk):
         init=kwargs.get('init',int(0))
         
         # First, we initialize the data
-        if self.data.shape[0] == 0:
+        if self.Data is None:
             if np.isscalar(init):
-                self.data=(np.ones((1,len(self._verilog_connectors)+1))*init).astype(int)
-                self.data[0,0]=int(time)
+                self.Data=(np.ones((1,len(self._verilog_connectors)+1))*init).astype(int)
+                self.Data[0,0]=int(time)
             elif init.shape[1]==len(self._verilog_connectors)+1:
-                self.data=init.astype(int)
+                self.Data=init.astype(int)
         else: #Lets manipulate
-            index=np.where(self.data[:,0]==time)[0]
+            index=np.where(self.Data[:,0]==time)[0]
             if index.size > 0:
                 # Alter existing value onwards from given time
-                self.data[index[-1]:,self.connector_datamap(name=name)]=int(val)
+                self.Data[index[-1]:,self.connector_datamap(name=name)]=int(val)
             else:
                 # Find the previous time, duplicate the row and alter the value
-                previndex=np.where(self.data[:,0]<time)[0][-1]
-                self.data=np.r_['0', self.data[0:previndex+1,:], self.data[previndex::,:]]
-                self.data[previndex+1,0]=time
-                self.data[previndex+1,self.connector_datamap(name=name)]=val
+                previndex=np.where(self.Data[:,0]<time)[0][-1]
+                self.Data=np.r_['0', self.Data[0:previndex+1,:], self.Data[previndex::,:]]
+                self.Data[previndex+1,0]=time
+                self.Data[previndex+1,self.connector_datamap(name=name)]=val
 
 
     # Condition string for monitoring if the signals are unknown
@@ -216,7 +210,7 @@ class verilog_iofile(thesdk):
     @property 
     def verilog_io_sync(self):
         if not hasattr(self,'_verilog_io_sync'):
-            if self.iotype=='data':
+            if self.iotype=='sample':
                 self._verilog_io_sync= '@(posedge clock)\n'
         return self._verilog_io_sync
 
@@ -243,7 +237,7 @@ class verilog_iofile(thesdk):
     @property
     def verilog_io(self,**kwargs):
         first=True
-        if self.iotype=='data':
+        if self.iotype=='sample':
             if self.dir=='out':
                 self._verilog_io=' always '+self.verilog_io_sync +'begin\n'
                 self._verilog_io+='if ( %s ) begin\n' %(self.verilog_io_condition)
@@ -267,7 +261,7 @@ class verilog_iofile(thesdk):
             self._verilog_io+=format+iolines+'\n);\n        end\n    end\n'
 
         #Control files are handled differently
-        elif self.iotype=='ctrl':
+        elif self.iotype=='event':
             if self.dir=='out':
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.dir=='in':
@@ -327,14 +321,13 @@ class verilog_iofile(thesdk):
     def write(self,**kwargs):
         self.dir='in'  # Only input files are written
         #Parse the rows to split complex numbers
-        data=kwargs.get('data',self.data)
+        data=kwargs.get('data',self.Data)
         datatype=kwargs.get('datatype',self.datatype)
         iotype=kwargs.get('iotype',self.iotype)
         header_line = []
         parsed=[]
-
         # Default is the data file
-        if iotype=='data':
+        if iotype=='sample':
             for i in range(data.shape[1]):
                 if i==0:
                    if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
@@ -363,7 +356,7 @@ class verilog_iofile(thesdk):
                 df.to_csv(path_or_buf=self.file,sep="\t",
                         index=False,header=False)
         # Control file is a different thing
-        elif iotype=='ctrl':
+        elif iotype=='event':
             for i in range(data.shape[1]):
                 if i==0:
                    if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
@@ -397,20 +390,20 @@ class verilog_iofile(thesdk):
         readd = pd.read_csv(fid,dtype=dtype,sep='\t',header=None)
         #read method for complex signal matrix
         if self.datatype=='complex':
-            print("Reading complex")
+            self.print_log(type="I", msg="Reading complex")
             rows=int(readd.values.shape[0])
             cols=int(readd.values.shape[1]/2)
             for i in range(cols):
                 if i==0:
-                    self.data=np.zeros((rows, cols),dtype=complex)
-                    self.data[:,i]=readd.values[:,2*i].astype('int')\
+                    self.Data=np.zeros((rows, cols),dtype=complex)
+                    self.Data[:,i]=readd.values[:,2*i].astype('int')\
                             +1j*readd.values[:,2*i+1].astype('int')
                 else:
-                    self.data[:,i]=readd.values[:,2*i].astype('int')\
+                    self.Data[:,i]=readd.values[:,2*i].astype('int')\
                             +1j*readd.values[:,2*i+1].astype('int')
 
         else:
-            self.data=readd.values
+            self.Data=readd.values
         fid.close()
 
     # Remove the file when no longer needed

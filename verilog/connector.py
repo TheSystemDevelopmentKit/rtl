@@ -6,6 +6,10 @@ from verilog import *
 
 ## Class for storing signals in wide sense, including IO's
 class verilog_connector(thesdk):
+    @property
+    def _classfile(self):
+        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+
     def __init__(self,**kwargs):
         self.name=kwargs.get('name','')
         self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire,reg,wire

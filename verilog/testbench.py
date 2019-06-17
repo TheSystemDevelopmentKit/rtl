@@ -113,13 +113,18 @@ class testbench(verilog_module):
         return iofile_defs 
 
     @property
+    def clock_definition(self):
+        clockdef='//Master clock is omnipresent\nalways #(c_Ts/2.0) clock = !clock;'
+        return clockdef
+
+    @property
     def iofile_close(self):
         iofile_close='\n//Close the io_files\n'
         for name, val in self.iofiles.Members.items():
             iofile_close=iofile_close+val.verilog_fclose
         iofile_close=iofile_close+'\n'
         return iofile_close 
-
+    
 # This is the method to generate testbench contents. override if needed
     def generate_contents(self):
     # Start the testbench contents
@@ -138,10 +143,9 @@ self.dut_instance.instance
         for inst, module in self.verilog_instances.Members.items():
             contents+=module.instance
 
+        contents+=self.clock_definition
         contents+="""
 
-//Master clock is omnipresent
-always #(c_Ts/2.0) clock = !clock;
 //io_out
         """
         for key, member in self.iofiles.Members.items():

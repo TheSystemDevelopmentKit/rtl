@@ -20,8 +20,7 @@ from verilog.verilog_iofile import verilog_iofile as verilog_iofile
 class verilog(thesdk,metaclass=abc.ABCMeta):
     #These need to be converted to abstact properties
     def __init__(self):
-        self.model=[]
-        self.iofile_bundle=Bundle()
+        pass
 
     @property
     @abstractmethod
@@ -232,7 +231,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         while not files_ok:
             count +=1
             if count >5:
-                self.print_log(type='F', msg="Verilog infile writing timeout")
+                self.print_log(type='F', msg='Verilog infile writing timeout')
             for name, file in self.iofile_bundle.Members.items(): 
                 if file.dir=='in':
                     files_ok=True
@@ -269,4 +268,16 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 if file.dir=='out':
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
+    
+    #This writes all infile
+    def write_infile(self):
+        for name, val in self.iofile_bundle.Members.items():
+            if val.dir=='in':
+                self.iofile_bundle.Members[name].write()
+    
+    #This reads all outfiles
+    def read_outfile(self):
+        for name, val in self.iofile_bundle.Members.items():
+            if val.dir=='out':
+                 self.iofile_bundle.Members[name].read()
 
