@@ -31,6 +31,53 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     #def _classfile(self):
     #    return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
+    # These propertios "extend" IO class, but do not need ot be member of it,
+    # Furthermore IO._Data _must_ me bidirectional. Otherwise driver and target 
+    # Must be defined separately
+    @property
+    def dir(self):
+        if hasattr(self,'_dir'):
+            return self._dir
+        else:
+            self._dir=None
+        return self._dir
+
+    @dir.setter
+    def dir(self,value):
+        self._dir=value
+
+    @property
+    def iotype(self):
+        if hasattr(self,'_iotype'):
+            return self._iotype
+        else:
+            self._iotype='sample'
+        return self._iotype
+
+    @property
+    def datatype(self):
+        if hasattr(self,'_datatype'):
+            return self._datatype
+        else:
+            self._datatype=None
+        return self._datatype
+
+    @datatype.setter
+    def datatype(self,value):
+        self._datatype=value
+
+    @property
+    def ionames(self):
+        if hasattr(self,'_ionames'):
+            return self._ionames
+        else:
+            self._ionames=[]
+        return self._ionames
+
+    @ionames.setter
+    def ionames(self,value):
+        self._ionames=value
+
     @property
     def preserve_iofiles(self):
         if hasattr(self,'_preserve_iofiles'):
@@ -224,52 +271,45 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     def vlogcmd(self):
         self._vlogcmd=None
     
-    def create_verilog_iofiles(self):
-        if self.model=='sv':
-            # Adds an entry named self.iofile_Bundle.Members['A']
-            # For inputs this is automated
-            for ioname, val in self.IOS.Members.items():
-                if val.dir is 'in' and val.iotype is not 'file':
-                    _=verilog_iofile(self,name='A',dir='in')
-                elif val.dir is 'out' and val.iotype is not 'file': 
-                    if val.datatype is not None:
-                        _=verilog_iofile(self,name=ioname,datatype=val.datatype) #int or complex 
-                    else:
-                        # Output file reader do not know if they are complex or not.
-                        # This could be automated if there would be a way to determine the output
-                        # datatype fom the assingmnet target
-                        self.print_log(type='F', 
-                                msg='Attribute \'datatype\' not defined for output %s.\n Mandatory values for ouput IO associated with verilogfile are \'int\' | \'sint\' | \'complex\' | \'scomplex\'.' %(ioname)
-                            )
-    # Manipulates both TB and self. Therefore can not be in TB module
-    def connect_inputs(self):
+    def create_connectors(self):
         # Create TB connectors from the control file
         # See controller.py
-        for ioname,val in self.IOS.Members.items():
-            if val.iotype is not 'file':
+        for ioname,io in self.IOS.Members.items():
+            # If input is a file, adopt it
+            if isinstance(io.Data,verilog_iofile): 
+                if io.name is not ioname:
+                    self.print_log(type='I', 
+                            msg='Unifying file %s name to ioname %s' %(io.name,ioname))
+                    io.name=ioname
+                io.Data.adopt(parent=self)
+                self.tb.parameters.Members.update(io.Data.vlogparam)
+
+                for connector in io.Data.verilog_connectors:
+                    self.tb.connectors.Members[connector.name]=connector
+                    # Connect them to DUT
+                    try: 
+                        self.dut.ios.Members[connector.name].connect=connector
+                    except:
+                        pass
+            # If input is not a file, look for corresponding file definition
+            elif ioname in self.iofile_bundle.Members:
+                val=self.iofile_bundle.Members[ioname]
                 self.iofile_bundle.Members[ioname].verilog_connectors=\
                         self.tb.connectors.list(names=val.ionames)
-                if val.dir is 'in': 
-                    # Data must be properly shaped
-                    self.iofile_bundle.Members[ioname].Data=self.IOS.Members[ioname].Data
-            elif val.iotype is 'file': #If the type is file, the Data is a bundle
-                for bname,bval in val.Data.Members.items():
-                    if val.dir is 'in': 
-                        # Adoption transfers parenthood of the files to this instance
-                        self.IOS.Members[ioname].Data.Members[bname].adopt(parent=self)
-                    for connector in bval.verilog_connectors:
-                        self.tb.connectors.Members[connector.name]=connector
-                        # Connect them to DUT
-                        try: 
-                            self.dut.ios.Members[connector.name].connect=connector
-                        except:
-                            pass
-        # Copy iofile simulation parameters to testbench
-        for name, val in self.iofile_bundle.Members.items():
-            self.tb.parameters.Members.update(val.vlogparam)
+                self.tb.parameters.Members.update(val.vlogparam)
         # Define the iofiles of the testbench. '
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle
+               
+    def connect_inputs(self):
+        for ioname,io in self.IOS.Members.items():
+            if ioname in self.iofile_bundle.Members:
+                val=self.iofile_bundle.Members[ioname]
+                # File type inputs are driven by the file.Data, not the input field
+                if not isinstance(self.IOS.Members[val.name].Data,verilog_iofile) \
+                        and val.dir is 'in':
+                    # Data must be properly shaped
+                    self.iofile_bundle.Members[ioname].Data=self.IOS.Members[ioname].Data
 
     # Define if the signals are signed or not
     # Can these be deducted?
@@ -277,14 +317,15 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         # Verilog module does not contain information if the bus is signed or not
         # Prior to writing output file, the type of the connecting wire defines
         # how the bus values are interpreted. 
-        for ioname,val in self.IOS.Members.items():
-            if ioname in self.iofile_bundle.Members and val.dir is 'out':
-                if (val.datatype is 'sint' ) or (val.datatype is 'scomplex'):
-                    if val.ionames:
-                        for assocname in val.ionames:
-                            self.tb.connectors.Members[assocname].type='signed'
-                        else:
-                            self.print_log(type='F', msg='List of associated ionames no defined for IO %s\. Provide it as list of strings' %(ioname))
+        for ioname,val in self.iofile_bundle.Members.items():
+            if val.dir is 'out' \
+                    and ((val.datatype is 'sint' ) or (val.datatype is 'scomplex')):
+                if val.ionames:
+                    for assocname in val.ionames:
+                        self.tb.connectors.Members[assocname].type='signed'
+                    else:
+                        self.print_log(type='F', 
+                            msg='List of associated ionames no defined for IO %s\. Provide it as list of strings' %(ioname))
 
     def execute_verilog_sim(self):
         filetimeout=60 #File appearance timeout in seconds
@@ -337,16 +378,24 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             self.execute_verilog_sim()
         else:  # V1.2 syntax
             if not hasattr(self,'define_io_conditions'):
-                self.print_log(type='W', msg='You are running Verilog simulation with v1.2 configuration, but you do not have \'define_io_conditions\' method.\n Using defaults is required for succesfull execution. \nSee verilog.run_verilog for example.\n Will be forced with abstract method in future releases.')
+                self.print_log(type='W', msg="""
+                    You are running Verilog simulation with v1.2 configuration.
+                    (You have defined IOS attribute)
+                    You have NOT defined \'define_io_conditions\' method.
+                    Using defaults reads inputs every rinsing edge clock  and 
+                    writes valid output with every rising clock edge. 
+                    To add more conditions, see verilog.run_verilog for examples. 
+                    Will be forced with abstract method in future releases.""")
+
         # Input A is read to verilog simulation after 'initd' is set to 1 by controller
         #self.iofile_bundle.Members['A'].verilog_io_condition='initdone'
         # Output is read to verilog simulation when all of the utputs are valid, 
         # and after 'initdo' is set to 1 by controller
         #self.iofile_bundle.Members['Z'].verilog_io_condition_append(cond='&& initdone')
 
-        self.create_verilog_iofiles() 
         self.tb=vtb(self)             
         self.tb.define_testbench()    
+        self.create_connectors()
         self.connect_inputs()         
 
         if hasattr(self,'define_io_conditions'):
@@ -359,7 +408,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self.write_infile()           
         self.execute_verilog_sim()            
         self.read_outfile()           
-        self.assign_outputs()         
+        self.connect_outputs()         
 
 
     #This writes all infile
@@ -374,8 +423,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             if val.dir=='out':
                  self.iofile_bundle.Members[name].read()
 
-    def assign_outputs(self):
-      #There should be a method for this
+    def connect_outputs(self):
         for name, val in self.iofile_bundle.Members.items():
             if val.dir=='out':
                 self.IOS.Members[name].Data=self.iofile_bundle.Members[name].Data
