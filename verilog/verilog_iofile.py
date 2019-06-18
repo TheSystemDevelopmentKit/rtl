@@ -42,6 +42,52 @@ class verilog_iofile(IO):
         if hasattr(self.parent,'iofile_bundle'):
             self.parent.iofile_bundle.new(name=self.name,val=self)
 
+
+
+    @property
+    def dir(self):
+        if hasattr(self,'_dir'):
+            return self._dir
+        else:
+            self._dir=None
+        return self._dir
+
+    @dir.setter
+    def dir(self,value):
+        self._dir=value
+
+    @property
+    def iotype(self):
+        if hasattr(self,'_iotype'):
+            return self._iotype
+        else:
+            self._iotype='sample'
+        return self._iotype
+
+    @property
+    def datatype(self):
+        if hasattr(self,'_datatype'):
+            return self._datatype
+        else:
+            self._datatype=None
+        return self._datatype
+
+    @datatype.setter
+    def datatype(self,value):
+        self._datatype=value
+
+    @property
+    def ionames(self):
+        if hasattr(self,'_ionames'):
+            return self._ionames
+        else:
+            self._ionames=[]
+        return self._ionames
+
+    @ionames.setter
+    def ionames(self,value):
+        self._ionames=value
+
     # Parameters for the verilog testbench estracted from
     # Simulation parameters
     @property

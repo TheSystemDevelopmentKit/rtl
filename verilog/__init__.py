@@ -34,7 +34,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     # These propertios "extend" IO class, but do not need ot be member of it,
     # Furthermore IO._Data _must_ me bidirectional. Otherwise driver and target 
     # Must be defined separately
-    @property
+    @property  # in | out
     def dir(self):
         if hasattr(self,'_dir'):
             return self._dir
@@ -47,7 +47,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._dir=value
 
     @property
-    def iotype(self):
+    def iotype(self):  # sample | event
         if hasattr(self,'_iotype'):
             return self._iotype
         else:
@@ -55,7 +55,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         return self._iotype
 
     @property
-    def datatype(self):
+    def datatype(self):  # complex | int | scomplex | sint
         if hasattr(self,'_datatype'):
             return self._datatype
         else:
@@ -67,7 +67,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._datatype=value
 
     @property
-    def ionames(self):
+    def ionames(self): # list of associated verilog ionames
         if hasattr(self,'_ionames'):
             return self._ionames
         else:
@@ -79,7 +79,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._ionames=value
 
     @property
-    def preserve_iofiles(self):
+    def preserve_iofiles(self):  # if True, do not delete files sfter sim 
         if hasattr(self,'_preserve_iofiles'):
             return self._preserve_iofiles
         else:
@@ -91,7 +91,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._preserve_iofiles=value
 
     @property
-    def interactive_verilog(self):
+    def interactive_verilog(self):# True= launch simulator GUI
         if hasattr(self,'_interactive_verilog'):
             return self._interactive_verilog
         else:
@@ -102,8 +102,8 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     def interactive_verilog(self,value):
         self._interactive_verilog=value
     
-    # This property utilises vhdl_iofile class to maintain list of io-files
-    # that  are automatically assigned to vhdlcmd
+    # This property utilises verilog_iofile class to maintain list of io-files
+    # that  are automatically assigned to verilogcmd
     @property
     def iofile_bundle(self):
         if not hasattr(self,'_iofile_bundle'):
