@@ -277,10 +277,10 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         for ioname,io in self.IOS.Members.items():
             # If input is a file, adopt it
             if isinstance(io.Data,verilog_iofile): 
-                if io.name is not ioname:
+                if io.Data.name is not ioname:
                     self.print_log(type='I', 
-                            msg='Unifying file %s name to ioname %s' %(io.name,ioname))
-                    io.name=ioname
+                            msg='Unifying file %s name to ioname %s' %(io.Data.name,ioname))
+                    io.Data.name=ioname
                 io.Data.adopt(parent=self)
                 self.tb.parameters.Members.update(io.Data.vlogparam)
 
@@ -382,8 +382,8 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     You are running Verilog simulation with v1.2 configuration.
                     (You have defined IOS attribute)
                     You have NOT defined \'define_io_conditions\' method.
-                    Using defaults reads inputs every rinsing edge clock  and 
-                    writes valid output with every rising clock edge. 
+                    With default conditions every rising edge clock reads 
+                    an input value  and writes a valid output value. 
                     To add more conditions, see verilog.run_verilog for examples. 
                     Will be forced with abstract method in future releases.""")
 
