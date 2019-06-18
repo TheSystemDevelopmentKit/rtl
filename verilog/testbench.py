@@ -37,7 +37,7 @@ class testbench(verilog_module):
         else:
             self.parent=parent
         try:  
-            self.file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '_test.sv'
+            self._file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '.sv'
             self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
         except:
             self.print_log(type='F', msg="Verilog Testbench file definition failed")
@@ -50,6 +50,15 @@ class testbench(verilog_module):
         self.content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
         self.assignment_matchlist=[]
         
+    @property
+    def file(self):
+        if not hasattr(self,'_file'):
+            self._file=None
+        return self._file
+
+    @file.setter
+    def file(self,value):
+            self._file=value
 
     @property
     def dut_instance(self):
@@ -124,7 +133,63 @@ class testbench(verilog_module):
             iofile_close=iofile_close+val.verilog_fclose
         iofile_close=iofile_close+'\n'
         return iofile_close 
+   
+    # This method 
+    def define_testbench(self):
+        # Dut is creted automaticaly, if verilog file for it exists
+        self.connectors.update(bundle=self.dut_instance.io_signals.Members)
+        #Assign verilog simulation parameters to testbench
+        self.parameters=self.parent.vlogparameters
+
+        #Define testbench verilog file
+        #self.file=self.parent.vlogtbsrc
+        
+        # Create clock if nonexistent 
+        if 'clock' not in self.dut_instance.ios.Members:
+            self.connectors.Members['clock']=verilog_connector(
+                    name='clock',cls='reg', init='\'b0')
+
+        # Create reset if nonexistent 
+        if 'reset' not in self.dut_instance.ios.Members:
+            self.connectors.Members['reset']=verilog_connector(
+                    name='reset',cls='reg', init='\'b0')
+
+        ## Start initializations
+        #Init the signals connected to the dut input to zero
+        for name, val in self.dut_instance.ios.Members.items():
+            if val.cls=='input':
+                val.connect.init='\'b0'
     
+    # Automate this bsed in dir
+    def connect_inputs(self):
+        # Create TB connectors from the control file
+        # See controller.py
+        for ioname,val in parent.IOS.Members.items():
+            if val.iotype is not 'file':
+                parent.iofile_bundle.Members[ioname].verilog_connectors=\
+                        self.connectors.list(names=val.ionames)
+                if val.dir is 'in': 
+                    # Data must be properly shaped
+                    parent.iofile_bundle.Members[ioname].Data=parent.IOS.Members[ioname].Data
+            elif val.iotype is 'file': #If the type is file, the Data is a bundle
+                for bname,bval in val.Data.Members.items():
+                    if val.dir is 'in': 
+                        # Adoption transfers parenthood of the files to this instance
+                        self.IOS.Members[ioname].Data.Members[bname].adopt(parent=self)
+                    for connector in bval.verilog_connectors:
+                        self.tb.connectors.Members[connector.name]=connector
+                        # Connect them to DUT
+                        try: 
+                            self.dut.ios.Members[connector.name].connect=connector
+                        except:
+                            pass
+        # Copy iofile simulation parameters to testbench
+        for name, val in self.iofile_bundle.Members.items():
+            self.tb.parameters.Members.update(val.vlogparam)
+        # Define the iofiles of the testbench. '
+        # Needed for creating file io routines 
+        self.tb.iofiles=self.iofile_bundle
+
 # This is the method to generate testbench contents. override if needed
     def generate_contents(self):
     # Start the testbench contents
