@@ -23,7 +23,17 @@ class verilog_iofile(IO):
             self.rndpart=os.path.basename(tempfile.mkstemp()[1])
             self.name=kwargs.get('name') 
             self.paramname=kwargs.get('param','-g g_file_')
-            self.datatype=kwargs.get('datatype',int)
+
+            # IO's are output by default
+            # Currently less needed for Python, but used in Verilog
+            self._dir=kwargs.get('dir','out')
+            self._datatype=kwargs.get('datatype',None)
+
+            self._iotype=kwargs.get('iotype','sample') # The file is a data file by default 
+                                                  # Option: sample, event. file 
+                                                  # Events are presented in time-value combinatios 
+                                                  # time in the column 0
+            self._ionames=kwargs.get('ionames',[]) #list of signal names associated with this io
 
             self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
                                                          # Do not generate things just 
@@ -42,9 +52,10 @@ class verilog_iofile(IO):
         if hasattr(self.parent,'iofile_bundle'):
             self.parent.iofile_bundle.new(name=self.name,val=self)
 
-
-
-    @property
+    # These propertios "extend" IO class, but do not need ot be member of it,
+    # Furthermore IO._Data _must_ me bidirectional. Otherwise driver and target 
+    # Must be defined separately
+    @property  # in | out
     def dir(self):
         if hasattr(self,'_dir'):
             return self._dir
@@ -57,7 +68,7 @@ class verilog_iofile(IO):
         self._dir=value
 
     @property
-    def iotype(self):
+    def iotype(self):  # sample | event
         if hasattr(self,'_iotype'):
             return self._iotype
         else:
@@ -65,7 +76,7 @@ class verilog_iofile(IO):
         return self._iotype
 
     @property
-    def datatype(self):
+    def datatype(self):  # complex | int | scomplex | sint
         if hasattr(self,'_datatype'):
             return self._datatype
         else:
@@ -77,7 +88,7 @@ class verilog_iofile(IO):
         self._datatype=value
 
     @property
-    def ionames(self):
+    def ionames(self): # list of associated verilog ionames
         if hasattr(self,'_ionames'):
             return self._ionames
         else:
@@ -87,6 +98,8 @@ class verilog_iofile(IO):
     @ionames.setter
     def ionames(self,value):
         self._ionames=value
+
+
 
     # Parameters for the verilog testbench estracted from
     # Simulation parameters

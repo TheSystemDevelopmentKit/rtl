@@ -34,49 +34,49 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     # These propertios "extend" IO class, but do not need ot be member of it,
     # Furthermore IO._Data _must_ me bidirectional. Otherwise driver and target 
     # Must be defined separately
-    @property  # in | out
-    def dir(self):
-        if hasattr(self,'_dir'):
-            return self._dir
-        else:
-            self._dir=None
-        return self._dir
+    #@property  # in | out
+    #def dir(self):
+    #    if hasattr(self,'_dir'):
+    #        return self._dir
+    #    else:
+    #        self._dir=None
+    #    return self._dir
 
-    @dir.setter
-    def dir(self,value):
-        self._dir=value
+    #@dir.setter
+    #def dir(self,value):
+    #    self._dir=value
 
-    @property
-    def iotype(self):  # sample | event
-        if hasattr(self,'_iotype'):
-            return self._iotype
-        else:
-            self._iotype='sample'
-        return self._iotype
+    #@property
+    #def iotype(self):  # sample | event
+    #    if hasattr(self,'_iotype'):
+    #        return self._iotype
+    #    else:
+    #        self._iotype='sample'
+    #    return self._iotype
 
-    @property
-    def datatype(self):  # complex | int | scomplex | sint
-        if hasattr(self,'_datatype'):
-            return self._datatype
-        else:
-            self._datatype=None
-        return self._datatype
+    #@property
+    #def datatype(self):  # complex | int | scomplex | sint
+    #    if hasattr(self,'_datatype'):
+    #        return self._datatype
+    #    else:
+    #        self._datatype=None
+    #    return self._datatype
 
-    @datatype.setter
-    def datatype(self,value):
-        self._datatype=value
+    #@datatype.setter
+    #def datatype(self,value):
+    #    self._datatype=value
 
-    @property
-    def ionames(self): # list of associated verilog ionames
-        if hasattr(self,'_ionames'):
-            return self._ionames
-        else:
-            self._ionames=[]
-        return self._ionames
+    #@property
+    #def ionames(self): # list of associated verilog ionames
+    #    if hasattr(self,'_ionames'):
+    #        return self._ionames
+    #    else:
+    #        self._ionames=[]
+    #    return self._ionames
 
-    @ionames.setter
-    def ionames(self,value):
-        self._ionames=value
+    #@ionames.setter
+    #def ionames(self,value):
+    #    self._ionames=value
 
     @property
     def preserve_iofiles(self):  # if True, do not delete files sfter sim 
