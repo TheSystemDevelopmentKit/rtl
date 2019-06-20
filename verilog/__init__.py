@@ -323,9 +323,9 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 if val.ionames:
                     for assocname in val.ionames:
                         self.tb.connectors.Members[assocname].type='signed'
-                    else:
-                        self.print_log(type='F', 
-                            msg='List of associated ionames no defined for IO %s\. Provide it as list of strings' %(ioname))
+                else:
+                    self.print_log(type='F', 
+                        msg='List of associated ionames no defined for IO %s\n. Provide it as list of strings' %(ioname))
 
     def execute_verilog_sim(self):
         filetimeout=60 #File appearance timeout in seconds

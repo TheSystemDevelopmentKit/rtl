@@ -27,7 +27,7 @@ class verilog_iofile(IO):
             # IO's are output by default
             # Currently less needed for Python, but used in Verilog
             self._dir=kwargs.get('dir','out')
-            self._datatype=kwargs.get('datatype',None)
+            self._datatype=kwargs.get('datatype','int')
 
             self._iotype=kwargs.get('iotype','sample') # The file is a data file by default 
                                                   # Option: sample, event. file 
@@ -407,7 +407,12 @@ class verilog_iofile(IO):
                        parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
                        header_line.append('%s_%s' %(self.name,i))
 
-            df=pd.DataFrame(parsed,dtype=datatype)
+            # Numbers are printed as intergers
+            if datatype is [ 'int', 'sint', 'complex', 'scomplex' ]:
+                df=pd.DataFrame(parsed,dtype='int')
+            else:
+                df=pd.DataFrame(parsed,dtype=datatype)
+
             if self.hasheader:
                 df.to_csv(path_or_buf=self.file,sep="\t",
                         index=False,header=header_line)
