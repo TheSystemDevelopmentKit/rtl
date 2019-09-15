@@ -1,9 +1,14 @@
-#Verilog class 
-# Provides verilog-related properties and methods for other classes TheSDK
-#
-# Adding this class as a superclass enforces the definitions for verilog in the
-# subclasses
-##############################################################################
+"""
+=======
+Verilog
+=======
+Simulation interface package for The System Development Kit 
+
+Provides utilities to import verilog modules to python environment and
+sutomatically generate testbenches for the most common simulation cases.
+
+Initially written by Marko Kosunen, 2017
+"""
 import os
 import sys
 import subprocess
@@ -18,6 +23,11 @@ from verilog.testbench import testbench as vtb
 from verilog.verilog_iofile import verilog_iofile as verilog_iofile
 
 class verilog(thesdk,metaclass=abc.ABCMeta):
+    """Adding this class as a superclass enforces the definitions 
+    for vhdl simulations in the subclasses.
+    
+    """
+
     #These need to be converted to abstact properties
     def __init__(self):
         pass
@@ -31,55 +41,14 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     #def _classfile(self):
     #    return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
-    # These propertios "extend" IO class, but do not need ot be member of it,
-    # Furthermore IO._Data _must_ me bidirectional. Otherwise driver and target 
-    # Must be defined separately
-    #@property  # in | out
-    #def dir(self):
-    #    if hasattr(self,'_dir'):
-    #        return self._dir
-    #    else:
-    #        self._dir=None
-    #    return self._dir
-
-    #@dir.setter
-    #def dir(self,value):
-    #    self._dir=value
-
-    #@property
-    #def iotype(self):  # sample | event
-    #    if hasattr(self,'_iotype'):
-    #        return self._iotype
-    #    else:
-    #        self._iotype='sample'
-    #    return self._iotype
-
-    #@property
-    #def datatype(self):  # complex | int | scomplex | sint
-    #    if hasattr(self,'_datatype'):
-    #        return self._datatype
-    #    else:
-    #        self._datatype=None
-    #    return self._datatype
-
-    #@datatype.setter
-    #def datatype(self,value):
-    #    self._datatype=value
-
-    #@property
-    #def ionames(self): # list of associated verilog ionames
-    #    if hasattr(self,'_ionames'):
-    #        return self._ionames
-    #    else:
-    #        self._ionames=[]
-    #    return self._ionames
-
-    #@ionames.setter
-    #def ionames(self,value):
-    #    self._ionames=value
 
     @property
-    def preserve_iofiles(self):  # if True, do not delete files sfter sim 
+    def preserve_iofiles(self):  
+        """True | False (default)
+
+        If True, do not delete file IO files after 
+        simulations. Useful for debugging the file IO"""
+
         if hasattr(self,'_preserve_iofiles'):
             return self._preserve_iofiles
         else:
@@ -91,7 +60,11 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._preserve_iofiles=value
 
     @property
-    def interactive_verilog(self):# True= launch simulator GUI
+    def interactive_verilog(self):
+        """ True | False (default)
+        
+        Launch simulator in local machine with GUI."""
+
         if hasattr(self,'_interactive_verilog'):
             return self._interactive_verilog
         else:
@@ -102,10 +75,15 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     def interactive_verilog(self,value):
         self._interactive_verilog=value
     
-    # This property utilises verilog_iofile class to maintain list of io-files
-    # that  are automatically assigned to verilogcmd
     @property
     def iofile_bundle(self):
+        """ 
+        Property of type thesdk.Bundle.
+        This property utilises verilog_iofile class to maintain list of IO-files
+        that  are automatically assigned as arguments to verilogcmd.
+        when verilog.verilog_iofile.verilog_iofile(name='<filename>,...) is used to define an IO-file, created file object is automatically
+        appended to this Bundle property as a member. Accessible with self.iofile_bundle.Members['<filename>']
+        """
         if not hasattr(self,'_iofile_bundle'):
             self._iofile_bundle=Bundle()
         return self._iofile_bundle
@@ -126,6 +104,11 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
     @property 
     def verilog_submission(self):
+        """
+        Defines verilog submioddion prefix from thesdk.GLOBALS['LSFSUBMISSION']
+
+        Usually something like 'bsub -K'
+        """
         if not hasattr(self, '_verilog_submission'):
             try:
                 self._verilog_submission=thesdk.GLOBALS['LSFSUBMISSION']+' '
