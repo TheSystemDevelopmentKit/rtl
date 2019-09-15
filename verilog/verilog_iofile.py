@@ -266,6 +266,10 @@ class verilog_iofile(IO):
                 self._verilog_io_condition= ' 1 '
         return self._verilog_io_condition
 
+    @verilog_io_condition.setter
+    def verilog_io_condition(self,value):
+        self._verilog_io_condition=value
+
     @property 
     def verilog_io_sync(self):
         if not hasattr(self,'_verilog_io_sync'):
@@ -277,20 +281,12 @@ class verilog_iofile(IO):
     def verilog_io_sync(self,value):
         self._verilog_io_sync=value
 
-    @verilog_io_condition.setter
-    @property 
-    def verilog_io_condition(self,value):
-                self._verilog_io_condition= value
-
     def verilog_io_condition_append(self,**kwargs ):
         cond=kwargs.get('cond', '')
         if not (not cond ):
             self._verilog_io_condition='%s \n%s' \
             %(self.verilog_io_condition,cond)
 
-    @verilog_io_condition.setter
-    def verilog_io_condition(self,value):
-        self._verilog_io_condition=value
 
     # Write or read construct for file IO
     @property
