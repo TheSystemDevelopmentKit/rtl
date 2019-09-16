@@ -127,6 +127,7 @@ class verilog_module(thesdk):
     def parameters(self):
         if not hasattr(self,'_parameters'):
             startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
+            iomatch=re.compile(r".*(?<!#)\(.*$")
             parammatch=re.compile(r".*(?<=#)\(.*$")
             paramstopmatch=re.compile(r".*\).*$")
             parablock=''
@@ -134,28 +135,31 @@ class verilog_module(thesdk):
             # Extract the module definition
             if os.path.isfile(self.file):
                 with open(self.file) as infile:
-                    wholefile=infile.readlines()
-                    modfind=False
-                    parafind=False
+                    wholefile = infile.readlines()
+                    modfind = False
+                    iofind = False
+                    parafind = False
                     for line in wholefile:
                         if (not modfind and startmatch.match(line)):
-                            modfind=True
-                        if modfind and parammatch.match(line):
-                                parafind=True
-                        if ( modfind and parafind and paramstopmatch.match(line)):
-                            modfind=False
-                            parafind=False
-                            line=re.sub(r"\).*$","",line)
-                            line=re.sub(r"//.*$","",line)
+                            modfind = True
+                        if modfind and (not iofind) and iomatch.match(line):
+                            iofind = True
+                        if modfind and (not iofind) and parammatch.match(line):
+                                parafind = True
+                        if ( modfind and (not iofind) and parafind and paramstopmatch.match(line)):
+                            modfind = False
+                            parafind = False
+                            line = re.sub(r"\).*$","",line)
+                            line = re.sub(r"//.*$","",line)
                             #Inclusive
-                            parablock=parablock+line +'\n'
+                            parablock = parablock+line +'\n'
                         elif modfind and parafind:
-                            line=re.sub(r"//.*$","",line)
-                            parablock=parablock+line
+                            line = re.sub(r"//.*$","",line)
+                            parablock = parablock+line
                     if parablock:
                         #Generate lambda functions for pattern filtering
                         parablock.replace("\n","")
-                        fils=[
+                        fils = [
                             re.compile(r"module\s*"+self.name+r"\s*"),
                             re.compile(r"#"),
                             re.compile(r"\(*"),
