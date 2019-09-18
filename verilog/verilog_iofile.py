@@ -1,10 +1,14 @@
-# Verilog_iofile class 
-# Provides verilog- file-io related properties and methods for TheSDK verilog
-#
-# Initially written by Marko Kosunen, marko.kosunen@aalto.fi, 
-#                      Yue Dai, 
-# 2018
-##############################################################################
+"""====================
+Verilog_iofile class 
+====================
+
+Provides verilog- file-io related properties and methods 
+for TheSDK verilog
+
+Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
+Yue Dai, 2018
+
+"""
 import os
 import sys
 from abc import * 
@@ -15,6 +19,12 @@ from verilog.connector import intend
 
 class verilog_iofile(IO):
     def __init__(self,parent=None,**kwargs):
+        """"Definition of init
+
+        Paremeters
+        ----------
+
+        """
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog input file not given")
         try:  
