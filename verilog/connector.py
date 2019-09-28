@@ -112,7 +112,7 @@ class verilog_connector_bundle(Bundle):
         inits=''
         match=kwargs.get('match',r".*") #By default, assign all
         for name, val in self.Members.items():
-            if re.match(match,name) and val.init:
+            if re.match(match,name) and ( val.init is not None and val.init is not '' ):
                 inits=inits+'%s = %s;\n' %(val.name,val.init)
         return intend(text=inits, level=kwargs.get('level',0))
 
