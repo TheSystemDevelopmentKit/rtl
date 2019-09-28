@@ -44,6 +44,7 @@ class verilog_iofile(IO):
                                                   # Events are presented in time-value combinatios 
                                                   # time in the column 0
             self._ionames=kwargs.get('ionames',[]) #list of signal names associated with this io
+            self._ioformat=kwargs.get('ioformat','%d') #by default, the io values are decimal integer numbers
 
             self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
                                                          # Do not generate things just 
@@ -109,7 +110,17 @@ class verilog_iofile(IO):
     def ionames(self,value):
         self._ionames=value
 
-
+    @property
+    def ioformat(self):
+        if hasattr(self,'_ioformat'):
+            return self._ioformat
+        else:
+            self._ioformat='%d'
+        return self._ioformat
+    
+    @ioformat.setter
+    def ioformat(self,velue):
+        self._ioformat=value
 
     # Parameters for the verilog testbench estracted from
     # Simulation parameters
