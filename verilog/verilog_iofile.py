@@ -31,17 +31,17 @@ class verilog_iofile(IO):
     
     Parameters
     -----------
-    parent : object. 
+    parent : object 
         The parent object initializing the 
         verilog_iofile instance. Default None
     
-    **kwargs: name=str,param=str
-        name : str.  
-            Name of the file. Appended with 
-            random string during the simulation.
-        param : str,  -g g_file
-            The string defining the testbench parameter to be be 
-            passed to the simulator at command line.
+    **kwargs :  
+            name : str  
+                Name of the file. Appended with 
+                random string during the simulation.
+            param : str,  -g g_file
+                The string defining the testbench parameter to be be 
+                passed to the simulator at command line.
     """
     def __init__(self,parent=None,**kwargs):
         if parent==None:
