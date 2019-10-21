@@ -1,8 +1,9 @@
-"""====================
-Verilog_iofile class 
-====================
+"""
+======================
+Verilog_iofile package 
+======================
 
-Provides verilog- file-io related properties and methods 
+Provides verilog- file-io related attributes and methods 
 for TheSDK verilog
 
 Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
@@ -18,13 +19,31 @@ import pandas as pd
 from verilog.connector import intend
 
 class verilog_iofile(IO):
+    """
+    Class to provide file IO for verilog simulations. When created, 
+    adds a verilog_iofile object to the parents iofile_bundle attribute.
+    Accessible as iofile_bundle.Members['name'].
+
+    Example
+    -------
+    Initiated in parent as: 
+        _=verilog_iofile(self,name='foobar')
+    
+    Parameters
+    -----------
+    parent : object. 
+        The parent object initializing the 
+        verilog_iofile instance. Default None
+    
+    **kwargs: name=str,param=str
+        name : str.  
+            Name of the file. Appended with 
+            random string during the simulation.
+        param : str,  -g g_file
+            The string defining the testbench parameter to be be 
+            passed to the simulator at command line.
+    """
     def __init__(self,parent=None,**kwargs):
-        """"Definition of init
-
-        Paremeters
-        ----------
-
-        """
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog input file not given")
         try:  
