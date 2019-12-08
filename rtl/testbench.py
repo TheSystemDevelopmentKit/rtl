@@ -5,12 +5,11 @@ import subprocess
 import shlex
 from abc import * 
 from thesdk import *
-from verilog import *
-from verilog.connector import verilog_connector
-from verilog.connector import verilog_connector_bundle
-from verilog.connector import intend 
-from verilog.module import verilog_module
-#from verilog.instance import verilog_instance
+from rtl import *
+from rtl.connector import verilog_connector
+from rtl.connector import verilog_connector_bundle
+from rtl.connector import intend 
+from rtl.module import verilog_module
 
 import numpy as np
 import pandas as pd
@@ -139,7 +138,7 @@ class testbench(verilog_module):
         # Dut is creted automaticaly, if verilog file for it exists
         self.connectors.update(bundle=self.dut_instance.io_signals.Members)
         #Assign verilog simulation parameters to testbench
-        self.parameters=self.parent.vlogparameters
+        self.parameters=self.parent.rtlparameters
 
         #Define testbench verilog file
         #self.file=self.parent.vlogtbsrc
@@ -185,7 +184,7 @@ class testbench(verilog_module):
                             pass
         # Copy iofile simulation parameters to testbench
         for name, val in self.iofile_bundle.Members.items():
-            self.tb.parameters.Members.update(val.vlogparam)
+            self.tb.parameters.Members.update(val.rtlparam)
         # Define the iofiles of the testbench. '
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle

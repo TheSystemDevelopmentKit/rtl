@@ -19,9 +19,10 @@ from thesdk import *
 import numpy as np
 import pandas as pd
 from functools import reduce
-from verilog.connector import intend
-from verilog.testbench import testbench as vtb
-from verilog.verilog_iofile import verilog_iofile as verilog_iofile
+
+from rtl.connector import intend
+from rtl.testbench import testbench as vtb
+from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 
 class rtl(thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions 
@@ -72,7 +73,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         Property of type thesdk.Bundle.
         This property utilises iofile class to maintain list of IO-files
         that  are automatically handled by simulator specific commands
-        when verilog.verilog_iofile.verilog_iofile(name='<filename>,...) is used to define an IO-file, created file object is automatically
+        when verilog.rtl_iofile.rtl_iofile(name='<filename>,...) is used to define an IO-file, created file object is automatically
         appended to this Bundle property as a member. Accessible with self.iofile_bundle.Members['<filename>']
         """
         if not hasattr(self,'_iofile_bundle'):
@@ -120,13 +121,13 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._name
     #No setter, no deleter.
 
-    @property
-    def entitypath(self):
-        if not hasattr(self, '_entitypath'):
-            #_classfile is an abstract property that must be defined in the class.
-            self._entitypath= os.path.dirname(os.path.dirname(self._classfile))
-        return self._entitypath
-    #No setter, no deleter.
+    #@property
+    #def entitypath(self):
+    #    if not hasattr(self, '_entitypath'):
+    #        #_classfile is an abstract property that must be defined in the class.
+    #        self._entitypath= os.path.dirname(os.path.dirname(self._classfile))
+    #    return self._entitypath
+    ##No setter, no deleter.
 
     @property
     def vlogsrcpath(self):
@@ -164,35 +165,35 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self._vlogtbsrc=self.vlogsrcpath + '/tb_' + self.name + '.sv'
         return self._vlogtbsrc
 
-    @property
-    def vlogsimpath(self):
-        if not hasattr(self, '_vlogsimpath'):
-            #_classfile is an abstract property that must be defined in the class.
-            if not (os.path.exists(self.entitypath+'/Simulations')):
-                os.mkdir(self.entitypath + '/Simulations')
-        self._vlogsimpath  = self.entitypath +'/Simulations/verilogsim'
-        if not (os.path.exists(self._vlogsimpath)):
-            os.mkdir(self._vlogsimpath)
-        return self._vlogsimpath
-    #No setter, no deleter.
+    #@property
+    #def rtlsimpath(self):
+    #    if not hasattr(self, '_rtlsimpath'):
+    #        #_classfile is an abstract property that must be defined in the class.
+    #        if not (os.path.exists(self.entitypath+'/Simulations')):
+    #            os.mkdir(self.entitypath + '/Simulations')
+    #    self._rtlsimpath  = self.entitypath +'/Simulations/rtlsim'
+    #    if not (os.path.exists(self._rtlsimpath)):
+    #        os.mkdir(self._rtlsimpath)
+    #    return self._rtlsimpath
+    ##No setter, no deleter.
 
     @property
-    def vlogworkpath(self):
-        if not hasattr(self, '_vlogworkpath'):
-            self._vlogworkpath    =  self.vlogsimpath +'/work'
-        return self._vlogworkpath
+    def rtlworkpath(self):
+        if not hasattr(self, '_rtlworkpath'):
+            self._rtlworkpath    =  self.simpath +'/work'
+        return self._rtlworkpath
 
     @property
-    def vlogparameters(self): 
-        if not hasattr(self, '_vlogparameters'):
-            self._vlogparameters =dict([])
-        return self._vlogparameters
-    @vlogparameters.setter
-    def vlogparameters(self,value): 
-            self._vlogparameters = value
-    @vlogparameters.deleter
-    def vlogparameters(self): 
-            self._vlogparameters = None
+    def rtlparameters(self): 
+        if not hasattr(self, '_rtlparameters'):
+            self._rtlparameters =dict([])
+        return self._rtlparameters
+    @rtlparameters.setter
+    def rtlparameters(self,value): 
+            self._rtlparameters = value
+    @rtlparameters.deleter
+    def rtlparameters(self): 
+            self._rtlparameters = None
 
     @property
     def vlogmodulefiles(self):
@@ -219,10 +220,11 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self._vhdlentityfiles = None 
 
     @property
-    def vlogcmd(self):
+    def rtlcmd(self):
         submission=self.verilog_submission
-        vloglibcmd =  'vlib ' +  self.vlogworkpath + ' && sleep 2'
-        vloglibmapcmd = 'vmap work ' + self.vlogworkpath
+        rtllibcmd =  'vlib ' +  self.rtlworkpath + ' && sleep 2'
+        rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+
         vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
 
@@ -235,7 +237,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                        vhdlmodulesstring )
         
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.vlogparameters.items()) ])
+            for param,val in iter(self.rtlparameters.items()) ])
 
         fileparams=''
         for name, file in self.iofile_bundle.Members.items():
@@ -243,56 +245,56 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if not self.interactive_rtl:
             dostring=' -do "run -all; quit;"'
-            vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' 
+            rtlsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' 
                     + fileparams + ' ' + gstring
                     +' work.tb_' + self.name  
                     + dostring)
         else:
-            dofile=self.vlogsimpath+'/dofile.do'
+            dofile=self.simpath+'/dofile.do'
             if os.path.isfile(dofile):
                 dostring=' -do "'+dofile+'"'
             else:
                 dostring=''
             submission="" #Local execution
-            vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
+            rtlsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
                     + ' ' + gstring +' work.tb_' + self.name + dostring)
 
         if self.model=='sv':
-            self._vlogcmd =  vloglibcmd  +\
-                    ' && ' + vloglibmapcmd +\
+            self._rtlcmd =  rtllibcmd  +\
+                    ' && ' + rtllibmapcmd +\
                     ' && ' + vlogcompcmd +\
                     ' && ' + submission +\
-                    vlogsimcmd
+                    rtlsimcmd
         elif self.model=='vhdl':
-            self._vlogcmd =  vloglibcmd  +\
-                    ' && ' + vloglibmapcmd +\
+            self._rtlcmd =  rtllibcmd  +\
+                    ' && ' + rtllibmapcmd +\
                     ' && ' + vhdlcompcmd +\
                     ' && ' + vlogcompcmd +\
                     ' && ' + submission +\
-                    vlogsimcmd
+                    rtlsimcmd
 
-        return self._vlogcmd
+        return self._rtlcmd
 
     # Just to give the freedom to set this if needed
-    @vlogcmd.setter
-    def vlogcmd(self,value):
-        self._vlogcmd=value
-    @vlogcmd.deleter
-    def vlogcmd(self):
-        self._vlogcmd=None
+    @rtlcmd.setter
+    def rtlcmd(self,value):
+        self._rtlcmd=value
+    @rtlcmd.deleter
+    def rtlcmd(self):
+        self._rtlcmd=None
     
     def create_connectors(self):
         # Create TB connectors from the control file
         # See controller.py
         for ioname,io in self.IOS.Members.items():
             # If input is a file, adopt it
-            if isinstance(io.Data,verilog_iofile): 
+            if isinstance(io.Data,rtl_iofile): 
                 if io.Data.name is not ioname:
                     self.print_log(type='I', 
                             msg='Unifying file %s name to ioname %s' %(io.Data.name,ioname))
                     io.Data.name=ioname
                 io.Data.adopt(parent=self)
-                self.tb.parameters.Members.update(io.Data.vlogparam)
+                self.tb.parameters.Members.update(io.Data.rtlparam)
 
                 for connector in io.Data.verilog_connectors:
                     self.tb.connectors.Members[connector.name]=connector
@@ -306,7 +308,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 val=self.iofile_bundle.Members[ioname]
                 self.iofile_bundle.Members[ioname].verilog_connectors=\
                         self.tb.connectors.list(names=val.ionames)
-                self.tb.parameters.Members.update(val.vlogparam)
+                self.tb.parameters.Members.update(val.rtlparam)
         # Define the iofiles of the testbench. '
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle
@@ -316,7 +318,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             if ioname in self.iofile_bundle.Members:
                 val=self.iofile_bundle.Members[ioname]
                 # File type inputs are driven by the file.Data, not the input field
-                if not isinstance(self.IOS.Members[val.name].Data,verilog_iofile) \
+                if not isinstance(self.IOS.Members[val.name].Data,rtl_iofile) \
                         and val.dir is 'in':
                     # Data must be properly shaped
                     self.iofile_bundle.Members[ioname].Data=self.IOS.Members[ioname].Data
@@ -346,7 +348,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                         msg='List of associated ionames no defined for IO %s\n. Provide it as list of strings' %(ioname))
 
 
-    def execute_verilog_sim(self):
+    def execute_rtl_sim(self):
         filetimeout=60 #File appearance timeout in seconds
         count=0
         files_ok=False
@@ -369,7 +371,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 except:
                     pass
 
-        self.print_log(type='I', msg="Running external command %s\n" %(self.vlogcmd) )
+        self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
 
         if self.interactive_rtl:
             self.print_log(type='I', msg="""
@@ -377,7 +379,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        subprocess.check_output(self.vlogcmd, shell=True);
+        subprocess.check_output(self.rtlcmd, shell=True);
 
         count=0
         files_ok=False
@@ -391,21 +393,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
     
-    def run_verilog(self):
-        if not hasattr(self,'IOS'):
-            self.print_log(type='O', msg='You are running Verilog simulation with v1.1 configuration.\n Please see https://github.com/TheSystemDevelopmentKit/thesdk_template\n for examples of migrating to v1.2')
-            self.execute_verilog_sim()
-        else:  # V1.2 syntax
-            if not hasattr(self,'define_io_conditions'):
-                self.print_log(type='W', msg="""
-                    You are running Verilog simulation with v1.2 configuration.
-                    (You have defined IOS attribute)
-                    You have NOT defined \'define_io_conditions\' method.
-                    With default conditions every rising edge clock reads 
-                    an input value  and writes a valid output value. 
-                    To add more conditions, see verilog.run_verilog for examples. 
-                    Will be forced with abstract method in future releases.""")
-
+    def run_rtl(self):
         self.tb=vtb(self)             
         self.tb.define_testbench()    
         self.create_connectors()
@@ -419,7 +407,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self.tb.generate_contents() 
         self.tb.export(force=True)
         self.write_infile()           
-        self.execute_verilog_sim()            
+        self.execute_rtl_sim()            
         self.read_outfile()           
         self.connect_outputs()         
 

@@ -17,24 +17,24 @@ from thesdk import *
 from thesdk.iofile import iofile
 import numpy as np
 import pandas as pd
-from verilog.connector import intend
+from rtl.connector import intend
 
-class verilog_iofile(iofile):
+class rtl_iofile(iofile):
     """
     Class to provide file IO for verilog simulations. When created, 
-    adds a verilog_iofile object to the parents iofile_bundle attribute.
+    adds a rtl_iofile object to the parents iofile_bundle attribute.
     Accessible as iofile_bundle.Members['name'].
 
     Example
     -------
     Initiated in parent as: 
-        _=verilog_iofile(self,name='foobar')
+        _=rtl_iofile(self,name='foobar')
     
     Parameters
     -----------
     parent : object 
         The parent object initializing the 
-        verilog_iofile instance. Default None
+        rtl_iofile instance. Default None
     
     **kwargs :  
             name : str  
@@ -49,17 +49,13 @@ class verilog_iofile(iofile):
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog input file not given")
         try:  
-            super(verilog_iofile,self).__init__(parent=parent,**kwargs)
+            super(rtl_iofile,self).__init__(parent=parent,**kwargs)
             self.paramname=kwargs.get('param','-g g_file_')
 
             self._ioformat=kwargs.get('ioformat','%d') #by default, the io values are decimal integer numbers
 
         except:
             self.print_log(type='F', msg="Verilog IO file definition failed")
-
-
-
-
 
 
     @property
@@ -78,7 +74,7 @@ class verilog_iofile(iofile):
     # Simulation parameters
     @property
     def file(self):
-        self._file=self.parent.vlogsimpath +'/' + self.name \
+        self._file=self.parent.simpath +'/' + self.name \
                 + '_' + self.rndpart +'.txt'
         return self._file
 
@@ -89,12 +85,12 @@ class verilog_iofile(iofile):
         return self._simparam
 
     @property
-    def vlogparam(self):
-        if not hasattr(self,'_vlogparam'):
+    def rtlparam(self):
+        if not hasattr(self,'_rtlparam'):
             key=re.sub(r"-g ",'',self.simparam).split('=')[0]
             val=re.sub(r"-g ",'',self.simparam).split('=')[1]
-            self._vlogparam={key:'\"%s\"'%(val)}
-        return self._vlogparam
+            self._rtlparam={key:'\"%s\"'%(val)}
+        return self._rtlparam
     
     # Status parameter
     @property
@@ -154,9 +150,9 @@ class verilog_iofile(iofile):
     @property
     def verilog_fopen(self):
         if self.dir=='in':
-            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
+            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
         if self.dir=='out':
-            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
+            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
         return self._verilog_fopen
 
     # File close
