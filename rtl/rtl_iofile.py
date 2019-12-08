@@ -70,16 +70,11 @@ class rtl_iofile(iofile):
     def ioformat(self,velue):
         self._ioformat=value
 
-    # Parameters for the verilog testbench estracted from
-    # Simulation parameters
-    @property
-    def file(self):
-        self._file=self.parent.simpath +'/' + self.name \
-                + '_' + self.rndpart +'.txt'
-        return self._file
-
     @property
     def simparam(self):
+        ''' String definition for parameter to be passed to the simulator
+        as a command line argument
+        '''
         self._simparam=self.paramname \
             + self.name + '=' + self.file
         return self._simparam
