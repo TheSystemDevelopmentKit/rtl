@@ -1,11 +1,12 @@
 """
 =======
-Verilog
+RTL
 =======
 Simulation interface package for The System Development Kit 
 
-Provides utilities to import verilog modules to python environment and
-sutomatically generate testbenches for the most common simulation cases.
+Provides utilities to import verilog modules and VHDL entities to 
+python environment and sutomatically generate testbenches for the 
+most common simulation cases.
 
 Initially written by Marko Kosunen, 2017
 """
@@ -22,25 +23,15 @@ from verilog.connector import intend
 from verilog.testbench import testbench as vtb
 from verilog.verilog_iofile import verilog_iofile as verilog_iofile
 
-class verilog(thesdk,metaclass=abc.ABCMeta):
+class rtl(thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions 
-    for vhdl simulations in the subclasses.
+    for rtl simulations in the subclasses.
     
     """
 
     #These need to be converted to abstact properties
     def __init__(self):
         pass
-
-    @property
-    @abstractmethod
-    def _classfile(self):
-        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
-    #This must be in every subclass file.
-    #@property
-    #def _classfile(self):
-    #    return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
-
 
     @property
     def preserve_iofiles(self):  
@@ -60,27 +51,27 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         self._preserve_iofiles=value
 
     @property
-    def interactive_verilog(self):
+    def interactive_rtl(self):
         """ True | False (default)
         
         Launch simulator in local machine with GUI."""
 
-        if hasattr(self,'_interactive_verilog'):
-            return self._interactive_verilog
+        if hasattr(self,'_interactive_rtl'):
+            return self._interactive_rtl
         else:
-            self._interactive_verilog=False
-        return self._interactive_verilog
+            self._interactive_rtl=False
+        return self._interactive_rtl
 
-    @interactive_verilog.setter
-    def interactive_verilog(self,value):
-        self._interactive_verilog=value
+    @interactive_rtl.setter
+    def interactive_rtl(self,value):
+        self._interactive_rtl=value
     
     @property
     def iofile_bundle(self):
         """ 
         Property of type thesdk.Bundle.
-        This property utilises verilog_iofile class to maintain list of IO-files
-        that  are automatically assigned as arguments to verilogcmd.
+        This property utilises iofile class to maintain list of IO-files
+        that  are automatically handled by simulator specific commands
         when verilog.verilog_iofile.verilog_iofile(name='<filename>,...) is used to define an IO-file, created file object is automatically
         appended to this Bundle property as a member. Accessible with self.iofile_bundle.Members['<filename>']
         """
@@ -116,7 +107,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='W',msg='Variable thesdk.GLOBALS incorrectly defined. _verilog_submission defaults to empty string and simulation is ran in localhost.')
                 self._verilog_submission=''
 
-        if hasattr(self,'_interactive_verilog'):
+        if hasattr(self,'_interactive_rtl'):
             return self._verilog_submission
 
         return self._verilog_submission
@@ -146,11 +137,26 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     #No setter, no deleter.
 
     @property
+    def vhdlsrcpath(self):
+        if not hasattr(self, '_vhdlsrcpath'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._vhdlsrcpath  =  self.entitypath + '/vhdl'
+        return self._vhdlsrcpath
+
+    @property
     def vlogsrc(self):
         if not hasattr(self, '_vlogsrc'):
             #_classfile is an abstract property that must be defined in the class.
             self._vlogsrc=self.vlogsrcpath + '/' + self.name + '.sv'
         return self._vlogsrc
+
+    @property
+    def vhdlsrc(self):
+        if not hasattr(self, '_vhdlsrc'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._vhdlsrc=self.vhdlsrcpath + '/' + self.name + '.vhd'
+        return self._vhdlsrc
+
     @property
     def vlogtbsrc(self):
         if not hasattr(self, '_vlogtbsrc'):
@@ -200,11 +206,17 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
     def vlogmodulefiles(self): 
             self._vlogmodulefiles = None 
 
-    #This is obsoleted
-    def def_verilog(self):
-        self.print_log(type='I', 
-                msg='Command def_verilog() is obsoleted. \
-                        It does nothing. \nWill be removed in future releases')
+    @property
+    def vhdlentityfiles(self):
+        if not hasattr(self, '_vlogmodulefiles'):
+            self._vlogmodulefiles =list([])
+        return self._vlogmodulefiles
+    @vhdlentityfiles.setter
+    def vhdlentityfiles(self,value): 
+            self._vhdlentityfiles = value
+    @vhdlentityfiles.deleter
+    def vhdlentityfiles(self): 
+            self._vhdlentityfiles = None 
 
     @property
     def vlogcmd(self):
@@ -213,8 +225,14 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         vloglibmapcmd = 'vmap work ' + self.vlogworkpath
         vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
+
+        vhdlmodulesstring=' '.join([ self.vlogsrcpath + '/'+ 
+            str(param) for param in self.vhdlentityfiles])
+
         vlogcompcmd = ( 'vlog -sv -work work ' + self.vlogsrc + ' ' +
                        self.vlogtbsrc + ' ' + vlogmodulesstring )
+        vhdlcompcmd = ( 'vcom -work work ' + self.vhdlsrc + ' ' +
+                       vhdlmodulesstring )
         
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
             for param,val in iter(self.vlogparameters.items()) ])
@@ -223,7 +241,7 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
         for name, file in self.iofile_bundle.Members.items():
             fileparams+=' '+file.simparam
 
-        if not self.interactive_verilog:
+        if not self.interactive_rtl:
             dostring=' -do "run -all; quit;"'
             vlogsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' 
                     + fileparams + ' ' + gstring
@@ -239,11 +257,20 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
             vlogsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
                     + ' ' + gstring +' work.tb_' + self.name + dostring)
 
-        self._vlogcmd =  vloglibcmd  +\
-                ' && ' + vloglibmapcmd +\
-                ' && ' + vlogcompcmd +\
-                ' && ' + submission +\
-                vlogsimcmd
+        if self.model=='sv':
+            self._vlogcmd =  vloglibcmd  +\
+                    ' && ' + vloglibmapcmd +\
+                    ' && ' + vlogcompcmd +\
+                    ' && ' + submission +\
+                    vlogsimcmd
+        elif self.model=='vhdl':
+            self._vlogcmd =  vloglibcmd  +\
+                    ' && ' + vloglibmapcmd +\
+                    ' && ' + vhdlcompcmd +\
+                    ' && ' + vlogcompcmd +\
+                    ' && ' + submission +\
+                    vlogsimcmd
+
         return self._vlogcmd
 
     # Just to give the freedom to set this if needed
@@ -344,9 +371,9 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
 
         self.print_log(type='I', msg="Running external command %s\n" %(self.vlogcmd) )
 
-        if self.interactive_verilog:
+        if self.interactive_rtl:
             self.print_log(type='I', msg="""
-                Running verilog simulation in interactive mode.
+                Running RTL simulation in interactive mode.
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
@@ -378,12 +405,6 @@ class verilog(thesdk,metaclass=abc.ABCMeta):
                     an input value  and writes a valid output value. 
                     To add more conditions, see verilog.run_verilog for examples. 
                     Will be forced with abstract method in future releases.""")
-
-        # Input A is read to verilog simulation after 'initd' is set to 1 by controller
-        #self.iofile_bundle.Members['A'].verilog_io_condition='initdone'
-        # Output is read to verilog simulation when all of the utputs are valid, 
-        # and after 'initdo' is set to 1 by controller
-        #self.iofile_bundle.Members['Z'].verilog_io_condition_append(cond='&& initdone')
 
         self.tb=vtb(self)             
         self.tb.define_testbench()    
