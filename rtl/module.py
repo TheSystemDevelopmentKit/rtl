@@ -1,23 +1,38 @@
-# Written by Marko Kosunen 20190109
-# marko.kosunen@aalto.fi
+"""
+===========
+Module
+===========
+Verilog import features for RTL simulation package of The System Development Kit 
+
+Provides utilities to import Verilog modules to 
+python environment.
+
+Initially written by Marko Kosunen, 2017
+
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.12.2019 13:21
+
+"""
 import os
 from thesdk import *
 from verilog import *
 from copy import deepcopy
-from verilog.connector import verilog_connector
-from verilog.connector import verilog_connector_bundle
+from rtl.connector import verilog_connector
+from rtl.connector import verilog_connector_bundle
 
 class verilog_module(thesdk):
-    # Idea  1) a) Collect IO's to database
-    #          b) collect parameters to dict
-    #       2) Reconstruct the module definition
-    #       3) a) Implement methods provide sinal connections
-    #          b) Implement methods to provide parameter assingments   
-    #       4) Create a method to create assigned module
-    #          definition, where signals are
-    #          a) assigned by name
-    #          b) to arbitrary name vector
-    #       5) Add contents, if required, and include that to definition
+    ''' Idea  1) a) Collect IO's to database
+                 b) collect parameters to dict
+              2) Reconstruct the module definition
+             
+              3) a) Implement methods provide sinal connections
+                 b) Implement methods to provide parameter assingments   
+              4) Create a method to create assigned module
+                 definition, where signals are
+                 a) assigned by name
+                 b) to arbitrary name vector
+              5) Add contents, if required, and include that to definition
+            
+    '''
     @property
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__

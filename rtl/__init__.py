@@ -1,7 +1,7 @@
 """
-=======
-RTL
-=======
+===========
+RTL package
+===========
 Simulation interface package for The System Development Kit 
 
 Provides utilities to import verilog modules and VHDL entities to 
@@ -9,6 +9,9 @@ python environment and sutomatically generate testbenches for the
 most common simulation cases.
 
 Initially written by Marko Kosunen, 2017
+
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.12.2019 13:13
+
 """
 import os
 import sys

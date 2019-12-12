@@ -10,6 +10,7 @@ from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
 from rtl.connector import intend 
 from rtl.module import verilog_module
+from rtl.entity import vhdl_entity
 
 import numpy as np
 import pandas as pd
@@ -36,8 +37,13 @@ class testbench(verilog_module):
         else:
             self.parent=parent
         try:  
+            # Testbench is always verilog
             self._file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '.sv'
-            self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
+            if self.parent.model=='sv':
+                self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
+            elif self.parent.model=='vhdl':
+                self._dutfile=self.parent.vhdlsrcpath + '/' + self.parent.name + '.vhd'
+
         except:
             self.print_log(type='F', msg="Verilog Testbench file definition failed")
         
@@ -62,7 +68,10 @@ class testbench(verilog_module):
     @property
     def dut_instance(self):
         if not hasattr(self,'_dut_instance'):
-            self._dut_instance=verilog_module(**{'file':self._dutfile})
+            if self.parent.model=='sv':
+                self._dut_instance=verilog_module(**{'file':self._dutfile})
+            elif self.parent.model=='vhdl':
+                self._dut_instance=vhdl_entity(**{'file':self._dutfile})
         return self._dut_instance
 
     
@@ -78,6 +87,7 @@ class testbench(verilog_module):
         return self._verilog_instances
 
     def verilog_instance_add(self,**kwargs):
+        # TODO: need to handle vhdl instances too
         name=kwargs.get('name')
         file=kwargs.get('file')
         self.verilog_instances.Members[name]=verilog_module(file=file,instname=name)
@@ -163,13 +173,13 @@ class testbench(verilog_module):
     def connect_inputs(self):
         # Create TB connectors from the control file
         # See controller.py
-        for ioname,val in parent.IOS.Members.items():
+        for ioname,val in self.parent.IOS.Members.items():
             if val.iotype is not 'file':
-                parent.iofile_bundle.Members[ioname].verilog_connectors=\
+                self.parent.iofile_bundle.Members[ioname].verilog_connectors=\
                         self.connectors.list(names=val.ionames)
                 if val.dir is 'in': 
                     # Data must be properly shaped
-                    parent.iofile_bundle.Members[ioname].Data=parent.IOS.Members[ioname].Data
+                    self.parent.iofile_bundle.Members[ioname].Data=self.parent.IOS.Members[ioname].Data
             elif val.iotype is 'file': #If the type is file, the Data is a bundle
                 for bname,bval in val.Data.Members.items():
                     if val.dir is 'in': 

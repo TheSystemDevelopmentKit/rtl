@@ -9,6 +9,8 @@ for TheSDK verilog
 Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
 Yue Dai, 2018
 
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.12.2019 13:10
+
 """
 import os
 import sys
