@@ -9,12 +9,12 @@ python environment.
 
 Initially written by Marko Kosunen, 2017
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.12.2019 13:21
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.12.2019 10:40
 
 """
 import os
 from thesdk import *
-from verilog import *
+from rtl import *
 from copy import deepcopy
 from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
@@ -35,6 +35,7 @@ class verilog_module(thesdk):
     '''
     @property
     def _classfile(self):
+        ''' Mandatory because of thesdk class '''
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
     def __init__(self, **kwargs):
@@ -121,7 +122,7 @@ class verilog_module(thesdk):
                                 signal.ll=int(busdef.group(1))
                                 signal.rl=int(busdef.group(2))
 
-                            #By default, we create a connecttor that is cross connected to the input
+                            #By default, we create a connector that is cross connected to the input
                             signal.connect=deepcopy(signal)
                             if signal.cls=='input':
                                 signal.connect.cls='reg'
@@ -289,18 +290,17 @@ class verilog_module(thesdk):
     @property
     def instance(self):
         #First we write the parameter section
-        #print(self.parameters)
         if self.parameters.Members:
             parameters=''
             first=True
             for name, val in self.parameters.Members.items():
                 if first:
-                    parameters='#(\n    .%s(%s)' %(name,val)
+                    parameters='#(\n    .%s(%s)' %(name,name)
                     first=False
                 else:
-                    parameters=parameters+',\n    .%s(%s)' %(name,val)
+                    parameters=parameters+',\n    .%s(%s)' %(name,name)
             parameters=parameters+'\n)'
-            self._instance='%s  %s %s' %(self.name,self.instname, parameters)
+            self._instance='%s  %s %s' %(self.name, parameters, self.instname)
         else:
             self._instance='%s %s ' %(self.name, self.instname)
         first=True
@@ -318,14 +318,13 @@ class verilog_module(thesdk):
                 else:
                     self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
             self._instance=self._instance+('\n)')
-        self._instance=self._instance+(';')
+        self._instance=self._instance+(';\n')
         return self._instance
 
     #Methods
     def export(self,**kwargs):
         if not os.path.isfile(self.file):
             print('Exporting verilog_module to %s.' %(self.file))
-            print('printing')
             with open(self.file, "w") as module_file:
                 module_file.write(self.definition)
 

@@ -11,7 +11,7 @@ Initially written by Marko Kosunen, 2017
 
 Transferred from VHL package in Dec 2019
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.12.2019 13:51
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.12.2019 10:39
 
 """
 import os
@@ -82,34 +82,34 @@ class vhdl_entity(verilog_module):
                     func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
                     dut=reduce(lambda s, func: func(s), func_list, dut)
                     dut=re.sub(r"\s+"," ",dut)
-                    dut=re.sub(r"in","in :",dut)
-                    dut=re.sub(r"out","out :",dut)
-                    dut=re.sub(r"inout","inout :",dut)
-                    dut=re.sub(r"\s:\s",":",dut)
+                    dut=re.sub(r"\s+in\s*","in :",dut)
+                    dut=re.sub(r"\s+out\s*","out :",dut)
+                    dut=re.sub(r"\s+inout\s*","inout :",dut)
+                    dut=re.sub(r"\s*:\s*",":",dut)
                     dut=re.sub(r"\s*;\s*",";",dut)
                     if dut:
                         for ioline in dut.split(';'):
                             extr=ioline.split(':')
                             signal=verilog_connector()
-                            signal.cls=extr[1]
+                            if extr[1]=='in':
+                                signal.cls='input'
+                            elif extr[1]=='out':
+                                signal.cls='output'
                             signal.name=extr[0]
-                            signal.type=extr[2]
-                            busdef=re.match(r"^.*\((.*)( downto | to )(.*)\)",extr[2])
+                            #signal.type=extr[2]
+                            signal.type=''
+                            busdef=re.match(r"^.*\(\s*(.*)(\s+downto\s+|\s+to\s+)(.*)\s*\)",extr[2])
                             if busdef:
                                 signal.ll=busdef.group(1)
                                 signal.rl=busdef.group(3)
-
-                            #By default, we create a connecttor that is cross 
-                            # connected to the input
+                            #By default, we create a connector that is cross connected to the input
                             signal.connect=deepcopy(signal)
-                            if signal.cls=='in':
+                            if signal.cls=='input':
                                 signal.connect.cls='reg'
-                            if signal.cls=='out':
+                            if signal.cls=='output':
                                 signal.connect.cls='wire'
-                            signal.connect.connect=signal
 
                             self._ios.Members[signal.name]=signal
-                            signal.connect=deepcopy(signal)
                             signal.connect.connect=signal
                             self._ios.Members[signal.name]=signal
         return self._ios
@@ -168,7 +168,7 @@ class vhdl_entity(verilog_module):
                         parablock=parablock.split(';')
                         for param in parablock:
                             extr=param.split(':')
-                            self._parameters.Members[extr[0]]=extr[1]
+                            self._parameters.Members[extr[0]]=extr[2]
         return self._parameters
 
     # Setting principle, assign a dict
@@ -222,6 +222,7 @@ class vhdl_entity(verilog_module):
             self._io_signals.Members[conn.name].connect=conn
         return self._io_signals
 
+        return self._definition
 
 
 

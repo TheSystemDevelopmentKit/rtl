@@ -22,7 +22,12 @@ class verilog_connector(thesdk):
 
     @property
     def width(self):
-        self._width=self.ll-self.rl+1
+        ''' Width of the connector: int | str (for parametrized bounds)'''
+            
+        if (isinstance(self.ll,str) or isinstance(self.rl,str)):
+            self._width=str(self.ll) + '-' + str(self.rl)+'+1'
+        else: 
+            self._width=int(self.ll)-int(self.rl)+1
         return self._width
 
     @property

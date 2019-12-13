@@ -10,7 +10,7 @@ most common simulation cases.
 
 Initially written by Marko Kosunen, 2017
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.12.2019 13:13
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.12.2019 09:29
 
 """
 import os
@@ -212,9 +212,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vhdlentityfiles(self):
-        if not hasattr(self, '_vlogmodulefiles'):
-            self._vlogmodulefiles =list([])
-        return self._vlogmodulefiles
+        if not hasattr(self, '_vhdlentityfiles'):
+            self._vhdlentityfiles =list([])
+        return self._vhdlentityfiles
     @vhdlentityfiles.setter
     def vhdlentityfiles(self,value): 
             self._vhdlentityfiles = value
@@ -231,13 +231,18 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
 
-        vhdlmodulesstring=' '.join([ self.vlogsrcpath + '/'+ 
+        vhdlmodulesstring=' '.join([ self.vhdlsrcpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
-        vlogcompcmd = ( 'vlog -sv -work work ' + self.vlogsrc + ' ' +
-                       self.vlogtbsrc + ' ' + vlogmodulesstring )
-        vhdlcompcmd = ( 'vcom -work work ' + self.vhdlsrc + ' ' +
-                       vhdlmodulesstring )
+        if self.model=='sv':
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                    + ' ' + self.vlogsrc + ' ' + self.vlogtbsrc )
+        elif self.model=='vhdl':
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                    + ' ' + self.vlogtbsrc )
+
+        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
+                       vhdlmodulesstring + ' ' + self.vhdlsrc )
         
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
             for param,val in iter(self.rtlparameters.items()) ])
