@@ -1,15 +1,15 @@
 """
 ======================
-Verilog_iofile package 
+rtl_iofile package 
 ======================
 
 Provides verilog- file-io related attributes and methods 
-for TheSDK verilog
+for TheSDK rtl
 
 Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
 Yue Dai, 2018
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 12.12.2019 13:10
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.12.2019 11:15
 
 """
 import os
