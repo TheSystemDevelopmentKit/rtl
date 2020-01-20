@@ -10,7 +10,7 @@ most common simulation cases.
 
 Initially written by Marko Kosunen, 2017
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.12.2019 09:29
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 20.01.2020 19:45
 
 """
 import os
@@ -118,22 +118,26 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def name(self):
+        ''' Name of the entity
+            Extracted from the _classfile attribute
+
+        '''
         if not hasattr(self, '_name'):
             #_classfile is an abstract property that must be defined in the class.
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
-    #No setter, no deleter.
-
-    #@property
-    #def entitypath(self):
-    #    if not hasattr(self, '_entitypath'):
-    #        #_classfile is an abstract property that must be defined in the class.
-    #        self._entitypath= os.path.dirname(os.path.dirname(self._classfile))
-    #    return self._entitypath
-    ##No setter, no deleter.
 
     @property
     def vlogsrcpath(self):
+        ''' Search path for the verilogfiles
+            self.entitypath/sv
+
+            Returns
+            _______
+                self.entitypath/sv
+
+
+        '''
         if not hasattr(self, '_vlogsrcpath'):
             #_classfile is an abstract property that must be defined in the class.
             self._vlogsrcpath  =  self.entitypath + '/sv'
@@ -142,6 +146,15 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vhdlsrcpath(self):
+        ''' VHDL search path
+            self.entitypath/vhdl
+
+            Returns
+            -------
+                self.entitypath/vhdl
+
+
+        '''
         if not hasattr(self, '_vhdlsrcpath'):
             #_classfile is an abstract property that must be defined in the class.
             self._vhdlsrcpath  =  self.entitypath + '/vhdl'
@@ -149,6 +162,14 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vlogsrc(self):
+        '''Verilog source file
+           self.vlogsrcpath/self.name.sv'
+
+           Returns
+           -------
+               self.vlogsrcpath + '/' + self.name + '.sv'
+
+        '''
         if not hasattr(self, '_vlogsrc'):
             #_classfile is an abstract property that must be defined in the class.
             self._vlogsrc=self.vlogsrcpath + '/' + self.name + '.sv'
@@ -156,6 +177,14 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vhdlsrc(self):
+        '''VHDL source file
+           self.vhdlsrcpath/self.name.sv'
+
+           Returns
+           -------
+               self.vhdlsrcpath + '/' + self.name + '.vhd'
+
+        '''
         if not hasattr(self, '_vhdlsrc'):
             #_classfile is an abstract property that must be defined in the class.
             self._vhdlsrc=self.vhdlsrcpath + '/' + self.name + '.vhd'
@@ -163,31 +192,34 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vlogtbsrc(self):
+        '''Verilog testbench source file
+
+        '''
         if not hasattr(self, '_vlogtbsrc'):
             #_classfile is an abstract property that must be defined in the class.
             self._vlogtbsrc=self.vlogsrcpath + '/tb_' + self.name + '.sv'
         return self._vlogtbsrc
 
-    #@property
-    #def rtlsimpath(self):
-    #    if not hasattr(self, '_rtlsimpath'):
-    #        #_classfile is an abstract property that must be defined in the class.
-    #        if not (os.path.exists(self.entitypath+'/Simulations')):
-    #            os.mkdir(self.entitypath + '/Simulations')
-    #    self._rtlsimpath  = self.entitypath +'/Simulations/rtlsim'
-    #    if not (os.path.exists(self._rtlsimpath)):
-    #        os.mkdir(self._rtlsimpath)
-    #    return self._rtlsimpath
-    ##No setter, no deleter.
-
     @property
     def rtlworkpath(self):
+        '''Work library directory for rtl compilations
+           self.simpath +'/work'
+
+           Returns
+           -------
+               self.simpath +'/work'
+
+        '''
         if not hasattr(self, '_rtlworkpath'):
             self._rtlworkpath    =  self.simpath +'/work'
         return self._rtlworkpath
 
     @property
     def rtlparameters(self): 
+        '''Dictionary of parameters passed to the simulator 
+        during the simulation invocation
+
+        '''
         if not hasattr(self, '_rtlparameters'):
             self._rtlparameters =dict([])
         return self._rtlparameters
@@ -200,6 +232,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vlogmodulefiles(self):
+        '''List of verilog modules to be compiled in addition of DUT
+
+        '''
         if not hasattr(self, '_vlogmodulefiles'):
             self._vlogmodulefiles =list([])
         return self._vlogmodulefiles
@@ -212,6 +247,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vhdlentityfiles(self):
+        '''List of VHDL entity files to be compiled in addiotion to DUT
+
+        '''
         if not hasattr(self, '_vhdlentityfiles'):
             self._vhdlentityfiles =list([])
         return self._vhdlentityfiles
@@ -224,6 +262,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def rtlcmd(self):
+        '''Command used for simulation invocation
+           Compiled from various parameters. See source for details.
+
+        '''
         submission=self.verilog_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath + ' && sleep 2'
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
@@ -292,6 +334,12 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self._rtlcmd=None
     
     def create_connectors(self):
+        '''Cretes verilog connector definitions from 
+           1) From a iofile that is provided in the Data 
+           attribute of an IO.
+           2) IOS of the verilog DUT
+
+        '''
         # Create TB connectors from the control file
         # See controller.py
         for ioname,io in self.IOS.Members.items():
@@ -322,6 +370,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self.tb.iofiles=self.iofile_bundle
                
     def connect_inputs(self):
+        '''Assigns all IOS.Members[name].Data to
+           self.iofile_bundle.Members[ioname].Data
+
+        '''
         for ioname,io in self.IOS.Members.items():
             if ioname in self.iofile_bundle.Members:
                 val=self.iofile_bundle.Members[ioname]
@@ -334,9 +386,12 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     # Define if the signals are signed or not
     # Can these be deducted?
     def format_ios(self):
-        # Verilog module does not contain information if the bus is signed or not
-        # Prior to writing output file, the type of the connecting wire defines
-        # how the bus values are interpreted. 
+        '''Verilog module does not contain information if 
+        the bus is signed or not
+        Prior to writing output file, the type of the 
+        connecting wire defines how the bus values are interpreted.
+
+         '''
         for ioname,val in self.iofile_bundle.Members.items():
             if val.dir is 'out' \
                     and ((val.datatype is 'sint' ) or (val.datatype is 'scomplex')):
@@ -357,6 +412,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
 
     def execute_rtl_sim(self):
+        '''Runs the rtl simulation in external simulator
+
+        '''
         filetimeout=60 #File appearance timeout in seconds
         count=0
         files_ok=False
@@ -402,6 +460,23 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     files_ok=files_ok and os.path.isfile(file.file)
     
     def run_rtl(self):
+        '''1) Creates testbench
+           2) Defines the contens of the testbench
+           3) Creates connctors
+           4) Connects inputs
+           5) Defines IO conditions
+           6) Defines IO Formats in testbench
+           7) Generates testbench contents
+           8) Exports the testbench to file
+           9) Writes input files
+           10) Executes the simulation
+           11) Read outputdiles 
+           12) Connects the outputs
+
+           You should overload this method while creating the simulation 
+           and debugging the testbench.
+
+        '''
         self.tb=vtb(self)             
         self.tb.define_testbench()    
         self.create_connectors()
@@ -422,17 +497,27 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     #This writes all infile
     def write_infile(self):
+        ''' Writes the input files
+
+        '''
         for name, val in self.iofile_bundle.Members.items():
             if val.dir=='in':
                 self.iofile_bundle.Members[name].write()
     
     #This reads all outfiles
     def read_outfile(self):
+        '''Reads the oputput files
+
+        '''
         for name, val in self.iofile_bundle.Members.items():
             if val.dir=='out':
                  self.iofile_bundle.Members[name].read()
 
     def connect_outputs(self):
+        '''Connects the ouput data from files to corresponding 
+        output IOs
+
+        '''
         for name, val in self.iofile_bundle.Members.items():
             if val.dir=='out':
                 self.IOS.Members[name].Data=self.iofile_bundle.Members[name].Data

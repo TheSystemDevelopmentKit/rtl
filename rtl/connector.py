@@ -2,7 +2,7 @@
 
 import os
 from thesdk import *
-from verilog import *
+#from verilog import *
 
 ## Class for storing signals in wide sense, including IO's
 class verilog_connector(thesdk):
