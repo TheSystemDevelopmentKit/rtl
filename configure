@@ -19,9 +19,8 @@ doc:
 	make html
 
 clean:
-	#cd ${THISDIR}/chisel && \\
-	#make clean && \\
-	find ${THISDIR}/Simulations -name \*tmp\*.txt -exec rm {} \\; 
+	cd ${THISDIR}/doc && \\
+	make clean 
    
 EOF
 exit 0
