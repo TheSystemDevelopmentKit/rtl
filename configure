@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+THISDIR=$( cd `dirname $0` && pwd )
+MODULE=$( basename ${THISDIR})
+
+#Defines TheSDK environment variables
+. ${THISDIR}/../../TheSDK.config
+
+CURRENTFILE=${THISDIR}/Makefile
+echo "Generating Makefile"
+
+cat << EOF > ${THISDIR}/Makefile
+
+.PHONY: doc clean
+
+all: doc
+
+doc:
+	cd $THISDIR/doc && \\
+	make html
+
+clean:
+	#cd ${THISDIR}/chisel && \\
+	#make clean && \\
+	find ${THISDIR}/Simulations -name \*tmp\*.txt -exec rm {} \\; 
+   
+EOF
+exit 0
+
