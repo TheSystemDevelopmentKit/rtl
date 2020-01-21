@@ -1,14 +1,15 @@
 """
 ===========
-RTL Module
+Module
 ===========
-Verilog module import features for RTL simulation package of The System Development Kit 
+Verilog module import features for RTL simulation package of 
+The System Development Kit.
 
 Provides utilities to import Verilog modules to 
 python environment.
 
 Initially written by Marko Kosunen, 2017
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 14.12.2019 09:27
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 19:30
 
 """
 import os
@@ -19,7 +20,7 @@ from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
 
 class verilog_module(thesdk):
-    r'''Objective:
+    '''Objective:
 
         1) 
            a) Collect IO's to database
@@ -43,10 +44,23 @@ class verilog_module(thesdk):
 
     @property
     def _classfile(self):
-        ''' Mandatory because of thesdk class '''
+        ''' Mandatory because nheriting thesdk class
+        
+        '''
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
     def __init__(self, **kwargs):
+        '''Parameters
+           ----------
+              **kwargs :
+                 file: str
+                    Verilog file containing the module
+                 name: str
+                    Name of the module
+                 instname: str, self.name
+                    Name of the instance
+
+        '''
         # No need to propertize these yet
         self.file=kwargs.get('file','')
         self._name=kwargs.get('name','')
@@ -57,12 +71,21 @@ class verilog_module(thesdk):
     #Name derived from the file
     @property
     def name(self):
+        '''Name of the module. Derived from the file name.
+
+        '''
+
         if not self._name:
             self._name=os.path.splitext(os.path.basename(self.file))[0]
         return self._name
 
     @property
     def instname(self):
+        '''Name of the instance, when instantiated inside other module.
+
+        Default: `self.name_DUT`
+
+        '''
         if not hasattr(self,'_instname'):
             self._instname=self.name+'_DUT'
         return self._instname
@@ -72,6 +95,12 @@ class verilog_module(thesdk):
 
     @property
     def ios(self):
+        '''Verilog connector bundle containing connectors for all module IOS.
+           All the IOs are connected to signal connectors that 
+           have the same name than the IOs. This is due to fact the we have decided 
+           that all signals are connectors. 
+
+        '''
         if not hasattr(self,'_ios'):
             startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
             iomatch=re.compile(r".*(?<!#)\(.*$")
@@ -149,6 +178,9 @@ class verilog_module(thesdk):
 
     @property
     def parameters(self):
+        '''Parameters of the verilog module. Bundle of values of type string.
+
+        '''
         if not hasattr(self,'_parameters'):
             startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
             iomatch=re.compile(r".*(?<!#)\(.*$")
@@ -207,6 +239,10 @@ class verilog_module(thesdk):
 
     @property
     def contents(self):
+        '''Contents of the module. String containing the Verilog code after 
+        the module definition.
+
+        '''
         if not hasattr(self,'_contents'):
             startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
             headerstopmatch=re.compile(r".*\);.*$")
@@ -239,6 +275,9 @@ class verilog_module(thesdk):
 
     @property
     def io_signals(self):
+        '''Bundle containing the signal connectors for IO connections.
+
+        '''
         if not hasattr(self,'_io_signals'):
             self._io_signals=verilog_connector_bundle()
             for ioname, io in self.ios.Members.items():
@@ -255,6 +294,10 @@ class verilog_module(thesdk):
 
     @property
     def definition(self):
+        '''Module definition part extracted for the file. Contains parameters and 
+        IO definitions.
+
+        '''
         if not hasattr(self,'_definition'):
             #First we print the parameter section
             if self.parameters.Members:
@@ -297,6 +340,9 @@ class verilog_module(thesdk):
     # Therefore it is always regenerated
     @property
     def instance(self):
+        '''Instantioation string of the module. Can be used inside of the other modules.
+
+        '''
         #First we write the parameter section
         if self.parameters.Members:
             parameters=''
@@ -331,6 +377,15 @@ class verilog_module(thesdk):
 
     #Methods
     def export(self,**kwargs):
+        '''Method to export the module to a given file.
+
+        Parameters
+        ----------
+           **kwargs :
+
+               force: Bool
+
+        '''
         if not os.path.isfile(self.file):
             print('Exporting verilog_module to %s.' %(self.file))
             with open(self.file, "w") as module_file:
@@ -347,31 +402,4 @@ class verilog_module(thesdk):
 
 if __name__=="__main__":
     pass
-
-##Some definitions generally present in verilog_modules
-#    @property
-#    def wire(self):
-#        if hasattr(self,'_wire'):
-#            return self._wire.content
-#        else:
-#            self._wire=section(self,name='wire')
-#            return self._wire.content
-#    @wire.setter
-#    def wire(self, value):
-#        if not hasattr(self,'_wire'):
-#            self._wire=section(self,name='wire')
-#        self._wire.content='wire %s;\n' %(value)
-#
-#    @property
-#    def reg(self):
-#        if hasattr(self,'_reg'):
-#            return self._reg.content
-#        else:
-#            self._reg=section(self,name='reg')
-#            return self._reg.content
-#    @reg.setter
-#    def reg(self, value):
-#        if not hasattr(self,'_reg'):
-#            self._reg=section(self,name='reg')
-#        self._reg.content='reg %s;\n' %(value)
 

@@ -5,13 +5,15 @@ Entity
 VHDL import features for RTL simulation package of The System Development Kit 
 
 Provides utilities to import VHDL entities to 
-python environment.
+python environment. Imported VHDL entities will be instantiated as verilog modules, 
+and are intended to be simulated within verilog testbench with simulator supporting 
+cross language compilations. 
 
 Initially written by Marko Kosunen, 2017
 
 Transferred from VHL package in Dec 2019
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.12.2019 10:39
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 19:27
 
 """
 import os
@@ -25,15 +27,33 @@ from rtl.connector import verilog_connector_bundle
 class vhdl_entity(verilog_module):
     @property
     def _classfile(self):
-        ''' Mandatory because of thesdk class '''
+        ''' Mandatory because of thesdk class 
+        
+        '''
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
     def __init__(self, **kwargs):
+        ''' Executes init of verilog_module, thus having the same attributes and 
+        parameters.
+
+        Parameters
+        ----------
+            **kwargs :
+               See module module
+        
+        '''
         super().__init__(**kwargs)
     
 
     @property
     def ios(self):
+        '''Verilog connector bundle containing connectors for all module IOS.
+           All the IOs are connected to signal connectors that 
+           have the same name than the IOs. This is due to fact the we have decided 
+           that all signals are connectors. 
+
+        '''
+        
         if not hasattr(self,'_ios'):
             startmatch=re.compile(r"entity *(?="+self.name+r"\s*is)"+r".*.+$")
             iomatch=re.compile(r".*port\(.*$")
@@ -122,6 +142,9 @@ class vhdl_entity(verilog_module):
 
     @property
     def parameters(self):
+        '''Verilog parameters extracted from generics of the VHDL entity
+
+        '''
         if not hasattr(self,'_parameters'):
             startmatch=re.compile(r"entity *(?="+self.name+r"\s*is)"+r".*.+$")
             parammatch=re.compile(r".*(?<=generic)\(.*$")
@@ -179,7 +202,9 @@ class vhdl_entity(verilog_module):
 
     @property
     def contents(self):
-        ''' Contents is extracted, but we actually do not need it is extracted '''
+        ''' Contents is extracted. We do not know what to do with it yet. 
+        
+        '''
         if not hasattr(self,'_contents'):
             startmatch=re.compile(r"\s*architecture\s+.*\s+of\s+"+self.name+r".*$")
             modulestopmatch=re.compile(r"\s*end\s+.* architecture\s*$")
@@ -205,26 +230,6 @@ class vhdl_entity(verilog_module):
     @contents.deleter
     def contents(self,value):
         self._contents=None
-
-    @property
-    def io_signals(self):
-        if not hasattr(self,'_io_signals'):
-            self._io_signals=verilog_connector_bundle()
-            for ioname, io in self.ios.Members.items():
-                # Connectior is created already in io definitio
-                # just point to it  
-                self._io_signals.Members[ioname]=io.connect
-        return self._io_signals
-
-    @io_signals.setter
-    def io_signals(self,value):
-        for conn in value.Members :
-            self._io_signals.Members[conn.name].connect=conn
-        return self._io_signals
-
-        return self._definition
-
-
 
 if __name__=="__main__":
     pass

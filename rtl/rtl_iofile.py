@@ -9,7 +9,7 @@ for TheSyDeKick RTL intereface.
 Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
 Yue Dai, 2018
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 06:47
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 06:58
 
 """
 import os
@@ -74,7 +74,7 @@ class rtl_iofile(iofile):
         '''Formatting string for verilog file reading
            Default %d, i.e. content of the file is single column of
            integers.
-
+           
         '''
         if hasattr(self,'_ioformat'):
             return self._ioformat
@@ -323,6 +323,14 @@ class rtl_iofile(iofile):
         self._verilog_io_sync=value
 
     def verilog_io_condition_append(self,**kwargs ):
+        '''Append new condition string to `verilog_io_condition`
+
+        Parameters
+        ----------
+        **kwargs :
+           cond : str
+
+        '''
         cond=kwargs.get('cond', '')
         if not (not cond ):
             self._verilog_io_condition='%s \n%s' \
@@ -333,10 +341,11 @@ class rtl_iofile(iofile):
     def verilog_io(self,**kwargs):
         '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
 
-        Return
-        ______
+        Returns 
+        _______
+        str
+            Verilog code for file IO to read/write the IO file.
 
-        Verilog code for file IO to read/write the IO file.
 
         '''
         first=True
