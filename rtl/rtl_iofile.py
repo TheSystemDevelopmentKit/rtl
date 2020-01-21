@@ -1,15 +1,15 @@
 """
 ======================
-rtl_iofile package 
+RTL IOfile module 
 ======================
 
 Provides verilog- file-io related attributes and methods 
-for TheSDK rtl
+for TheSyDeKick RTL intereface.
 
 Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
 Yue Dai, 2018
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 13.12.2019 11:15
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 06:47
 
 """
 import os
@@ -22,31 +22,40 @@ import pandas as pd
 from rtl.connector import intend
 
 class rtl_iofile(iofile):
-    """
+    '''
     Class to provide file IO for verilog simulations. When created, 
     adds a rtl_iofile object to the parents iofile_bundle attribute.
-    Accessible as iofile_bundle.Members['name'].
+    Accessible as self.iofile_bundle.Members['name'].
+
+    Provides methods and attributes that can be used to construct sections
+    in Verilog testbenches, like file io routines, file open and close routines,
+    file io routines, file io format strings and read/write conditions.
+
 
     Example
     -------
     Initiated in parent as: 
         _=rtl_iofile(self,name='foobar')
     
-    Parameters
-    -----------
-    parent : object 
-        The parent object initializing the 
-        rtl_iofile instance. Default None
-    
-    **kwargs :  
-            name : str  
-                Name of the file. Appended with 
-                random string during the simulation.
-            param : str,  -g g_file
-                The string defining the testbench parameter to be be 
-                passed to the simulator at command line.
-    """
+                
+    '''
     def __init__(self,parent=None,**kwargs):
+        '''Parameters
+        -----------
+        parent : object 
+            The parent object initializing the 
+            rtl_iofile instance. Default None
+        
+        **kwargs :  
+                name : str  
+                    Name of the file. Appended with 
+                    random string during the simulation.
+                param : str,  -g `'g_file_'`
+                    The string defining the testbench parameter to be be 
+                    passed to the simulator at command line. Sets the paramname attribute.
+                ioformat : str, %d
+                   sets the ioformat attribute.
+        '''
         #This is a redundant check, but doens not hurt.to have it here too.
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog input file not given")
@@ -62,6 +71,11 @@ class rtl_iofile(iofile):
 
     @property
     def ioformat(self):
+        '''Formatting string for verilog file reading
+           Default %d, i.e. content of the file is single column of
+           integers.
+
+        '''
         if hasattr(self,'_ioformat'):
             return self._ioformat
         else:
@@ -76,6 +90,7 @@ class rtl_iofile(iofile):
     def simparam(self):
         ''' String definition for parameter to be passed to the simulator
         as a command line argument
+
         '''
         self._simparam=self.paramname \
             + self.name + '=' + self.file
@@ -83,6 +98,12 @@ class rtl_iofile(iofile):
 
     @property
     def rtlparam(self):
+        '''Extracts the parameter name and value from simparam attribute. 
+        Used to construct the parameter definitions for Verilog testbench. 
+
+        Default {'g_file_<self.name>', self.file }
+
+        '''
         if not hasattr(self,'_rtlparam'):
             key=re.sub(r"-g ",'',self.simparam).split('=')[0]
             val=re.sub(r"-g ",'',self.simparam).split('=')[1]
@@ -92,6 +113,9 @@ class rtl_iofile(iofile):
     # Status parameter
     @property
     def verilog_stat(self):
+        '''Status variable name to be used in verilog testbench.
+
+        '''
         if not hasattr(self,'_verilog_stat'):
             self._verilog_stat='status_%s' %(self.name)
         return self._verilog_stat
@@ -103,16 +127,26 @@ class rtl_iofile(iofile):
     #Timestamp integers for control files
     @property
     def verilog_ctstamp(self):
+        '''Current time stamp variable name to be used in verilog testbench.
+        Used in event type file IO.
+
+        '''
         if not hasattr(self,'_verilog_ctstamp'):
             self._verilog_ctstamp='ctstamp_%s' %(self.name)
         return self._verilog_ctstamp
     @property
     def verilog_ptstamp(self):
+        '''Past time stamp variable for verilog testbench. Used in event type file IO.
+
+        '''
         if not hasattr(self,'_verilog_ptstamp'):
             self._verilog_ptstamp='ptstamp_%s' %(self.name)
         return self._verilog_ptstamp
     @property
     def verilog_tdiff(self):
+        '''Verilog time differencec variable. Used in event based file IO.
+        '
+        '''
         if not hasattr(self,'_verilog_diff'):
             self._verilog_tdiff='tdiff_%s' %(self.name)
         return self._verilog_tdiff
@@ -121,6 +155,9 @@ class rtl_iofile(iofile):
     # Status integer verilog definitions
     @property
     def verilog_statdef(self):
+        '''Verilog file read status integer variable definitions and initializations strings.
+
+        '''
         if self.iotype=='sample':
             self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
         elif self.iotype=='event':
@@ -136,6 +173,9 @@ class rtl_iofile(iofile):
     # File pointer
     @property
     def verilog_fptr(self):
+        '''Verilog file pointer name.
+
+        '''
         self._verilog_fptr='f_%s' %(self.name)
         return self._verilog_fptr
 
@@ -146,6 +186,9 @@ class rtl_iofile(iofile):
     # File opening, direction dependent 
     @property
     def verilog_fopen(self):
+        '''Verilog file open routine string.
+
+        '''
         if self.dir=='in':
             self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
         if self.dir=='out':
@@ -155,13 +198,18 @@ class rtl_iofile(iofile):
     # File close
     @property
     def verilog_fclose(self):
+        '''Verilog file close routine sting.
+
+        '''
         self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
         return self._verilog_fclose
     
-    # List for verilog connectors.
-    # These are the verilog signals/regs associated with this file
     @property
     def verilog_connectors(self):
+        ''' List for verilog connectors.
+        These are the verilog signals/regs associated with this file
+
+        '''
         if not hasattr(self,'_verilog_connectors'):
             self._verilog_connectors=[]
         return self._verilog_connectors
@@ -171,10 +219,13 @@ class rtl_iofile(iofile):
         #Ordered list.
         self._verilog_connectors=value
 
-    # Verilog_connectors is an ordered list Because order is important in file
-    # IO. However, we need a mapping from name to value to assing data to 
-    # correct columns of data. Less use for data files, more for controls
     def connector_datamap(self,**kwargs):
+        '''Verilog_connectors is an ordered list. Order defines the assumed order of columns in the 
+        file to be read or written. 
+        This datamap provides {'name' : index } dictionary to assing data to 
+        correct columns. Less use for data files, more for controls
+
+        '''
         name=kwargs.get('name')
         if not self._verilog_connectors:
             self.print_log(type='F', msg='Connector undefined, can\'t access.')
@@ -190,6 +241,18 @@ class rtl_iofile(iofile):
         return self._verilog_connector_datamap[name]
 
     def set_control_data(self,**kwargs):
+        '''Method to define event based data value with name,time, and value.
+
+        Parameters
+        ----------
+        **kwargs :
+            time: int, 0
+            name: str
+            val: type undefined
+            init: int, 0
+            vector of values to initialize the data. lenght should correpond to `self.verilog_connectors+1`
+
+        '''
         time=kwargs.get('time',int(0))
         name=kwargs.get('name')
         val=kwargs.get('val')
@@ -218,6 +281,13 @@ class rtl_iofile(iofile):
     # Condition string for monitoring if the signals are unknown
     @property 
     def verilog_io_condition(self):
+        '''Verilog condition string that must be true in ordedr to file IO read/write to occur.
+
+        Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
+        Default for input file: `'1'` 
+        file is always read with rising edge of the clock or in the time of an event defined in the file.
+
+        '''
         if not hasattr(self,'_verilog_io_condition'):
             if self.dir=='out':
                 first=True
@@ -238,6 +308,11 @@ class rtl_iofile(iofile):
 
     @property 
     def verilog_io_sync(self):
+        '''File io synchronization condition for sample type input.
+        Default: `@(posedge clock)`
+
+        '''
+
         if not hasattr(self,'_verilog_io_sync'):
             if self.iotype=='sample':
                 self._verilog_io_sync= '@(posedge clock)\n'
@@ -254,9 +329,16 @@ class rtl_iofile(iofile):
             %(self.verilog_io_condition,cond)
 
 
-    # Write or read construct for file IO
     @property
     def verilog_io(self,**kwargs):
+        '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
+
+        Return
+        ______
+
+        Verilog code for file IO to read/write the IO file.
+
+        '''
         first=True
         if self.iotype=='sample':
             if self.dir=='out':

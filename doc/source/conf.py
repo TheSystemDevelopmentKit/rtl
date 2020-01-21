@@ -29,6 +29,7 @@ version = ''
 # The full version, including alpha/beta/rc tags
 release = 'v1.3'
 
+autoclass_content='both'
 
 # -- General configuration ---------------------------------------------------
 
@@ -76,7 +77,7 @@ language = None
 exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = None
+pygments_style = 'sphinx'
 
 
 # -- Options for HTML output -------------------------------------------------
