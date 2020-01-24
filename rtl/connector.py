@@ -2,10 +2,14 @@
 
 import os
 from thesdk import *
-from verilog import *
+#from verilog import *
 
 ## Class for storing signals in wide sense, including IO's
 class verilog_connector(thesdk):
+    @property
+    def _classfile(self):
+        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+
     def __init__(self,**kwargs):
         self.name=kwargs.get('name','')
         self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire,reg,wire
@@ -13,24 +17,23 @@ class verilog_connector(thesdk):
         self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
         self.rl=kwargs.get('ll',0)      # Bus bus range right limit 0 by default
         self.init=kwargs.get('init','') # Initial value
-<<<<<<< HEAD
         self.connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
-        self._assignment=''
-        self._definition=''
-=======
-        self.connect=kwargs.get('connect',None) # Verilog_connector_bundle
+        self.ioformat=kwargs.get('ioformat','%d')# By default, connectors are handles as integers in file io.
 
->>>>>>> 552ba5a58d86b3eeeefa4f8ce76d6cd2f14d086e
     @property
     def width(self):
-        self._width=self.ll-self.rl+1
+        ''' Width of the connector: int | str (for parametrized bounds)'''
+            
+        if (isinstance(self.ll,str) or isinstance(self.rl,str)):
+            self._width=str(self.ll) + '-' + str(self.rl)+'+1'
+        else: 
+            self._width=int(self.ll)-int(self.rl)+1
         return self._width
 
     @property
-<<<<<<< HEAD
     def definition(self):
         if self.width==1:
-            self._defininition='%s %s;\n' %(self.cls, self.name)
+            self._definition='%s %s;\n' %(self.cls, self.name)
         elif self.type:
             self._definition='%s %s [%s:%s] %s;\n' %(self.cls, self.type, self.ll, self.rl, self.name)
         else:
@@ -57,13 +60,6 @@ class verilog_connector(thesdk):
             return '%s <= #%s %s;\n' %(self.name,time, value)
         else:
             return '%s <= %s;\n' %(self.name, value)
-=======
-    def connected(self,**kwargs):
-        if hasattr(self,'connect'):
-            return self.connect.Members.keys()
-        else:
-            return None
->>>>>>> 552ba5a58d86b3eeeefa4f8ce76d6cd2f14d086e
 
 class verilog_connector_bundle(Bundle):
     def __init__(self,**kwargs):
@@ -71,38 +67,78 @@ class verilog_connector_bundle(Bundle):
 
     def new(self,**kwargs):
         name=kwargs.get('name','')
-        cls=kwargs.get('cls','')   # Input,output,inout,reg,wire,reg,wire
-        type=kwargs.get('type','') # signed
-        ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
-        rl=kwargs.get('ll',0)      # Bus bus range right limit 0 by default
-        init=kwargs.get('init','') # Initial value
-        connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
+        cls=kwargs.get('cls','')           # Input,output,inout,reg,wire,reg,wire
+        type=kwargs.get('type','')         # signed
+        ll=kwargs.get('ll',0)              # Bus range left limit 0 by default
+        rl=kwargs.get('ll',0)              # Bus bus range right limit 0 by default
+        init=kwargs.get('init','')         # Initial value
+        connect=kwargs.get('connect',None) # Can't be verilog connector by default. Would be recursive
         self.Members[name]=verilog_connector(name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
 
     def update(self,**kwargs):
+        #[TODO]: Write sanity checks
         bundle=kwargs.get('bundle',None)
         self.Members.update(bundle)
     
     def mv(self,**kwargs):
+        #[TODO]: Write sanity checks
         fro=kwargs.get('fro')
         to=kwargs.get('to')
         self.Members[to]=self.Members.pop(fro)
         self.Members[to].name=to
 
     def connect(self,**kwargs):
-        match=kwargs.get('match')
+        #[TODO]: Write sanity checks
+        match=kwargs.get('match',r".*")  #By default, connect all
         conname=kwargs.get('connect')
         for name, value in self.Members.items():
             if re.match(match,name):
                 value.connect=self.Members[conname]
 
+    def init(self,**kwargs):
+        #[TODO]: Write sanity checks
+        match=kwargs.get('match',r".*")  #By default, connect all
+        initval=kwargs.get('init','')
+        for name, value in self.Members.items():
+            if re.match(match,name):
+                value.init=initval
+
     def assign(self,**kwargs):
-        match=kwargs.get('match')
+        #[TODO]: Write sanity checks
+        match=kwargs.get('match',r".*") #By default, assign all
         assignments=''
         for name, value in self.Members.items():
             if re.match(match,name):
                 assignments=assignments+value.assignment
-        return assignments
+        return intend(text=assignments, level=kwargs.get('level',0))
+
+    def verilog_inits(self,**kwargs):
+        #[TODO]: Write sanity checks
+        inits=''
+        match=kwargs.get('match',r".*") #By default, assign all
+        for name, val in self.Members.items():
+            if re.match(match,name) and ( val.init is not None and val.init is not '' ):
+                inits=inits+'%s = %s;\n' %(val.name,val.init)
+        return intend(text=inits, level=kwargs.get('level',0))
+
+    def list(self,**kwargs):
+        #[TODO]: Write sanity checks
+        names=kwargs.get('names','')
+        connectors=[]
+        if names:
+            for name in names:
+                connectors.append(self.Members[name])
+        return connectors
+
+#Helper to intend text blocks
+def intend(**kwargs):
+    textout=''
+    nspaces=4
+    for line in (kwargs.get('text')).splitlines():
+        for _ in range(nspaces*kwargs.get('level')):
+            line=line+' '
+        textout=textout+line+'\n'
+    return textout
 
 if __name__=="__main__":
     pass

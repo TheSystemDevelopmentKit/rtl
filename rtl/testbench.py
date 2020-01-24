@@ -1,44 +1,67 @@
-# Written by Marko Kosunen 20190108
+"""
+=========
+Testbench
+=========
+
+Verilog testbench utility mmodule for TheSyDeKick. Contains attributes annd methods to import DUT as `verilog_module` 
+instance, parse its IO and parameter definitions and construct a structured testbench with clock and file IO.
+
+Utilizes logging method from thesdk.
+Extendsd `verilog_module` with additional properties.
+
+Initially written by Marko Kosunen 20190108, marko.kosunen@aalto.fi
+
+"""
 import os
 import sys
 import subprocess
 import shlex
 from abc import * 
 from thesdk import *
-from verilog import *
-from verilog.connector import verilog_connector
-from verilog.connector import verilog_connector_bundle
-from verilog.connector import intend 
-from verilog.module import verilog_module
-#from verilog.instance import verilog_instance
+from rtl import *
+from rtl.connector import verilog_connector
+from rtl.connector import verilog_connector_bundle
+from rtl.connector import intend 
+from rtl.module import verilog_module
+from rtl.entity import vhdl_entity
 
 import numpy as np
 import pandas as pd
 from functools import reduce
 import textwrap
-## Some guidelines:
-## DUT is parsed from the verilog file.
-## Simparams are parsed to header from the parent
-## All io's are read from a file? (Is this good)
 ## Code injection should be possible
 ## at least between blocks
 ## Default structure during initialization?
 
-# Utilizes logging method from thesdk
-# Is extendsd verilog module with some additional properties
 class testbench(verilog_module):
+    ''' Testbench class. Extends `verilog_module`
+
+    '''
+
     @property
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
     def __init__(self, parent=None, **kwargs):
+        '''Parameters
+           ----------
+           parent: object, None (mandatory to define). TheSyDeKick parent entity object for this testbench.
+           **kwargs :
+              None
+
+        '''
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog testbench not given")
         else:
             self.parent=parent
         try:  
+            # Testbench is always verilog
             self._file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '.sv'
-            self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
+            if self.parent.model=='sv':
+                self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
+            elif self.parent.model=='vhdl':
+                self._dutfile=self.parent.vhdlsrcpath + '/' + self.parent.name + '.vhd'
+
         except:
             self.print_log(type='F', msg="Verilog Testbench file definition failed")
         
@@ -52,6 +75,12 @@ class testbench(verilog_module):
         
     @property
     def file(self):
+        '''Path to the testbench file
+
+        Default: `self.parent.vlogsrcpath + '/tb_' + self.parent.name + '.sv'`
+
+
+        '''
         if not hasattr(self,'_file'):
             self._file=None
         return self._file
@@ -62,8 +91,14 @@ class testbench(verilog_module):
 
     @property
     def dut_instance(self):
+        '''RTL module parsed from the verilog or VHDL file of the parent depending on `parent.model`
+
+        '''
         if not hasattr(self,'_dut_instance'):
-            self._dut_instance=verilog_module(**{'file':self._dutfile})
+            if self.parent.model=='sv':
+                self._dut_instance=verilog_module(**{'file':self._dutfile})
+            elif self.parent.model=='vhdl':
+                self._dut_instance=vhdl_entity(**{'file':self._dutfile})
         return self._dut_instance
 
     
@@ -74,18 +109,38 @@ class testbench(verilog_module):
 
     @property
     def verilog_instances(self):
+        '''Verilog instances Bundle to be added to tesbench
+        
+        Todo 
+        Need to handle VHDL instance too.
+
+        '''
         if not hasattr(self,'_verilog_instances'):
             self._verilog_instances=Bundle()
         return self._verilog_instances
 
     def verilog_instance_add(self,**kwargs):
+        '''Add verilog instance to the Bundle fro a file
+
+        Parameters
+        ----------
+        **kwargs:
+           name : str
+             name of the module
+           file :
+               File defining the module
+
+        '''
+        # TODO: need to handle vhdl instances too
         name=kwargs.get('name')
         file=kwargs.get('file')
         self.verilog_instances.Members[name]=verilog_module(file=file,instname=name)
     
     @property
     def parameter_definitions(self):
-        # Registers first
+        '''Parameter  and variable definition strins of the testbench
+
+        '''
         definitions='//Parameter definitions\n'
         for name, val in self.content_parameters.items():
                 definitions+='parameter '+ val[0]+' '+name+'='+ val[1]+';\n'
@@ -93,6 +148,9 @@ class testbench(verilog_module):
     
     @property
     def connector_definitions(self):
+        '''Verilog register and wire definition strings
+
+        '''
         # Registers first
         definitions='//Register definitions\n'
         for name, val in self.connectors.Members.items():
@@ -106,6 +164,9 @@ class testbench(verilog_module):
         return definitions
 
     def assignments(self,**kwargs):
+        '''Wire assingment strings
+
+        '''
         matchlist=kwargs.get('matchlist',self.assignment_matchlist)
         assigns='\n//Assignments\n'
         for match in matchlist:
@@ -114,6 +175,9 @@ class testbench(verilog_module):
      
     @property
     def iofile_definitions(self):
+        '''IOfile definition strings
+
+        '''
         iofile_defs='//Variables for the io_files\n'
         for name, val in self.iofiles.Members.items():
             iofile_defs=iofile_defs+val.verilog_statdef
@@ -123,11 +187,20 @@ class testbench(verilog_module):
 
     @property
     def clock_definition(self):
+        '''Clock definition string
+
+        Todo
+        Create append mechanism to add more clocks.
+
+        '''
         clockdef='//Master clock is omnipresent\nalways #(c_Ts/2.0) clock = !clock;'
         return clockdef
 
     @property
     def iofile_close(self):
+        '''File close procedure for all IO files.
+
+        '''
         iofile_close='\n//Close the io_files\n'
         for name, val in self.iofiles.Members.items():
             iofile_close=iofile_close+val.verilog_fclose
@@ -136,14 +209,14 @@ class testbench(verilog_module):
    
     # This method 
     def define_testbench(self):
+        '''Defines the tb connectivity, creates reset and clock, and initializes them to zero
+
+        '''
         # Dut is creted automaticaly, if verilog file for it exists
         self.connectors.update(bundle=self.dut_instance.io_signals.Members)
         #Assign verilog simulation parameters to testbench
-        self.parameters=self.parent.vlogparameters
+        self.parameters=self.parent.rtlparameters
 
-        #Define testbench verilog file
-        #self.file=self.parent.vlogtbsrc
-        
         # Create clock if nonexistent 
         if 'clock' not in self.dut_instance.ios.Members:
             self.connectors.Members['clock']=verilog_connector(
@@ -162,15 +235,18 @@ class testbench(verilog_module):
     
     # Automate this bsed in dir
     def connect_inputs(self):
+        '''Define connections to DUT inputs.
+
+        '''
         # Create TB connectors from the control file
         # See controller.py
-        for ioname,val in parent.IOS.Members.items():
+        for ioname,val in self.parent.IOS.Members.items():
             if val.iotype is not 'file':
-                parent.iofile_bundle.Members[ioname].verilog_connectors=\
+                self.parent.iofile_bundle.Members[ioname].verilog_connectors=\
                         self.connectors.list(names=val.ionames)
                 if val.dir is 'in': 
                     # Data must be properly shaped
-                    parent.iofile_bundle.Members[ioname].Data=parent.IOS.Members[ioname].Data
+                    self.parent.iofile_bundle.Members[ioname].Data=self.parent.IOS.Members[ioname].Data
             elif val.iotype is 'file': #If the type is file, the Data is a bundle
                 for bname,bval in val.Data.Members.items():
                     if val.dir is 'in': 
@@ -185,13 +261,30 @@ class testbench(verilog_module):
                             pass
         # Copy iofile simulation parameters to testbench
         for name, val in self.iofile_bundle.Members.items():
-            self.tb.parameters.Members.update(val.vlogparam)
+            self.tb.parameters.Members.update(val.rtlparam)
         # Define the iofiles of the testbench. '
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle
 
-# This is the method to generate testbench contents. override if needed
     def generate_contents(self):
+        ''' This is the method to generate testbench contents. Override if needed
+            Contents of the testbench is constructed from attributes in the 
+            following order ::
+            
+                self.parameter_definitions
+                self.connector_definitions
+                self.assignments()
+                self.iofile_definitions
+                self.dut_instance.instance
+                self.verilog_instance_members.items().instance (for all members)
+                self.connectors.verilog_inits()
+                self.iofiles.Members.items().verilog_io (for all members)
+                self.iofile.close (for all members)
+
+             Addtional code may be currently injected by appending desired 
+             strings (Verilog sytax) to the relevant string attributes.
+
+        '''
     # Start the testbench contents
         contents="""
 //timescale 1ps this should probably be a global model parameter
@@ -235,14 +328,6 @@ self.connectors.verilog_inits(level=1)+\
 
         contents+='\njoin\n'+self.iofile_close+'\n$finish;\nend\n'
         self.contents=contents
-
-# This might be an overkill, but it makes it possible to have
-# section attributes
-#class section(thesdk):
-#    def __init__(self,parent=None,**kwargs):
-#        if parent==None:
-#            self.print_log(type='F', msg="Parent of Verilog section not given")
-#        self.name=kwargs.get('name')
 
 if __name__=="__main__":
     pass

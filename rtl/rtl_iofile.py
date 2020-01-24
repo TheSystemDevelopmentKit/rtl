@@ -1,131 +1,121 @@
-# Verilog_iofile class 
-# Provides verilog- file-io related properties and methods for TheSDK verilog
-#
-# Initially written by Marko Kosunen, marko.kosunen@aalto.fi, 
-#                      Yue Dai, 
-# 2018
-##############################################################################
+"""
+======================
+RTL IOfile module 
+======================
+
+Provides verilog- file-io related attributes and methods 
+for TheSyDeKick RTL intereface.
+
+Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
+Yue Dai, 2018
+
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 06:58
+
+"""
 import os
 import sys
 from abc import * 
 from thesdk import *
+from thesdk.iofile import iofile
 import numpy as np
 import pandas as pd
-from verilog.connector import intend
+from rtl.connector import intend
 
-class verilog_iofile(IO):
+class rtl_iofile(iofile):
+    '''
+    Class to provide file IO for verilog simulations. When created, 
+    adds a rtl_iofile object to the parents iofile_bundle attribute.
+    Accessible as self.iofile_bundle.Members['name'].
+
+    Provides methods and attributes that can be used to construct sections
+    in Verilog testbenches, like file io routines, file open and close routines,
+    file io routines, file io format strings and read/write conditions.
+
+
+    Example
+    -------
+    Initiated in parent as: 
+        _=rtl_iofile(self,name='foobar')
+    
+                
+    '''
     def __init__(self,parent=None,**kwargs):
+        '''Parameters
+        -----------
+        parent : object 
+            The parent object initializing the 
+            rtl_iofile instance. Default None
+        
+        **kwargs :  
+                name : str  
+                    Name of the file. Appended with 
+                    random string during the simulation.
+                param : str,  -g `'g_file_'`
+                    The string defining the testbench parameter to be be 
+                    passed to the simulator at command line. Sets the paramname attribute.
+                ioformat : str, %d
+                   sets the ioformat attribute.
+        '''
+        #This is a redundant check, but doens not hurt.to have it here too.
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog input file not given")
         try:  
-            super(verilog_iofile,self).__init__(**kwargs)
-            self.parent=parent
-            self.rndpart=os.path.basename(tempfile.mkstemp()[1])
-            self.name=kwargs.get('name') 
+            super(rtl_iofile,self).__init__(parent=parent,**kwargs)
             self.paramname=kwargs.get('param','-g g_file_')
 
-            # IO's are output by default
-            # Currently less needed for Python, but used in Verilog
-            self._dir=kwargs.get('dir','out')
-            self._datatype=kwargs.get('datatype','int')
+            self._ioformat=kwargs.get('ioformat','%d') #by default, the io values are decimal integer numbers
 
-            self._iotype=kwargs.get('iotype','sample') # The file is a data file by default 
-                                                  # Option: sample, event. file 
-                                                  # Events are presented in time-value combinatios 
-                                                  # time in the column 0
-            self._ionames=kwargs.get('ionames',[]) #list of signal names associated with this io
-
-            self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
-                                                         # Do not generate things just 
-                                                         # to remove them in the next step
-            if hasattr(self.parent,'preserve_iofiles'):
-                self.preserve=parent.preserve_iofiles
-            else:
-                self.preserve=False
         except:
             self.print_log(type='F', msg="Verilog IO file definition failed")
 
-        #TODO: Needs a check to eliminate duplicate entries to iofiles
-        if hasattr(self.parent,'iofiles'):
-            self.print_log(type='O',msg="Attribute iofiles has been replaced by iofile_bundle")
-
-        if hasattr(self.parent,'iofile_bundle'):
-            self.parent.iofile_bundle.new(name=self.name,val=self)
-
-    # These propertios "extend" IO class, but do not need ot be member of it,
-    # Furthermore IO._Data _must_ me bidirectional. Otherwise driver and target 
-    # Must be defined separately
-    @property  # in | out
-    def dir(self):
-        if hasattr(self,'_dir'):
-            return self._dir
-        else:
-            self._dir=None
-        return self._dir
-
-    @dir.setter
-    def dir(self,value):
-        self._dir=value
 
     @property
-    def iotype(self):  # sample | event
-        if hasattr(self,'_iotype'):
-            return self._iotype
+    def ioformat(self):
+        '''Formatting string for verilog file reading
+           Default %d, i.e. content of the file is single column of
+           integers.
+           
+        '''
+        if hasattr(self,'_ioformat'):
+            return self._ioformat
         else:
-            self._iotype='sample'
-        return self._iotype
-
-    @property
-    def datatype(self):  # complex | int | scomplex | sint
-        if hasattr(self,'_datatype'):
-            return self._datatype
-        else:
-            self._datatype=None
-        return self._datatype
-
-    @datatype.setter
-    def datatype(self,value):
-        self._datatype=value
-
-    @property
-    def ionames(self): # list of associated verilog ionames
-        if hasattr(self,'_ionames'):
-            return self._ionames
-        else:
-            self._ionames=[]
-        return self._ionames
-
-    @ionames.setter
-    def ionames(self,value):
-        self._ionames=value
-
-
-
-    # Parameters for the verilog testbench estracted from
-    # Simulation parameters
-    @property
-    def file(self):
-        self._file=self.parent.vlogsimpath +'/' + self.name \
-                + '_' + self.rndpart +'.txt'
-        return self._file
+            self._ioformat='%d'
+        return self._ioformat
+    
+    @ioformat.setter
+    def ioformat(self,velue):
+        self._ioformat=value
 
     @property
     def simparam(self):
+        ''' String definition for parameter to be passed to the simulator
+        as a command line argument
+
+        '''
         self._simparam=self.paramname \
             + self.name + '=' + self.file
         return self._simparam
 
     @property
-    def vlogparam(self):
-        if not hasattr(self,'_vlogparam'):
+    def rtlparam(self):
+        '''Extracts the parameter name and value from simparam attribute. 
+        Used to construct the parameter definitions for Verilog testbench. 
+
+        Default {'g_file_<self.name>', self.file }
+
+        '''
+        if not hasattr(self,'_rtlparam'):
             key=re.sub(r"-g ",'',self.simparam).split('=')[0]
             val=re.sub(r"-g ",'',self.simparam).split('=')[1]
-            self._vlogparam={key:'\"%s\"'%(val)}
-        return self._vlogparam
+            self._rtlparam={key:'\"%s\"'%(val)}
+        return self._rtlparam
     
     # Status parameter
     @property
     def verilog_stat(self):
+        '''Status variable name to be used in verilog testbench.
+
+        '''
         if not hasattr(self,'_verilog_stat'):
             self._verilog_stat='status_%s' %(self.name)
         return self._verilog_stat
@@ -137,16 +127,26 @@ class verilog_iofile(IO):
     #Timestamp integers for control files
     @property
     def verilog_ctstamp(self):
+        '''Current time stamp variable name to be used in verilog testbench.
+        Used in event type file IO.
+
+        '''
         if not hasattr(self,'_verilog_ctstamp'):
             self._verilog_ctstamp='ctstamp_%s' %(self.name)
         return self._verilog_ctstamp
     @property
     def verilog_ptstamp(self):
+        '''Past time stamp variable for verilog testbench. Used in event type file IO.
+
+        '''
         if not hasattr(self,'_verilog_ptstamp'):
             self._verilog_ptstamp='ptstamp_%s' %(self.name)
         return self._verilog_ptstamp
     @property
     def verilog_tdiff(self):
+        '''Verilog time differencec variable. Used in event based file IO.
+        '
+        '''
         if not hasattr(self,'_verilog_diff'):
             self._verilog_tdiff='tdiff_%s' %(self.name)
         return self._verilog_tdiff
@@ -155,6 +155,9 @@ class verilog_iofile(IO):
     # Status integer verilog definitions
     @property
     def verilog_statdef(self):
+        '''Verilog file read status integer variable definitions and initializations strings.
+
+        '''
         if self.iotype=='sample':
             self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
         elif self.iotype=='event':
@@ -170,6 +173,9 @@ class verilog_iofile(IO):
     # File pointer
     @property
     def verilog_fptr(self):
+        '''Verilog file pointer name.
+
+        '''
         self._verilog_fptr='f_%s' %(self.name)
         return self._verilog_fptr
 
@@ -180,22 +186,30 @@ class verilog_iofile(IO):
     # File opening, direction dependent 
     @property
     def verilog_fopen(self):
+        '''Verilog file open routine string.
+
+        '''
         if self.dir=='in':
-            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
+            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
         if self.dir=='out':
-            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
+            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
         return self._verilog_fopen
 
     # File close
     @property
     def verilog_fclose(self):
+        '''Verilog file close routine sting.
+
+        '''
         self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
         return self._verilog_fclose
     
-    # List for verilog connectors.
-    # These are the verilog signals/regs associated with this file
     @property
     def verilog_connectors(self):
+        ''' List for verilog connectors.
+        These are the verilog signals/regs associated with this file
+
+        '''
         if not hasattr(self,'_verilog_connectors'):
             self._verilog_connectors=[]
         return self._verilog_connectors
@@ -205,10 +219,13 @@ class verilog_iofile(IO):
         #Ordered list.
         self._verilog_connectors=value
 
-    # Verilog_connectors is an ordered list Because order is important in file
-    # IO. However, we need a mapping from name to value to assing data to 
-    # correct columns of data. Less use for data files, more for controls
     def connector_datamap(self,**kwargs):
+        '''Verilog_connectors is an ordered list. Order defines the assumed order of columns in the 
+        file to be read or written. 
+        This datamap provides {'name' : index } dictionary to assing data to 
+        correct columns. Less use for data files, more for controls
+
+        '''
         name=kwargs.get('name')
         if not self._verilog_connectors:
             self.print_log(type='F', msg='Connector undefined, can\'t access.')
@@ -224,6 +241,18 @@ class verilog_iofile(IO):
         return self._verilog_connector_datamap[name]
 
     def set_control_data(self,**kwargs):
+        '''Method to define event based data value with name,time, and value.
+
+        Parameters
+        ----------
+        **kwargs :
+            time: int, 0
+            name: str
+            val: type undefined
+            init: int, 0
+            vector of values to initialize the data. lenght should correpond to `self.verilog_connectors+1`
+
+        '''
         time=kwargs.get('time',int(0))
         name=kwargs.get('name')
         val=kwargs.get('val')
@@ -252,6 +281,13 @@ class verilog_iofile(IO):
     # Condition string for monitoring if the signals are unknown
     @property 
     def verilog_io_condition(self):
+        '''Verilog condition string that must be true in ordedr to file IO read/write to occur.
+
+        Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
+        Default for input file: `'1'` 
+        file is always read with rising edge of the clock or in the time of an event defined in the file.
+
+        '''
         if not hasattr(self,'_verilog_io_condition'):
             if self.dir=='out':
                 first=True
@@ -266,8 +302,17 @@ class verilog_iofile(IO):
                 self._verilog_io_condition= ' 1 '
         return self._verilog_io_condition
 
+    @verilog_io_condition.setter
+    def verilog_io_condition(self,value):
+        self._verilog_io_condition=value
+
     @property 
     def verilog_io_sync(self):
+        '''File io synchronization condition for sample type input.
+        Default: `@(posedge clock)`
+
+        '''
+
         if not hasattr(self,'_verilog_io_sync'):
             if self.iotype=='sample':
                 self._verilog_io_sync= '@(posedge clock)\n'
@@ -277,24 +322,32 @@ class verilog_iofile(IO):
     def verilog_io_sync(self,value):
         self._verilog_io_sync=value
 
-    @verilog_io_condition.setter
-    @property 
-    def verilog_io_condition(self,value):
-                self._verilog_io_condition= value
-
     def verilog_io_condition_append(self,**kwargs ):
+        '''Append new condition string to `verilog_io_condition`
+
+        Parameters
+        ----------
+        **kwargs :
+           cond : str
+
+        '''
         cond=kwargs.get('cond', '')
         if not (not cond ):
             self._verilog_io_condition='%s \n%s' \
             %(self.verilog_io_condition,cond)
 
-    @verilog_io_condition.setter
-    def verilog_io_condition(self,value):
-        self._verilog_io_condition=value
 
-    # Write or read construct for file IO
     @property
     def verilog_io(self,**kwargs):
+        '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
+
+        Returns 
+        _______
+        str
+            Verilog code for file IO to read/write the IO file.
+
+
+        '''
         first=True
         if self.iotype=='sample':
             if self.dir=='out':
@@ -365,120 +418,4 @@ class verilog_iofile(IO):
         else:
             self.print_log(type='F', msg='Iotype not defined')
         return self._verilog_io
-
-    # Relocate i.e. change parent. 
-    # probably this could be automated
-    # by using properties
-    def adopt(self,parent=None,**kwargs):
-        if parent==None:
-            self.print_log(type='F', msg='Parent must be given for relocation')
-        self.parent=parent
-        if hasattr(self.parent,'iofile_bundle'):
-            self.parent.iofile_bundle.new(name=self.name,val=self)
-
-    # File writing
-    def write(self,**kwargs):
-        self.dir='in'  # Only input files are written
-        #Parse the rows to split complex numbers
-        data=kwargs.get('data',self.Data)
-        datatype=kwargs.get('datatype',self.datatype)
-        iotype=kwargs.get('iotype',self.iotype)
-        header_line = []
-        parsed=[]
-        # Default is the data file
-        if iotype=='sample':
-            for i in range(data.shape[1]):
-                if i==0:
-                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                       parsed=np.r_['1',np.real(data[:,i]).reshape(-1,1),
-                               np.imag(data[:,i].reshape(-1,1))]
-                       header_line.append('%s_%s_Real' %(self.name,i))
-                       header_line.append('%s_%s_Imag' %(self.name,i))
-                   else:
-                       parsed=np.r_['1',data[:,i].reshape(-1,1)]
-                       header_line.append('%s_%s' %(self.name,i))
-                else:
-                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                       parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),
-                               np.imag(data[:,i].reshape(-1,1))]
-                       header_line.append('%s_%s_Real' %(self.name,i))
-                       header_line.append('%s_%s_Imag' %(self.name,i))
-                   else:
-                       parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
-                       header_line.append('%s_%s' %(self.name,i))
-
-            # Numbers are printed as intergers
-            if datatype is [ 'int', 'sint', 'complex', 'scomplex' ]:
-                df=pd.DataFrame(parsed,dtype='int')
-            else:
-                df=pd.DataFrame(parsed,dtype=datatype)
-
-            if self.hasheader:
-                df.to_csv(path_or_buf=self.file,sep="\t",
-                        index=False,header=header_line)
-            else:
-                df.to_csv(path_or_buf=self.file,sep="\t",
-                        index=False,header=False)
-        # Control file is a different thing
-        elif iotype=='event':
-            for i in range(data.shape[1]):
-                if i==0:
-                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                       self.print_log(type='F', msg='Timestamp can not be complex.')
-                   else:
-                       parsed=np.r_['1',data[:,i].reshape(-1,1)]
-                       header_line.append('Timestamp')
-                else:
-                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                       parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),
-                               np.imag(data[:,i].reshape(-1,1))]
-                       header_line.append('%s_%s_Real' %(self.name,i))
-                       header_line.append('%s_%s_Imag' %(self.name,i))
-                   else:
-                       parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
-                       header_line.append('%s_%s' %(self.name,i))
-
-            df=pd.DataFrame(parsed,dtype=datatype)
-            if self.hasheader:
-                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
-            else:
-                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
-        # This is to compensate filesystem delays
-        time.sleep(10)
-        
-    # Reading
-    def read(self,**kwargs):
-        fid=open(self.file,'r')
-        self.datatype=kwargs.get('datatype',self.datatype)
-        dtype=kwargs.get('dtype',object)
-        readd = pd.read_csv(fid,dtype=dtype,sep='\t',header=None)
-        #read method for complex signal matrix
-        if self.datatype is 'complex' or self.datatype is 'scomplex':
-            self.print_log(type="I", msg="Reading complex")
-            rows=int(readd.values.shape[0])
-            cols=int(readd.values.shape[1]/2)
-            for i in range(cols):
-                if i==0:
-                    self.Data=np.zeros((rows, cols),dtype=complex)
-                    self.Data[:,i]=readd.values[:,2*i].astype('int')\
-                            +1j*readd.values[:,2*i+1].astype('int')
-                else:
-                    self.Data[:,i]=readd.values[:,2*i].astype('int')\
-                            +1j*readd.values[:,2*i+1].astype('int')
-
-        else:
-            self.Data=readd.values
-        fid.close()
-
-    # Remove the file when no longer needed
-    def remove(self):
-        if self.preserve:
-            self.print_log(type="I", msg="Preserve_value is %s" %(self.preserve))
-            self.print_log(type="I", msg="Preserving file %s" %(self.file))
-        else:
-            try:
-                os.remove(self.file)
-            except:
-                pass
-
 
