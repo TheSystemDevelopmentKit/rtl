@@ -10,7 +10,7 @@ most common simulation cases.
 
 Initially written by Marko Kosunen, 2017
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 20.01.2020 19:45
+Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 24.01.2020 15:28
 
 """
 import os
@@ -420,13 +420,13 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         files_ok=False
         while not files_ok:
             count +=1
-            if count >5:
+            if count >filetimeout:
                 self.print_log(type='F', msg='Verilog infile writing timeout')
             for name, file in self.iofile_bundle.Members.items(): 
                 if file.dir=='in':
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
-            time.sleep(int(filetimeout/5))
+            time.sleep(int(1)) #Wait for one second
 
         #Remove existing output files before execution
         for name, file in self.iofile_bundle.Members.items(): 
@@ -451,9 +451,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         files_ok=False
         while not files_ok:
             count +=1
-            if count >5:
+            if count >filetimeout:
                 self.print_log(type='F', msg="Verilog outfile timeout")
-            time.sleep(int(filetimeout/5))
+            time.sleep(int(1))
             for name, file in self.iofile_bundle.Members.items(): 
                 if file.dir=='out':
                     files_ok=True
