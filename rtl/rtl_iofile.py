@@ -9,8 +9,6 @@ for TheSyDeKick RTL intereface.
 Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
 Yue Dai, 2018
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 06:58
-
 """
 import os
 import sys
@@ -67,6 +65,18 @@ class rtl_iofile(iofile):
 
         except:
             self.print_log(type='F', msg="Verilog IO file definition failed")
+
+
+    #Overload from iofile package
+    @property
+    def file(self):
+        ''' Name of the IO file to be read or written.
+
+        '''
+        if not hasattr(self,'_file'):
+            self._file=self.parent.rtlsimpath +'/' + self.name \
+                    + '_' + self.rndpart +'.txt'
+        return self._file
 
 
     @property

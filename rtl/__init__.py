@@ -10,8 +10,6 @@ most common simulation cases.
 
 Initially written by Marko Kosunen, 2017
 
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 24.01.2020 15:28
-
 """
 import os
 import sys
@@ -201,17 +199,33 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._vlogtbsrc
 
     @property
-    def rtlworkpath(self):
-        '''Work library directory for rtl compilations
-           self.simpath +'/work'
+    def rtlsimpath(self):
+        '''Work library directory for rtl simutions
+           self.entitypath+'/Simulations/rtlsim'
 
            Returns
            -------
-               self.simpath +'/work'
+               self.entitypath+'/Simulations/rtlsim'
+
+        '''
+        if not hasattr(self, '_rtlsimpath'):
+            self._rtlsimpath = self.entitypath+'/Simulations/rtlsim'
+            if not os.path.exists(self._rtlsimpath):
+                os.makedirs(self._rtlsimpath)
+
+        return self._rtlsimpath
+    @property
+    def rtlworkpath(self):
+        '''Work library directory for rtl compilations
+           self.rtlsimpath +'/work'
+
+           Returns
+           -------
+               self.rtlsimpath +'/work'
 
         '''
         if not hasattr(self, '_rtlworkpath'):
-            self._rtlworkpath    =  self.simpath +'/work'
+            self._rtlworkpath    =  self.rtlsimpath +'/work'
         return self._rtlworkpath
 
     @property
@@ -300,7 +314,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     +' work.tb_' + self.name  
                     + dostring)
         else:
-            dofile=self.simpath+'/dofile.do'
+            dofile=self.rtlsimpath+'/dofile.do'
             if os.path.isfile(dofile):
                 dostring=' -do "'+dofile+'"'
             else:
