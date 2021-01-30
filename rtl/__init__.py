@@ -45,7 +45,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         if hasattr(self,'_preserve_iofiles'):
             return self._preserve_iofiles
         else:
-            self._preserve_iofiles=False
+            self._preserve_iofiles = False
         return self._preserve_iofiles
 
     @preserve_iofiles.setter
@@ -506,7 +506,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self.write_infile()           
         self.execute_rtl_sim()            
         self.read_outfile()           
-        self.connect_outputs()         
+        self.connect_outputs() 
+        if not self.preserve_iofiles:
+            del(self.iofile_bundle)
+
 
 
     #This writes all infile
