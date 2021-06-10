@@ -376,6 +376,12 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # If input is not a file, look for corresponding file definition
             elif ioname in self.iofile_bundle.Members:
                 val=self.iofile_bundle.Members[ioname]
+                for name in val.ionames:
+                    # [TODO] Sanity check, only floating inputs make sense.
+                    if not name in self.tb.connectors.Members.keys():
+                        self.print_log(type='I', 
+                                msg='Creating non-existent IO connector %s for testbench' %(name))
+                        self.tb.connectors.new(name=name, cls='reg')
                 self.iofile_bundle.Members[ioname].verilog_connectors=\
                         self.tb.connectors.list(names=val.ionames)
                 self.tb.parameters.Members.update(val.rtlparam)
