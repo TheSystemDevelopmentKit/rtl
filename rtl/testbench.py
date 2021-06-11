@@ -206,6 +206,27 @@ class testbench(verilog_module):
             iofile_close=iofile_close+val.verilog_fclose
         iofile_close=iofile_close+'\n'
         return iofile_close 
+
+    @property
+    def misccmd(self):
+        """String
+        
+        Miscellaneous command string corresponding to self.rtlmisc -list in
+        the parent entity.
+        """
+        if not hasattr(self,'_misccmd'):
+            self._misccmd="// Manual commands\n"
+            mcmd = self.parent.rtlmisc
+            for cmd in mcmd:
+                self._misccmd += cmd + "\n"
+        return self._misccmd
+    
+    @misccmd.setter
+    def misccmd(self,value):
+        self._misccmd=value
+    @misccmd.deleter
+    def misccmd(self,value):
+        self._misccmd=None
    
     # This method 
     def define_testbench(self):
@@ -275,6 +296,7 @@ class testbench(verilog_module):
                 self.connector_definitions
                 self.assignments()
                 self.iofile_definitions
+                sefl.misccmd
                 self.dut_instance.instance
                 self.verilog_instance_members.items().instance (for all members)
                 self.connectors.verilog_inits()
@@ -292,8 +314,8 @@ class testbench(verilog_module):
 self.connector_definitions+\
 self.assignments() +\
 self.iofile_definitions+\
+self.misccmd+\
 """
-
 //DUT definition
 """+\
 self.dut_instance.instance

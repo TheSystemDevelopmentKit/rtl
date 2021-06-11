@@ -124,6 +124,27 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             #_classfile is an abstract property that must be defined in the class.
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
+    @property
+    def rtlmisc(self): 
+        """List<String>
+
+        List of manual commands to be pasted to the testbench. The strings are
+        pasted to their own lines (no linebreaks needed), and the syntax is
+        unchanged.
+
+        Example: creating a custm clock::
+
+            self.rtlmisc = []
+            self.rtlmisc.append('reg clock2;')
+            self.rtlmisc.append('initial clock2=\'b0;')
+            self.rtlmisc.append('always #(c_Ts2/2.0) clock2 = !clock2;')
+        """
+        if not hasattr(self, '_rtlmisc'):
+            self._rtlmisc = []
+        return self._rtlmisc
+    @rtlmisc.setter
+    def rtlmisc(self,value): 
+            self._rtlmisc = value
 
     @property
     def vlogsrcpath(self):
