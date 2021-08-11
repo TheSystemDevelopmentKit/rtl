@@ -308,26 +308,38 @@ class rtl_iofile(iofile):
         if not hasattr(self, '_Data'):
             self._Data=None
 
-        # build a numpy array from the dict and sort it by time column
-        diff_array = np.array([np.insert(signals, 0, time) for (time, signals) in self.DictData.items()])
+        else: 
+            if self.iotype=='event':
+                diff_array = np.array([np.insert(signals, 0, time) for (time, signals) in self.DictData.items()])
 
-        # populate None values from previous timestamps
-        transposed = np.transpose(diff_array)
-        for i in range(1, transposed.shape[0]):
-            for j in range(1, transposed.shape[1]):
-                if transposed[i,j] is None:
-                    transposed[i,j] = transposed[i, j-1]
-        io_array = np.transpose(transposed).astype(int)
-
-        return io_array
+                # populate None values from previous timestamps
+                transposed = np.transpose(diff_array)
+                for i in range(1, transposed.shape[0]):
+                    for j in range(1, transposed.shape[1]):
+                        if transposed[i,j] is None:
+                            transposed[i,j] = transposed[i, j-1]
+                self._Data = np.transpose(transposed).astype(int)
+        return self._Data
 
     # Setter - Takes a numpy array and converts it to the diff-based SortedDict
     @Data.setter
     def Data(self, value):
         # convert value to equivalent SortedDict representation
-        self.DictData = sc.SortedDict()
-        for row in value:
-            self.DictData[row[0]] = row[1:]
+        if self.iotype=='event':
+            for row in value:
+                self.DictData[row[0]] = row[1:]
+            # build a numpy array from the dict and sort it by time column
+            diff_array = np.array([np.insert(signals, 0, time) for (time, signals) in self.DictData.items()])
+
+            # populate None values from previous timestamps
+            transposed = np.transpose(diff_array)
+            for i in range(1, transposed.shape[0]):
+                for j in range(1, transposed.shape[1]):
+                    if transposed[i,j] is None:
+                        transposed[i,j] = transposed[i, j-1]
+            self._Data = np.transpose(transposed).astype(int)
+        else:
+            self._Data=value
 
     @property
     def DictData(self):
