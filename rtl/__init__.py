@@ -45,7 +45,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         if hasattr(self,'_preserve_iofiles'):
             return self._preserve_iofiles
         else:
-            self._preserve_iofiles=False
+            self._preserve_iofiles = False
         return self._preserve_iofiles
 
     @preserve_iofiles.setter
@@ -124,6 +124,27 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             #_classfile is an abstract property that must be defined in the class.
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
+    @property
+    def rtlmisc(self): 
+        """List<String>
+
+        List of manual commands to be pasted to the testbench. The strings are
+        pasted to their own lines (no linebreaks needed), and the syntax is
+        unchanged.
+
+        Example: creating a custm clock::
+
+            self.rtlmisc = []
+            self.rtlmisc.append('reg clock2;')
+            self.rtlmisc.append('initial clock2=\'b0;')
+            self.rtlmisc.append('always #(c_Ts2/2.0) clock2 = !clock2;')
+        """
+        if not hasattr(self, '_rtlmisc'):
+            self._rtlmisc = []
+        return self._rtlmisc
+    @rtlmisc.setter
+    def rtlmisc(self,value): 
+            self._rtlmisc = value
 
     @property
     def vlogsrcpath(self):
@@ -376,6 +397,12 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # If input is not a file, look for corresponding file definition
             elif ioname in self.iofile_bundle.Members:
                 val=self.iofile_bundle.Members[ioname]
+                for name in val.ionames:
+                    # [TODO] Sanity check, only floating inputs make sense.
+                    if not name in self.tb.connectors.Members.keys():
+                        self.print_log(type='I', 
+                                msg='Creating non-existent IO connector %s for testbench' %(name))
+                        self.tb.connectors.new(name=name, cls='reg')
                 self.iofile_bundle.Members[ioname].verilog_connectors=\
                         self.tb.connectors.list(names=val.ionames)
                 self.tb.parameters.Members.update(val.rtlparam)
@@ -506,7 +533,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self.write_infile()           
         self.execute_rtl_sim()            
         self.read_outfile()           
-        self.connect_outputs()         
+        self.connect_outputs() 
+        if not self.preserve_iofiles:
+            del(self.iofile_bundle)
+
 
 
     #This writes all infile
