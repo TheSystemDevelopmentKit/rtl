@@ -15,7 +15,7 @@ class verilog_connector(thesdk):
         self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire,reg,wire
         self.type=kwargs.get('type','') # signed
         self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
-        self.rl=kwargs.get('ll',0)      # Bus bus range right limit 0 by default
+        self.rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
         self.init=kwargs.get('init','') # Initial value
         self.connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
         self.ioformat=kwargs.get('ioformat','%d')# By default, connectors are handles as integers in file io.
@@ -70,7 +70,7 @@ class verilog_connector_bundle(Bundle):
         cls=kwargs.get('cls','')           # Input,output,inout,reg,wire,reg,wire
         type=kwargs.get('type','')         # signed
         ll=kwargs.get('ll',0)              # Bus range left limit 0 by default
-        rl=kwargs.get('ll',0)              # Bus bus range right limit 0 by default
+        rl=kwargs.get('rl',0)              # Bus bus range right limit 0 by default
         init=kwargs.get('init','')         # Initial value
         connect=kwargs.get('connect',None) # Can't be verilog connector by default. Would be recursive
         self.Members[name]=verilog_connector(name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
