@@ -309,7 +309,7 @@ class rtl_iofile(iofile):
             self._Data=None
 
         else: 
-            if self.iotype=='event':
+            if self.iotype=='event' and hasattr(self, '_DictData'):
                 diff_array = np.array([np.insert(signals, 0, time) for (time, signals) in self.DictData.items()])
 
                 # populate None values from previous timestamps
