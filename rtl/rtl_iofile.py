@@ -17,7 +17,6 @@ from thesdk import *
 from thesdk.iofile import iofile
 import numpy as np
 import pandas as pd
-import sortedcontainers as sc
 from rtl.connector import intend
 
 class rtl_iofile(iofile):
@@ -66,8 +65,6 @@ class rtl_iofile(iofile):
 
         except:
             self.print_log(type='F', msg="Verilog IO file definition failed")
-
-        self._DictData = None  # data structure for event-based IO data
 
 
     #Overload from iofile package
@@ -254,9 +251,7 @@ class rtl_iofile(iofile):
         return self._verilog_connector_datamap[name]
 
     def set_control_data(self,**kwargs):
-        '''Method to define event based data value with name, time, and value.
-        Uses a python dictionary instead of a numpy array for more efficient insertions.
-        The 'time' column acts as the dictionary key, the remaining columns are stored as the value.
+        '''Method to define event based data value with name,time, and value.
 
         Parameters
         ----------
@@ -272,72 +267,26 @@ class rtl_iofile(iofile):
         name=kwargs.get('name')
         val=kwargs.get('val')
         init=kwargs.get('init',int(0))
-
-        # sanity checks
-        assert isinstance(time, int), "Argument 'time' should have the type 'int'"
-
-        # Init Data and add first element
-        if self.DictData is None:
-            self.DictData = sc.SortedDict()
+        
+        # First, we initialize the data
+        if self.Data is None:
             if np.isscalar(init):
-                self.DictData[0] = (np.ones(len(self._verilog_connectors))*init).astype(int)
-            elif init.shape[1] == len(self._verilog_connectors)+1:
-                init_array = init.astype(int)
-                for row in init_array:
-                    self.DictData[row[0]] = row[1:]
-        # Add subsequent elements as diffs as follows:
-        # None -- no change
-        # int -- change signal to the given value
-        else:
-            # add a new row if the time is not yet in the dictionary
-            if time not in self.DictData:
-                # init diff as no change
-                self.DictData[time] = [None for _ in range(len(self._verilog_connectors))]
+                self.Data=(np.ones((1,len(self._verilog_connectors)+1))*init).astype(int)
+                self.Data[0,0]=int(time)
+            elif init.shape[1]==len(self._verilog_connectors)+1:
+                self.Data=init.astype(int)
+        else: #Lets manipulate
+            index=np.where(self.Data[:,0]==time)[0]
+            if index.size > 0:
+                # Alter existing value onwards from given time
+                self.Data[index[-1]:,self.connector_datamap(name=name)]=int(val)
+            else:
+                # Find the previous time, duplicate the row and alter the value
+                previndex=np.where(self.Data[:,0]<time)[0][-1]
+                self.Data=np.r_['0', self.Data[0:previndex+1,:], self.Data[previndex::,:]]
+                self.Data[previndex+1,0]=time
+                self.Data[previndex+1,self.connector_datamap(name=name)]=val
 
-            # change corresponding value
-            self.DictData[time][self.connector_datamap(name=name)-1] = val
-
-    # Overload self.Data accessors to keep them consistent with the assumption of using numpy arrays
-    # To hold IO data. These methods convert to and from the diff-based data structure used in this
-    # module. I.e. the self.Data property will look like an numpy array as seen from external modules
-    # while in reality it's using the more efficient SortedDict implementation internally.
-
-    # Getter - This takes the difference based format stored in DictData and converts it to a numpy array
-    @property
-    def Data(self):
-        if not hasattr(self, '_Data'):
-            self._Data=None
-
-        # build a numpy array from the dict and sort it by time column
-        diff_array = np.array([np.insert(signals, 0, time) for (time, signals) in self.DictData.items()])
-
-        # populate None values from previous timestamps
-        transposed = np.transpose(diff_array)
-        for i in range(1, transposed.shape[0]):
-            for j in range(1, transposed.shape[1]):
-                if transposed[i,j] is None:
-                    transposed[i,j] = transposed[i, j-1]
-        io_array = np.transpose(transposed).astype(int)
-
-        return io_array
-
-    # Setter - Takes a numpy array and converts it to the diff-based SortedDict
-    @Data.setter
-    def Data(self, value):
-        # convert value to equivalent SortedDict representation
-        self.DictData = sc.SortedDict()
-        for row in value:
-            self.DictData[row[0]] = row[1:]
-
-    @property
-    def DictData(self):
-        if not hasattr(self, '_Data'):
-            self._DictData=None
-        return self._DictData
-
-    @DictData.setter
-    def DictData(self, value):
-        self._DictData = value
 
     # Condition string for monitoring if the signals are unknown
     @property 
