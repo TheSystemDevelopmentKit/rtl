@@ -174,9 +174,8 @@ class rtl_iofile(iofile):
         if self.iotype=='sample':
             self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
         elif self.iotype=='event':
-            self._verilog_statdef='integer %s, %s, %s, %s, %s;\n' %(self.verilog_stat, 
-                    self.verilog_fptr, self.verilog_ctstamp, self.verilog_ptstamp, 
-                    self.verilog_tdiff)
+            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
+            self._verilog_statdef+='time %s, %s, %s;\n' %(self.verilog_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
             self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
             self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ptstamp) 
             for connector in self.verilog_connectors:
