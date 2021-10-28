@@ -77,7 +77,7 @@ class rtl_iofile(iofile):
 
         '''
         if not hasattr(self,'_file'):
-            self._file=self.parent.rtlsimpath +'/' + self.name \
+            self._file=self.parent.simpath +'/' + self.name \
                     + '_' + self.rndpart +'.txt'
         return self._file
 
