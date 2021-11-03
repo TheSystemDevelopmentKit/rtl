@@ -279,6 +279,38 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def vhdlentityfiles(self): 
             self._vhdlentityfiles = None 
 
+    # TODO: These will eventually refactor do-file location and contents
+    #@property
+    #def interactive_control(self):
+    #    ''' Content of the interactive rtl control file (.do -file).
+    #    '''
+    #    if not hasattr(self, '_interactive_control'):
+    #        self._interactive_control = ''
+    #    return self._interactive_control
+    #@interactive_control.setter
+    #def interactive_control(self,value): 
+    #    self._interactive_control = value
+
+    #@property
+    #def interactive_control_file(self):
+    #    ''' Path to interactive rtl control file (.do -file).
+
+    #    The content of the file is defined in interactive_control.
+    #    '''
+    #    if not hasattr(self, '_interactive_control_file'):
+    #        obsoletepath = '%s/Simulations/rtlsim/dofile.do' % (self.entitypath)
+    #        if os.path.exists(obsoletepath):
+    #            self.print_log(type='O',msg='Found deprecated do-file %s' % obsoletepath)
+    #            self.print_log(type='O',msg='Define the desired contents of the do-file in interactive_control -property in the testbench and delete the deprecated file.')
+    #            self.print_log(type='O',msg='Loading the deprecated file for now.')
+    #            self._interactive_control_file = obsoletepath
+    #        else:
+    #            self._interactive_control_file = '%s/dofile.do' % self.simpath
+    #    return self._interactive_control_file
+    #@interactive_control_file.setter
+    #def interactive_control_file(self,value): 
+    #    self._interactive_control_file = value
+
     @property
     def rtlcmd(self):
         '''Command used for simulation invocation
@@ -319,7 +351,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     +' work.tb_' + self.name  
                     + dostring)
         else:
-            dofile=self.simpath+'/dofile.do'
+            dofile='%s/Simulations/rtlsim/dofile.do' % self.entitypath
             if os.path.isfile(dofile):
                 dostring=' -do "'+dofile+'"'
             else:
