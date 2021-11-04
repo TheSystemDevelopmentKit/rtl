@@ -20,6 +20,7 @@ from thesdk import *
 import numpy as np
 import pandas as pd
 from functools import reduce
+import shutil
 
 from rtl.connector import intend
 from rtl.testbench import testbench as vtb
@@ -279,37 +280,60 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def vhdlentityfiles(self): 
             self._vhdlentityfiles = None 
 
-    # TODO: These will eventually refactor do-file location and contents
-    #@property
-    #def interactive_control(self):
-    #    ''' Content of the interactive rtl control file (.do -file).
-    #    '''
-    #    if not hasattr(self, '_interactive_control'):
-    #        self._interactive_control = ''
-    #    return self._interactive_control
-    #@interactive_control.setter
-    #def interactive_control(self,value): 
-    #    self._interactive_control = value
+    @property
+    def interactive_control_contents(self):
+        ''' Content of the interactive rtl control file (.do -file).
 
-    #@property
-    #def interactive_control_file(self):
-    #    ''' Path to interactive rtl control file (.do -file).
+        If this property is set, a new dofile gets written to the simulation
+        path.
 
-    #    The content of the file is defined in interactive_control.
-    #    '''
-    #    if not hasattr(self, '_interactive_control_file'):
-    #        obsoletepath = '%s/Simulations/rtlsim/dofile.do' % (self.entitypath)
-    #        if os.path.exists(obsoletepath):
-    #            self.print_log(type='O',msg='Found deprecated do-file %s' % obsoletepath)
-    #            self.print_log(type='O',msg='Define the desired contents of the do-file in interactive_control -property in the testbench and delete the deprecated file.')
-    #            self.print_log(type='O',msg='Loading the deprecated file for now.')
-    #            self._interactive_control_file = obsoletepath
-    #        else:
-    #            self._interactive_control_file = '%s/dofile.do' % self.simpath
-    #    return self._interactive_control_file
-    #@interactive_control_file.setter
-    #def interactive_control_file(self,value): 
-    #    self._interactive_control_file = value
+        For example, the contents can be defined in the top testbench as::
+
+            self.interactive_control_contents="""
+                add wave -position insertpoint \\
+                sim/:tb_inverter:A \\
+                sim/:tb_inverter:clock \\
+                sim/:tb_inverter:Z
+                run -all
+                wave zoom full
+            """
+        
+        '''
+        if not hasattr(self, '_interactive_control_contents'):
+            self._interactive_control_contents = ''
+        return self._interactive_control_contents
+    @interactive_control_contents.setter
+    def interactive_control_contents(self,value): 
+        self._interactive_control_contents = value
+
+    @property
+    def interactive_controlfile(self):
+        ''' Path to interactive rtl control file (.do -file).
+
+        The content of the file can be defined in interactive_control. If the
+        content is not set in interactive_control property, the do-file is read
+        from this file path.
+        '''
+        if not hasattr(self, '_interactive_controlfile'):
+            obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
+            dofilepath = '%s/dofile.do' % self.simpath
+            if os.path.exists(obsoletepath):
+                self.print_log(type='O',msg='Found deprecated do-file in %s' % obsoletepath)
+                if os.path.isfile(dofilepath):
+                    self.print_log(type='O',msg='File exists also in %s' % dofilepath)
+                else:
+                    self.print_log(type='O',msg='Copying the file to %s' % dofilepath)
+                    shutil.copyfile(obsoletepath,dofilepath)
+                self.print_log(type='O',msg='Please remove the deprecated file.')
+            elif self.interactive_control_contents != '':
+                self.print_log(type='I',msg='Creating %s' % dofilepath)
+                with open(dofilepath,'w') as dofile:
+                    dofile.write(self.interactive_control_contents)
+            self._interactive_controlfile = dofilepath
+        return self._interactive_controlfile
+    @interactive_controlfile.setter
+    def interactive_controlfile(self,value): 
+        self._interactive_controlfile = value
 
     @property
     def rtlcmd(self):
@@ -351,11 +375,13 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     +' work.tb_' + self.name  
                     + dostring)
         else:
-            dofile='%s/Simulations/rtlsim/dofile.do' % self.entitypath
+            dofile=self.interactive_controlfile
             if os.path.isfile(dofile):
                 dostring=' -do "'+dofile+'"'
+                self.print_log(type='D',msg='Using interactive control file %s' % dofile)
             else:
                 dostring=''
+                self.print_log(type='D',msg='No interactive control file set.')
             submission="" #Local execution
             rtlsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
                     + ' ' + gstring +' work.tb_' + self.name + dostring)
