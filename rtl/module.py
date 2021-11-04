@@ -9,7 +9,7 @@ Provides utilities to import Verilog modules to
 python environment.
 
 Initially written by Marko Kosunen, 2017
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 19:30
+Last modification by Okko Järvinen, 28.10.2021 07:55
 
 """
 import os
@@ -387,7 +387,7 @@ class verilog_module(thesdk):
 
         '''
         if not os.path.isfile(self.file):
-            print('Exporting verilog_module to %s.' %(self.file))
+            self.print_log(msg='Exporting verilog_module to %s.' %(self.file))
             with open(self.file, "w") as module_file:
                 module_file.write(self.definition)
 
@@ -395,7 +395,7 @@ class verilog_module(thesdk):
             self.print_log(type='F', msg=('Export target file %s exists.\n Force overwrite with force=True.' %(self.file)))
 
         elif kwargs.get('force'):
-            print('Forcing overwrite of verilog_module to %s.' %(self.file))
+            self.print_log(msg='Forcing overwrite of verilog_module to %s.' %(self.file))
             with open(self.file, "w") as module_file:
                 module_file.write(self.definition)
 

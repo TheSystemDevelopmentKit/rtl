@@ -220,33 +220,17 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._vlogtbsrc
 
     @property
-    def rtlsimpath(self):
-        '''Work library directory for rtl simutions
-           self.entitypath+'/Simulations/rtlsim'
-
-           Returns
-           -------
-               self.entitypath+'/Simulations/rtlsim'
-
-        '''
-        if not hasattr(self, '_rtlsimpath'):
-            self._rtlsimpath = self.entitypath+'/Simulations/rtlsim'
-            if not os.path.exists(self._rtlsimpath):
-                os.makedirs(self._rtlsimpath)
-
-        return self._rtlsimpath
-    @property
     def rtlworkpath(self):
         '''Work library directory for rtl compilations
-           self.rtlsimpath +'/work'
+           self.simpath +'/work'
 
            Returns
            -------
-               self.rtlsimpath +'/work'
+               self.simpath +'/work'
 
         '''
         if not hasattr(self, '_rtlworkpath'):
-            self._rtlworkpath    =  self.rtlsimpath +'/work'
+            self._rtlworkpath    =  self.simpath +'/work'
         return self._rtlworkpath
 
     @property
@@ -295,6 +279,38 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def vhdlentityfiles(self): 
             self._vhdlentityfiles = None 
 
+    # TODO: These will eventually refactor do-file location and contents
+    #@property
+    #def interactive_control(self):
+    #    ''' Content of the interactive rtl control file (.do -file).
+    #    '''
+    #    if not hasattr(self, '_interactive_control'):
+    #        self._interactive_control = ''
+    #    return self._interactive_control
+    #@interactive_control.setter
+    #def interactive_control(self,value): 
+    #    self._interactive_control = value
+
+    #@property
+    #def interactive_control_file(self):
+    #    ''' Path to interactive rtl control file (.do -file).
+
+    #    The content of the file is defined in interactive_control.
+    #    '''
+    #    if not hasattr(self, '_interactive_control_file'):
+    #        obsoletepath = '%s/Simulations/rtlsim/dofile.do' % (self.entitypath)
+    #        if os.path.exists(obsoletepath):
+    #            self.print_log(type='O',msg='Found deprecated do-file %s' % obsoletepath)
+    #            self.print_log(type='O',msg='Define the desired contents of the do-file in interactive_control -property in the testbench and delete the deprecated file.')
+    #            self.print_log(type='O',msg='Loading the deprecated file for now.')
+    #            self._interactive_control_file = obsoletepath
+    #        else:
+    #            self._interactive_control_file = '%s/dofile.do' % self.simpath
+    #    return self._interactive_control_file
+    #@interactive_control_file.setter
+    #def interactive_control_file(self,value): 
+    #    self._interactive_control_file = value
+
     @property
     def rtlcmd(self):
         '''Command used for simulation invocation
@@ -335,7 +351,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     +' work.tb_' + self.name  
                     + dostring)
         else:
-            dofile=self.rtlsimpath+'/dofile.do'
+            dofile='%s/Simulations/rtlsim/dofile.do' % self.entitypath
             if os.path.isfile(dofile):
                 dostring=' -do "'+dofile+'"'
             else:
@@ -503,43 +519,49 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def run_rtl(self):
         '''1) Creates testbench
            2) Defines the contens of the testbench
-           3) Creates connctors
+           3) Creates connectors
            4) Connects inputs
            5) Defines IO conditions
-           6) Defines IO Formats in testbench
+           6) Defines IO formats in testbench
            7) Generates testbench contents
            8) Exports the testbench to file
            9) Writes input files
            10) Executes the simulation
-           11) Read outputdiles 
+           11) Read outputfiles 
            12) Connects the outputs
 
            You should overload this method while creating the simulation 
            and debugging the testbench.
 
         '''
-        self.tb=vtb(self)             
-        self.tb.define_testbench()    
-        self.create_connectors()
-        self.connect_inputs()         
+        if self.load_state != '': 
+            # Loading a previously stored state
+            self._read_state()
+        else:
+            self.tb=vtb(self)             
+            self.tb.define_testbench()    
+            self.create_connectors()
+            self.connect_inputs()         
 
-        if hasattr(self,'define_io_conditions'):
-            self.define_io_conditions()   # Local, this is dependent on how you
-                                          # control the simulation
-                                          # i.e. when you want to read an write your IO's
-        self.format_ios()             
-        self.tb.generate_contents() 
-        self.tb.export(force=True)
-        self.write_infile()           
-        self.execute_rtl_sim()            
-        self.read_outfile()           
-        self.connect_outputs() 
-        if not self.preserve_iofiles:
-            del(self.iofile_bundle)
+            if hasattr(self,'define_io_conditions'):
+                self.define_io_conditions()   # Local, this is dependent on how you
+                                              # control the simulation
+                                              # i.e. when you want to read an write your IO's
+            self.format_ios()
+            self.tb.generate_contents()
+            self.tb.export(force=True)
+            self.write_infile()
+            self.execute_rtl_sim()
+            self.read_outfile()
+            self.connect_outputs()
+            # Save entity state
+            if self.save_state:
+                self._write_state()
+            # Clean simulation results
+            if not self.preserve_iofiles:
+                del(self.iofile_bundle)
 
-
-
-    #This writes all infile
+    #This writes all infiles
     def write_infile(self):
         ''' Writes the input files
 
@@ -566,6 +588,3 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             if val.dir=='out':
                 self.IOS.Members[name].Data=self.iofile_bundle.Members[name].Data
               
-
-
-
