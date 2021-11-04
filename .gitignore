@@ -1,5 +1,10 @@
-*.swp
-*.swo
-*.pyc
+**/__pycache__
+*.eps
+*.pdf
 *~
-
+*.swp
+*.nfs
+*.svn
+*.asv
+Makefile
+doc/build/**

@@ -285,7 +285,8 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         ''' Content of the interactive rtl control file (.do -file).
 
         If this property is set, a new dofile gets written to the simulation
-        path.
+        path. This takes precedence over the file pointed by
+        `interactive_controlfile`.
 
         For example, the contents can be defined in the top testbench as::
 
@@ -310,25 +311,28 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def interactive_controlfile(self):
         ''' Path to interactive rtl control file (.do -file).
 
-        The content of the file can be defined in interactive_control. If the
-        content is not set in interactive_control property, the do-file is read
-        from this file path.
+        The content of the file can be defined in `interactive_control`. If the
+        content is not set in `interactive_control` -property, the do-file is
+        read from this file path. Default path is `./dofile.do`.
         '''
         if not hasattr(self, '_interactive_controlfile'):
             obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
-            dofilepath = '%s/dofile.do' % self.simpath
+            dofilepath = '%s/dofile.do' % self.entitypath
             if os.path.exists(obsoletepath):
-                self.print_log(type='O',msg='Found deprecated do-file in %s' % obsoletepath)
-                if os.path.isfile(dofilepath):
-                    self.print_log(type='O',msg='File exists also in %s' % dofilepath)
-                else:
-                    self.print_log(type='O',msg='Copying the file to %s' % dofilepath)
-                    shutil.copyfile(obsoletepath,dofilepath)
-                self.print_log(type='O',msg='Please remove the deprecated file and use the `interactive_controlfile` attribute instead.')
+                self.print_log(type='O',msg='Found obsoleted do-file in %s' % obsoletepath)
+                self.print_log(type='O',msg='To fix the obsolete warning:')
+                self.print_log(type='O',msg='Move the obsoleted file %s to the default path %s' % (obsoletepath,dofilepath))
+                self.print_log(type='O',msg='Or, set a custom do-file path to self.interactive_controlfile.')
+                self.print_log(type='O',msg='Or, define the do-file contents in self.interactive_control_contents in your testbench.')
+                self.print_log(type='O',msg='Using the obsoleted file for now.')
+                dofilepath = obsoletepath
             elif self.interactive_control_contents != '':
-                self.print_log(type='I',msg='Creating %s' % dofilepath)
+                dofilepath = '%s/dofile.do' % self.simpath
+                self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % dofilepath)
                 with open(dofilepath,'w') as dofile:
                     dofile.write(self.interactive_control_contents)
+            elif os.path.isfile(dofilepath):
+                self.print_log(type='I',msg='Using existing control file %s' % dofilepath)
             self._interactive_controlfile = dofilepath
         return self._interactive_controlfile
     @interactive_controlfile.setter
@@ -528,7 +532,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        subprocess.check_output(self.rtlcmd, shell=True);
+        subprocess.check_output(self._rtlcmd, shell=True);
 
         count=0
         files_ok=False
