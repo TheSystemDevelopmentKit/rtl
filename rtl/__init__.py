@@ -327,6 +327,8 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='O',msg='Using the obsoleted file for now.')
                 dofilepath = obsoletepath
             elif self.interactive_control_contents != '':
+                if os.path.isfile(dofilepath):
+                    self.print_log(type='W',msg='Interactive control file %s ignored and interactive_control_contents used instead.' % dofilepath)
                 dofilepath = '%s/dofile.do' % self.simpath
                 self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % dofilepath)
                 with open(dofilepath,'w') as dofile:
