@@ -315,9 +315,26 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         content is not set in `interactive_control` -property, the do-file is
         read from this file path. Default path is `./dofile.do`.
         '''
-        if not hasattr(self, '_interactive_controlfile'):
-            obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
-            dofilepath = '%s/dofile.do' % self.entitypath
+        obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
+        dofilepath = '%s/dofile.do' % self.entitypath
+        newdofilepath = '%s/dofile.do' % self.simpath
+        # Property interactive_control_contents already given and new temporary
+        # file not yet created -> create new file and use that
+        if self.interactive_control_contents != '' and not os.path.isfile(newdofilepath):
+            # Check if a custom file path was given
+            if hasattr(self, '_interactive_controlfile'):
+                dofilepath = self._interactive_controlfile
+            # Give a warning if default/custom path contains a do-file already
+            if os.path.isfile(dofilepath):
+                self.print_log(type='W',msg='Interactive control file %s ignored and interactive_control_contents used instead.' % dofilepath)
+            # Write interactive_control_contents to a temporary file
+            self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % newdofilepath)
+            with open(newdofilepath,'w') as dofile:
+                dofile.write(self.interactive_control_contents)
+            self._interactive_controlfile = newdofilepath
+        # No contents or path given -> use default path (or obsolete path)
+        elif not hasattr(self, '_interactive_controlfile'):
+            # Nag about obsolete stuff
             if os.path.exists(obsoletepath):
                 self.print_log(type='O',msg='Found obsoleted do-file in %s' % obsoletepath)
                 self.print_log(type='O',msg='To fix the obsolete warning:')
@@ -325,17 +342,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='O',msg='Or, set a custom do-file path to self.interactive_controlfile.')
                 self.print_log(type='O',msg='Or, define the do-file contents in self.interactive_control_contents in your testbench.')
                 self.print_log(type='O',msg='Using the obsoleted file for now.')
-                dofilepath = obsoletepath
-            elif self.interactive_control_contents != '':
-                if os.path.isfile(dofilepath):
-                    self.print_log(type='W',msg='Interactive control file %s ignored and interactive_control_contents used instead.' % dofilepath)
-                dofilepath = '%s/dofile.do' % self.simpath
-                self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % dofilepath)
-                with open(dofilepath,'w') as dofile:
-                    dofile.write(self.interactive_control_contents)
-            elif os.path.isfile(dofilepath):
-                self.print_log(type='I',msg='Using existing control file %s' % dofilepath)
-            self._interactive_controlfile = dofilepath
+                self._interactive_controlfile = obsoletepath
+            else:
+                # Use default do-file location
+                self._interactive_controlfile = dofilepath
         return self._interactive_controlfile
     @interactive_controlfile.setter
     def interactive_controlfile(self,value): 
@@ -384,10 +394,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             dofile=self.interactive_controlfile
             if os.path.isfile(dofile):
                 dostring=' -do "'+dofile+'"'
-                self.print_log(type='D',msg='Using interactive control file %s' % dofile)
+                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
             else:
                 dostring=''
-                self.print_log(type='D',msg='No interactive control file set.')
+                self.print_log(type='I',msg='No interactive control file set.')
             submission="" #Local execution
             rtlsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
                     + ' ' + gstring +' work.tb_' + self.name + dostring)
