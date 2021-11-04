@@ -324,7 +324,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 else:
                     self.print_log(type='O',msg='Copying the file to %s' % dofilepath)
                     shutil.copyfile(obsoletepath,dofilepath)
-                self.print_log(type='O',msg='Please remove the deprecated file.')
+                self.print_log(type='O',msg='Please remove the deprecated file and use the `interactive_controlfile` attribute instead.')
             elif self.interactive_control_contents != '':
                 self.print_log(type='I',msg='Creating %s' % dofilepath)
                 with open(dofilepath,'w') as dofile:
