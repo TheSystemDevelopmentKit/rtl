@@ -313,11 +313,16 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         The content of the file can be defined in `interactive_control`. If the
         content is not set in `interactive_control` -property, the do-file is
-        read from this file path. Default path is `./dofile.do`.
+        read from this file path. Default path is
+        `./interactive_control_files/modelsim/dofile.do`.
         '''
+        dofiledir = '%s/interactive_control_files/modelsim' % self.entitypath
+        dofilepath = '%s/dofile.do' % dofiledir
         obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
-        dofilepath = '%s/dofile.do' % self.entitypath
         newdofilepath = '%s/dofile.do' % self.simpath
+        if not os.path.exists(dofiledir):
+            self.print_log(type='I',msg='Creating %s' % dofiledir)
+            os.makedirs(dofiledir)
         # Property interactive_control_contents already given and new temporary
         # file not yet created -> create new file and use that
         if self.interactive_control_contents != '' and not os.path.isfile(newdofilepath):
