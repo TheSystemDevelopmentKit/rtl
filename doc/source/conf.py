@@ -27,7 +27,7 @@ author = 'Marko Kosunen'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = 'v1.3'
+release = 'v1.7'
 
 autoclass_content='both'
 
@@ -112,7 +112,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'verilogdoc'
+htmlhelp_basename = 'rtldoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -139,8 +139,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'verilog.tex', 'verilog Documentation',
-     'Marko Kosunen', 'manual'),
+    (master_doc, 'rtl.tex', 'rtl Documentation',
+     author, 'manual'),
 ]
 
 
@@ -149,7 +149,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'verilog', 'verilog Documentation',
+    (master_doc, 'rtl', 'rtl Documentation',
      [author], 1)
 ]
 
@@ -160,8 +160,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'verilog', 'verilog Documentation',
-     author, 'verilog', 'One line description of project.',
+    (master_doc, 'rtl', 'rtl Documentation',
+     author, 'rtl', 'One line description of project.',
      'Miscellaneous'),
 ]
 
