@@ -497,11 +497,12 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
          '''
         for ioname,val in self.iofile_bundle.Members.items():
-            if val.dir is 'out' \
-                    and ((val.datatype is 'sint' ) or (val.datatype is 'scomplex')):
+            if val.dir is 'out'
                 if val.ionames:
                     for assocname in val.ionames:
-                        self.tb.connectors.Members[assocname].type='signed'
+                        if ((val.datatype is 'sint' ) or (val.datatype is 'scomplex')):
+                            self.tb.connectors.Members[assocname].type='signed'
+                        self.print_log(type='I', msg='Setting format of %s to %s' %(assocname, val.ioformat))
                         self.tb.connectors.Members[assocname].ioformat=val.ioformat
                 else:
                     self.print_log(type='F', 
@@ -509,6 +510,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             elif val.dir is 'in':
                 if val.ionames:
                     for assocname in val.ionames:
+                        self.print_log(type='I', msg='Setting format of %s to %s' %(assocname, val.ioformat))
                         self.tb.connectors.Members[assocname].ioformat=val.ioformat
                 else:
                     self.print_log(type='F', 
@@ -581,6 +583,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            and debugging the testbench.
 
         '''
+<<<<<<< Updated upstream
         if self.load_state != '': 
             # Loading a previously stored state
             self._read_state()
@@ -609,6 +612,55 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 del(self.iofile_bundle)
 
     #This writes all infiles
+||||||| constructed merge base
+        self.tb=vtb(self)             
+        self.tb.define_testbench()    
+        self.create_connectors()
+        self.connect_inputs()         
+
+        if hasattr(self,'define_io_conditions'):
+            self.define_io_conditions()   # Local, this is dependent on how you
+                                          # control the simulation
+                                          # i.e. when you want to read an write your IO's
+        print('PERSEE')
+        self.format_ios()             
+        self.tb.generate_contents() 
+        self.tb.export(force=True)
+        self.write_infile()           
+        self.execute_rtl_sim()            
+        self.read_outfile()           
+        self.connect_outputs() 
+        if not self.preserve_iofiles:
+            del(self.iofile_bundle)
+
+
+
+    #This writes all infile
+=======
+        self.tb=vtb(self)             
+        self.tb.define_testbench()    
+        self.create_connectors()
+        self.connect_inputs()         
+
+        if hasattr(self,'define_io_conditions'):
+            self.define_io_conditions()   # Local, this is dependent on how you
+                                          # control the simulation
+                                          # i.e. when you want to read an write your IO's
+        print('PERSEE')
+        self.format_ios()             
+        self.tb.generate_contents() 
+        self.tb.export(force=True)
+        self.write_infile()           
+        self.execute_rtl_sim()            
+        self.read_outfile()           
+        self.connect_outputs() 
+        if not self.preserve_iofiles:
+            del(self.iofile_bundle)
+
+
+
+    #This writes all infile
+>>>>>>> Stashed changes
     def write_infile(self):
         ''' Writes the input files
 
