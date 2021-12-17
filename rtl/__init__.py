@@ -497,24 +497,15 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
          '''
         for ioname,val in self.iofile_bundle.Members.items():
-            if val.dir is 'out'
-                if val.ionames:
-                    for assocname in val.ionames:
+            if val.ionames:
+                for assocname in val.ionames:
+                    if val.dir is 'out'
                         if ((val.datatype is 'sint' ) or (val.datatype is 'scomplex')):
                             self.tb.connectors.Members[assocname].type='signed'
-                        self.print_log(type='I', msg='Setting format of %s to %s' %(assocname, val.ioformat))
-                        self.tb.connectors.Members[assocname].ioformat=val.ioformat
-                else:
-                    self.print_log(type='F', 
-                        msg='List of associated ionames no defined for IO %s\n. Provide it as list of strings' %(ioname))
-            elif val.dir is 'in':
-                if val.ionames:
-                    for assocname in val.ionames:
-                        self.print_log(type='I', msg='Setting format of %s to %s' %(assocname, val.ioformat))
-                        self.tb.connectors.Members[assocname].ioformat=val.ioformat
-                else:
-                    self.print_log(type='F', 
-                        msg='List of associated ionames no defined for IO %s\n. Provide it as list of strings' %(ioname))
+                self.tb.connectors.Members[assocname].ioformat=val.ioformat
+            else:
+                self.print_log(type='F', 
+                    msg='List of associated ionames not defined for IO %s\n. Provide it as list of strings' %(ioname))
 
 
     def execute_rtl_sim(self):
