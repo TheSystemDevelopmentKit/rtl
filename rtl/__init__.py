@@ -502,7 +502,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     if val.dir is 'out':
                         if ((val.datatype is 'sint' ) or (val.datatype is 'scomplex')):
                             self.tb.connectors.Members[assocname].type='signed'
-                self.tb.connectors.Members[assocname].ioformat=val.ioformat
+                    self.tb.connectors.Members[assocname].ioformat=val.ioformat
             else:
                 self.print_log(type='F', 
                     msg='List of associated ionames not defined for IO %s\n. Provide it as list of strings' %(ioname))
@@ -600,27 +600,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # Clean simulation results
             if not self.preserve_iofiles:
                 del(self.iofile_bundle)
-
-    #This writes all infiles
-        self.tb=vtb(self)             
-        self.tb.define_testbench()    
-        self.create_connectors()
-        self.connect_inputs()         
-
-        if hasattr(self,'define_io_conditions'):
-            self.define_io_conditions()   # Local, this is dependent on how you
-                                          # control the simulation
-                                          # i.e. when you want to read an write your IO's
-        self.format_ios()             
-        self.tb.generate_contents() 
-        self.tb.export(force=True)
-        self.write_infile()           
-        self.execute_rtl_sim()            
-        self.read_outfile()           
-        self.connect_outputs() 
-        if not self.preserve_iofiles:
-            del(self.iofile_bundle)
-
 
 
     #This writes all infile
