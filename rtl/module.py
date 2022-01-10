@@ -109,6 +109,7 @@ class verilog_module(thesdk):
             dut=''
             # Extract the module definition
             self._ios=verilog_connector_bundle()
+            self.print_log(type='I', msg="{}".format(self.file))
             if os.path.isfile(self.file):
                 with open(self.file) as infile:
                     wholefile=infile.readlines()
@@ -168,6 +169,8 @@ class verilog_module(thesdk):
                             signal.connect.connect=signal
 
                             self._ios.Members[signal.name]=signal
+            else:
+                self.print_log(type='F', msg='File does not exist: %s' % self.file)
         return self._ios
 
     # Setting principle, assign a dict

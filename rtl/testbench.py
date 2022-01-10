@@ -50,15 +50,19 @@ class testbench(verilog_module):
               None
 
         '''
+
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog testbench not given")
         else:
             self.parent=parent
         try:  
             # Testbench is always verilog
-            self._file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '.sv'
+            self._file=self.parent.simvlogpath + '/tb_' + self.parent.name + '.sv'
             if self.parent.model=='sv':
-                self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
+                if parent.generate_verilog:
+                    self._dutfile=self.parent.simvlogpath+ '/' + self.parent.name + '.v'
+                else:
+                    self._dutfile=self.parent.simvlogpath+ '/' + self.parent.name + '.sv'
             elif self.parent.model=='vhdl':
                 self._dutfile=self.parent.vhdlsrcpath + '/' + self.parent.name + '.vhd'
 
