@@ -32,7 +32,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     
     """
 
-    #These need to be converted to abstact properties
+    # These need to be converted to abstact properties
     def __init__(self):
         pass
 
@@ -43,9 +43,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         If True, do not delete file IO files after 
         simulations. Useful for debugging the file IO"""
 
-        if hasattr(self,'_preserve_iofiles'):
-            return self._preserve_iofiles
-        else:
+        if not hasattr(self,'_preserve_iofiles'):
             self._preserve_iofiles = False
         return self._preserve_iofiles
     @preserve_iofiles.setter
@@ -53,31 +51,14 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self._preserve_iofiles=value
 
     @property
-    def generate_verilog(self):
-        """True | False (default)
-
-        Used to indicate if the entity is a chisel generator and should
-        generate verilog output before starting simulation.
-        """
-        if not hasattr(self, '_generate_verilog'):
-            self._generate_verilog = False
-        return self._generate_verilog
-    @generate_verilog.setter
-    def generate_verilog(self, value):
-        self._generate_verilog = value
-
-    @property
     def interactive_rtl(self):
         """ True | False (default)
         
         Launch simulator in local machine with GUI."""
 
-        if hasattr(self,'_interactive_rtl'):
-            return self._interactive_rtl
-        else:
-            self._interactive_rtl=False
+        if not hasattr(self,'_interactive_rtl'):
+            self._interactive_rtl = False
         return self._interactive_rtl
-
     @interactive_rtl.setter
     def interactive_rtl(self,value):
         self._interactive_rtl=value
@@ -138,6 +119,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             #_classfile is an abstract property that must be defined in the class.
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
+
     @property
     def rtlmisc(self): 
         """List<String>
@@ -177,94 +159,19 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     #No setter, no deleter.
 
     @property
-    def simvlogpath(self):
-        '''Verilog source directory for rtl simulations
-           self.simpath + '/src'
+    def vlogsrc(self):
+        '''Verilog source file
+           self.vlogsrcpath/self.name.sv
 
            Returns
            -------
-               self.simpath + '/src'
-        '''
-        if not hasattr(self, '_simvlogpath'):
-            self._simvlogpath = os.path.join(self.simpath, 'src')
-        return self._simvlogpath
-
-    @property
-    def chiselargs(self):
-        ''' Dictionary of command line arguments passed to chisel generator
+               self.vlogsrcpath + '/' + self.name + self.vlogext
 
         '''
-        if not hasattr(self, '_chiselargs'):
-            self._chiselargs = dict()
-        return self._chiselargs
-    @chiselargs.setter
-    def chiselargs(self, value):
-        self._chiselargs = value
-    @chiselargs.deleter
-    def chiselargs(self):
-        self._chiselargs = None
-
-    @property
-    def chiselpath(self):
-        ''' Chisel generator path relative to entity root
-
-            Returns
-            -------
-                self.entitypath + '/chisel'
-        '''
-        if not hasattr(self, '_chiselpath'):
-            self._chiselpath =  os.path.join(self.entitypath, 'chisel')
-        return self._chiselpath
-
-    @property
-    def chiselpackage(self):
-        ''' Chisel package name that contains the executable generator main class.
-            By default the chisel package name is the entity name in lowercase.
-            Can be overridden if this assumption is not valid.
-
-        ''' 
-        if not hasattr(self, '_chiselpackage'):
-            self._chiselpackage = self.name.lower()
-        return self._chiselpackage
-    @chiselpackage.setter
-    def chiselpackage(self, value):
-        self._chiselpackage = value
-    @chiselpackage.deleter
-    def chiselpackage(self):
-        self._chiselpackage = None
-
-    @property
-    def chiselmain(self):
-        ''' Chisel main class that is executed as the generator.
-            By default the main class name is the entity name.
-            Can be overridden if this assumption is not valid.
-            The name of the generated top-level module must match entity name.
-
-        '''
-        if not hasattr(self, '_chiselmain'):
-            self._chiselmain = self.name
-        return self._chiselmain
-    @chiselmain.setter
-    def chiselmain(self, value):
-        self._chiselmain = value
-    @chiselmain.deleter
-    def chiselmain(self):
-        self._chiselmain = None
-
-    @property
-    def chiselcmd(self):
-        """ Sbt command used to execute the Chisel generator to elaborate it into verilog
-
-        """
-        # Leave user-defined -td or --target-dir unchanged
-        if not ('-td' in self.chiselargs.keys() or '--target-dir' in self.chiselargs.keys()):
-            self.chiselargs['--target-dir'] = self.simvlogpath
-
-        args_str = ' '.join([' '.join(pair) for pair in self.chiselargs.items()])
-        self._chiselcmd = "cd %s && sbt 'runMain %s.%s %s' && sync %s" \
-                % (self.chiselpath, self.chiselpackage, self.chiselmain, args_str, self.simvlogpath)
-            
-        return self._chiselcmd
+        if not hasattr(self, '_vlogsrc'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._vlogsrc=self.vlogsrcpath + '/' + self.name + self.vlogext
+        return self._vlogsrc
 
     @property
     def vhdlsrcpath(self):
@@ -283,38 +190,19 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._vhdlsrcpath
 
     @property
-    def vlogsrc(self):
-        '''Verilog source file
-           self.vlogsrcpath/self.name.sv'
+    def vlogext(self):
+        ''' File extension for verilog files
 
-           Returns
-           -------
-               self.vlogsrcpath + '/' + self.name + '.sv'
+            Default is '.sv', but this can be overridden to support, e.g.
+            generators like Chisel that always use the '.v' prefix.
 
         '''
-        if not hasattr(self, '_vlogsrc'):
-            #_classfile is an abstract property that must be defined in the class.
-            self._vlogsrc=self.vlogsrcpath + '/' + self.name + '.sv'
-        return self._vlogsrc
-
-    @property
-    def simvlogsrc(self):
-        '''Verilog simulation source file
-           self.simvlogpath/self.name.sv'
-           Chisel generated files have .v extension
-
-           Returns
-           -------
-               self.simvlogpath + '/' + self.name + '.sv'
-
-        '''
-        if not hasattr(self, '_simvlogsrc'):
-            if not self.generate_verilog:
-                self._simvlogsrc=self.simvlogpath+ '/' + self.name + '.sv'
-            else:
-                # Chisel outputs plain verilog instead of SystemVerilog
-                self._simvlogsrc=self.simvlogpath+ '/' + self.name + '.v'
-        return self._simvlogsrc
+        if not hasattr(self, '_vlogext'):
+            self._vlogext = '.sv'
+        return self._vlogext
+    @vlogext.setter
+    def vlogext(self, value):
+        self._vlogext = value
 
     @property
     def vhdlsrc(self):
@@ -332,14 +220,53 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._vhdlsrc
 
     @property
-    def vlogtbsrc(self):
-        '''Verilog testbench source file
+    def simrtlpath(self):
+        '''HDL source directory for rtl simulations
+           self.simpath + '/rtl'
+
+           Returns
+           -------
+               self.simpath + '/rtl'
+        '''
+        if not hasattr(self, '_simrtlpath'):
+            self._simrtlpath = os.path.join(self.simpath, 'rtl')
+            try:
+                if not os.path.exists(self._simrtlpath):
+                    self.print_log(type='I', msg='Creating %s' % self._simrtlpath)
+                    os.makedirs(self._simrtlpath)
+            except:
+                self.print_log(type='E', msg='Failed to create %s' % self.simrtlpath)
+        return self._simrtlpath
+
+    @property
+    def simdut(self):
+        ''' Top-level source file for Device Under Test in simulations directory
+
+            Returns
+            -------
+                self.simrtlpath + self.name + self.vlogext for 'sv' model
+                self.simrtlpath + self.name + '.vhd' for 'vhdl' model
+        '''
+        if not hasattr(self, '_simdut'):
+            extension = None
+            if self.model == 'sv':
+                extension = self.vlogext
+            elif self.model == 'vhdl':
+                extension = '.vhd'
+            else:
+                self.print_log(type='F', msg='Unsupported model %s' % self.model)
+            self._simdut = os.path.join(self.simrtlpath, self.name+extension)
+        return self._simdut
+
+    @property
+    def simtb(self):
+        ''' Verilog testbench source file in simulations directory
 
         '''
-        if not hasattr(self, '_vlogtbsrc'):
+        if not hasattr(self, '_simtb'):
             #_classfile is an abstract property that must be defined in the class.
-            self._vlogtbsrc=self.simvlogpath + '/tb_' + self.name + '.sv'
-        return self._vlogtbsrc
+            self._simtb=self.simrtlpath + '/tb_' + self.name + '.sv'
+        return self._simtb
 
     @property
     def rtlworkpath(self):
@@ -388,7 +315,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vhdlentityfiles(self):
-        '''List of VHDL entity files to be compiled in addiotion to DUT
+        '''List of VHDL entity files to be compiled in addition to DUT
 
         '''
         if not hasattr(self, '_vhdlentityfiles'):
@@ -484,10 +411,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         submission=self.verilog_submission
-        rtllibcmd =  'vlib ' +  self.rtlworkpath + ' && sync ' + self.rtlworkpath
+        rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
 
-        vlogmodulesstring=' '.join([ self.simvlogpath + '/'+ 
+        vlogmodulesstring=' '.join([ self.simrtlpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
 
         # TODO: use source copied to simulation dir
@@ -496,10 +423,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if self.model=='sv':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simvlogsrc + ' ' + self.vlogtbsrc )
+                    + ' ' + self.simdut + ' ' + self.simtb )
         elif self.model=='vhdl':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.vlogtbsrc )
+                    + ' ' + self.simtb )
 
         vhdlcompcmd = ( 'vcom -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
@@ -533,6 +460,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self._rtlcmd =  rtllibcmd  +\
                     ' && ' + rtllibmapcmd +\
                     ' && ' + vlogcompcmd +\
+                    ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd
         elif self.model=='vhdl':
@@ -540,6 +468,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     ' && ' + rtllibmapcmd +\
                     ' && ' + vhdlcompcmd +\
                     ' && ' + vlogcompcmd +\
+                    ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd
 
@@ -629,31 +558,51 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='F', 
                     msg='List of associated ionames not defined for IO %s\n. Provide it as list of strings' %(ioname))
 
-    def execute_chisel_cmd(self):
-        '''Generates rtl sources from chisel generator
+    def copy_rtl_sources(self):
+        ''' Copy rtl sources to self.simrtlpath
+
         '''
-        self.print_log(type='I', msg='Executing external command: %s' % self.chiselcmd)
-        output = subprocess.check_output(self.chiselcmd, shell=True)
-        print(output.decode('utf-8'))
+        self.print_log(type='I', msg='Copying rtl sources to %s' % self.simrtlpath)
+        if self.model == 'sv':
+            # copy dut source
+            vlogsrc_exists = os.path.isfile(self.vlogsrc)   # verilog source present in self.entitypath/sv
+            simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
+            # if neither exist throw an fatal error (missing dut source)
+            if not vlogsrc_exists and not simdut_exists:
+                self.print_log(type='F', msg="Missing verilog source for 'sv' model at: %s" % self.vlogsrc)
+            # vlogsrc exists, simdut doesn't exist => copy vlogsrc to simdut
+            elif vlogsrc_exists and not simdut_exists:
+                self.print_log(type='I', msg='Copying %s to %s' % (self.vlogsrc, self.simdut))
+                shutil.copyfile(self.vlogsrc, self.simdut)
+            # vlogsrc doesn't exist, simdut exists (externally generated) => use externally generated simdut
+            elif not vlogsrc_exists and simdut_exists:
+                self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
+            # if both sources are present throw a fatal error (multiple conflicting source files)
+            else:
+                self.print_log(type='F', msg="Model 'sv' source %s conflicts with externally generated source %s"
+                        % (self.vlogsrc, self.simdut))
 
-    def copy_vlog_source(self):
-        try:
-            if not os.path.exists(self.simvlogpath):
-                os.makedirs(self.simvlogpath)
-        except:
-            self.print_log(type='E', msg='Failed to create %s' % self.simvlogpath)
+            # copy other verilog files
+            for modfile in self.vlogmodulefiles:
+                srcfile = os.path.join(self.vlogsrcpath, modfile)
+                dstfile = os.path.join(self.simrtlpath, modfile)
+                self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
+                shutil.copyfile(srcfile, dstfile)
 
-        # copy dut
-        shutil.copyfile(self.vlogsrc, self.simvlogsrc)
+        # nothing generates vhdl so simply copy all files to simrtlpath
+        elif self.model == 'vhdl':
+            shutil.copy(self.vhdlsrc, self.simrtlpath)
+            for entfile in self.vhdlentityfiles:
+                srcfile = os.path.join(self.vlogsrcpath, entfile)
+                dstfile = os.path.join(self.simrtlpath, entfile)
+                self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
+                shutil.copyfile(srcfile, dstfile)
 
-        # copy other verilog sources
-        for modfile in self.vlogmodulefiles:
-            srcfile = os.path.join(self.vlogsrcpath, modfile)
-            dstfile = os.path.join(self.simvlogpath, modfile)
-            shutil.copyfile(srcfile, dstfile)
-
-        # TODO: copy vhdl module files?
-        # TODO: flush buffered writes?
+        # flush cached writes to disk
+        output = subprocess.check_output("sync %s" % self.simrtlpath, shell=True)
+        output = output.decode('utf-8')
+        if len(output) != 0:
+            print(output)
 
     def execute_rtl_sim(self):
         '''Runs the rtl simulation in external simulator
@@ -689,7 +638,8 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        subprocess.check_output(self._rtlcmd, shell=True);
+        output = subprocess.check_output(self._rtlcmd, shell=True);
+        self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
 
         count=0
         files_ok=False
@@ -704,20 +654,19 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     files_ok=files_ok and os.path.isfile(file.file)
     
     def run_rtl(self):
-        '''1) Copy verilog sources to temporary simulation directory
-           2) Generate verilog source from chisel
-           3) Creates testbench
-           4) Defines the contens of the testbench
-           5) Creates connectors
-           6) Connects inputs
-           7) Defines IO conditions
-           8) Defines IO formats in testbench
-           9) Generates testbench contents
-           10) Exports the testbench to file
-           11) Writes input files
-           12) Executes the simulation
-           13) Read outputfiles 
-           14) Connects the outputs
+        '''1) Copies rtl sources to a temporary simulation directory
+           2) Creates a testbench
+           3) Defines the contens of the testbench
+           4) Creates connectors
+           5) Connects inputs
+           6) Defines IO conditions
+           7) Defines IO formats in testbench
+           8) Generates testbench contents
+           9) Exports the testbench to file
+           10) Writes input files
+           11) Executes the simulation
+           12) Read outputfiles 
+           13) Connects the outputs
 
            You should overload this method while creating the simulation 
            and debugging the testbench.
@@ -727,15 +676,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # Loading a previously stored state
             self._read_state()
         else:
-            # Profile simulation setup
-            # import cProfile, pstats
-            # profiler = cProfile.Profile()
-            # profiler.enable()
-
-            self.copy_vlog_source()
-            if self.generate_verilog:
-                self.execute_chisel_cmd()
-
+            self.copy_rtl_sources()
             self.tb=vtb(self)             
             self.tb.define_testbench()    
             self.create_connectors()
@@ -749,13 +690,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self.tb.generate_contents()
             self.tb.export(force=True)
             self.write_infile()
-
-            # Profile simulation setup
-            # profiler.disable()
-            # stats = pstats.Stats(profiler).sort_stats('cumtime')
-            # stats.print_stats()
-            # exit()
-
             self.execute_rtl_sim()
             self.read_outfile()
             self.connect_outputs()
@@ -765,7 +699,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # Clean simulation results
             if not self.preserve_iofiles:
                 del(self.iofile_bundle)
-
 
     #This writes all infile
     def write_infile(self):
@@ -786,8 +719,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                  self.iofile_bundle.Members[name].read()
 
     def connect_outputs(self):
-        '''Connects the ouput data from files to corresponding 
-        output IOs
+        '''Connects the ouput data from files to corresponding output IOs
 
         '''
         for name, val in self.iofile_bundle.Members.items():
