@@ -51,6 +51,21 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self._preserve_iofiles=value
 
     @property
+    def preserve_rtlfiles(self):  
+        """True | False (default)
+
+        If True, do not delete testbench and copy of DUT after simulations. Useful for
+        debugging testbench generation.
+        
+        """
+        if not hasattr(self,'_preserve_iofiles'):
+            self._preserve_rtlfiles=False
+        return self._preserve_iofiles
+    @preserve_rtlfiles.setter
+    def preserve_rtlfiles(self,value):
+        self._preserve_rtlfiles=value
+
+    @property
     def interactive_rtl(self):
         """ True | False (default)
         
@@ -237,6 +252,28 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             except:
                 self.print_log(type='E', msg='Failed to create %s' % self.rtlsimpath)
         return self._rtlsimpath
+
+    @rtlsimpath.deleter
+    def rtlsimpath(self):
+        if os.path.exists(self.rtlsimpath):
+            try:
+                for target in os.listdir(self.rtlsimpath):
+                    targetpath = '%s/%s' % (self.rtlsimpath,target)
+                    if self.preserve_rtlfiles:
+                        self.print_log(type='D',msg='Preserving %s' % targetpath)
+                    else:
+                        if os.path.isdir(targetpath):
+                            shutil.rmtree(targetpath)
+                        else:
+                            os.remove(targetpath)
+                        self.print_log(type='D',msg='Removing %s' % targetpath)
+            except:
+                self.print_log(type='W',msg='Could not remove %s' % targetpath)
+            try:
+                shutil.rmtree(self.rtlsimpath)
+                self.print_log(type='D',msg='Removing %s' % self.rtlsimpath)
+            except:
+                self.print_log(type='W',msg='Could not remove %s' %self.rtlsimpath)
 
     @property
     def simdut(self):
@@ -699,6 +736,8 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # Clean simulation results
             if not self.preserve_iofiles:
                 del(self.iofile_bundle)
+            if not self.preserve_rtlfiles:
+                del(self.rtlsimpath)
 
 
     #This writes all infile
