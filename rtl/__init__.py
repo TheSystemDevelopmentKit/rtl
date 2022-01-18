@@ -319,6 +319,15 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self._rtlworkpath = self.simpath +'/work'
         return self._rtlworkpath
 
+    @rtlworkpath.deleter
+    def rtlworkpath(self):
+        if os.path.exists(self.rtlworkpath):
+            try:
+                shutil.rmtree(self.rtlworkpath)
+                self.print_log(type='D',msg='Removing %s' % self.rtlworkpath)
+            except:
+                self.print_log(type='W',msg='Could not remove %s' %self.rtlworkpath)
+
     @property
     def rtlparameters(self): 
         '''Dictionary of parameters passed to the simulator 
@@ -704,6 +713,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            11) Executes the simulation
            12) Read outputfiles 
            13) Connects the outputs
+           14) Cleans up the intermediate files
 
            You should overload this method while creating the simulation 
            and debugging the testbench.
@@ -737,6 +747,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             if not self.preserve_iofiles:
                 del(self.iofile_bundle)
             if not self.preserve_rtlfiles:
+                del(self.rtlworkpath)
                 del(self.rtlsimpath)
 
 
