@@ -40,7 +40,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def preserve_iofiles(self):  
         """True | False (default)
 
-        If True, do not delete file IO files after 
+        If True, do not delete IO files after 
         simulations. Useful for debugging the file IO"""
 
         if not hasattr(self,'_preserve_iofiles'):
@@ -220,7 +220,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._vhdlsrc
 
     @property
-    def simrtlpath(self):
+    def rtlsimpath(self):
         '''HDL source directory for rtl simulations
            self.simpath + '/rtl'
 
@@ -228,24 +228,24 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            -------
                self.simpath + '/rtl'
         '''
-        if not hasattr(self, '_simrtlpath'):
-            self._simrtlpath = os.path.join(self.simpath, 'rtl')
+        if not hasattr(self, '_rtlsimpath'):
+            self._rtlsimpath = os.path.join(self.simpath, 'rtl')
             try:
-                if not os.path.exists(self._simrtlpath):
-                    self.print_log(type='I', msg='Creating %s' % self._simrtlpath)
-                    os.makedirs(self._simrtlpath)
+                if not os.path.exists(self._rtlsimpath):
+                    self.print_log(type='I', msg='Creating %s' % self._rtlsimpath)
+                    os.makedirs(self._rtlsimpath)
             except:
-                self.print_log(type='E', msg='Failed to create %s' % self.simrtlpath)
-        return self._simrtlpath
+                self.print_log(type='E', msg='Failed to create %s' % self.rtlsimpath)
+        return self._rtlsimpath
 
     @property
     def simdut(self):
-        ''' Top-level source file for Device Under Test in simulations directory
+        ''' Source file for Device Under Test in simulations directory
 
             Returns
             -------
-                self.simrtlpath + self.name + self.vlogext for 'sv' model
-                self.simrtlpath + self.name + '.vhd' for 'vhdl' model
+                self.rtlsimpath + self.name + self.vlogext for 'sv' model
+                self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
         '''
         if not hasattr(self, '_simdut'):
             extension = None
@@ -255,7 +255,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 extension = '.vhd'
             else:
                 self.print_log(type='F', msg='Unsupported model %s' % self.model)
-            self._simdut = os.path.join(self.simrtlpath, self.name+extension)
+            self._simdut = os.path.join(self.rtlsimpath, self.name+extension)
         return self._simdut
 
     @property
@@ -265,7 +265,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_simtb'):
             #_classfile is an abstract property that must be defined in the class.
-            self._simtb=self.simrtlpath + '/tb_' + self.name + '.sv'
+            self._simtb=self.rtlsimpath + '/tb_' + self.name + '.sv'
         return self._simtb
 
     @property
@@ -414,7 +414,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
 
-        vlogmodulesstring=' '.join([ self.simrtlpath + '/'+ 
+        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
 
         # TODO: use source copied to simulation dir
@@ -542,7 +542,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     # Can these be deducted?
     def format_ios(self):
         '''Verilog module does not contain information if 
-        the bus is signed or not
+        the bus is signed or not.
         Prior to writing output file, the type of the 
         connecting wire defines how the bus values are interpreted.
 
@@ -559,10 +559,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     msg='List of associated ionames not defined for IO %s\n. Provide it as list of strings' %(ioname))
 
     def copy_rtl_sources(self):
-        ''' Copy rtl sources to self.simrtlpath
+        ''' Copy rtl sources to self.rtlsimpath
 
         '''
-        self.print_log(type='I', msg='Copying rtl sources to %s' % self.simrtlpath)
+        self.print_log(type='I', msg='Copying rtl sources to %s' % self.rtlsimpath)
         if self.model == 'sv':
             # copy dut source
             vlogsrc_exists = os.path.isfile(self.vlogsrc)   # verilog source present in self.entitypath/sv
@@ -579,27 +579,27 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
             # if both sources are present throw a fatal error (multiple conflicting source files)
             else:
-                self.print_log(type='F', msg="Model 'sv' source %s conflicts with externally generated source %s"
-                        % (self.vlogsrc, self.simdut))
+                self.print_log(type='W', msg="Both model 'sv' source %s and generated source %s exist. Using %s."
+                        % (self.vlogsrc, self.simdut, self.simdut))
 
             # copy other verilog files
             for modfile in self.vlogmodulefiles:
                 srcfile = os.path.join(self.vlogsrcpath, modfile)
-                dstfile = os.path.join(self.simrtlpath, modfile)
+                dstfile = os.path.join(self.rtlsimpath, modfile)
                 self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                 shutil.copyfile(srcfile, dstfile)
 
-        # nothing generates vhdl so simply copy all files to simrtlpath
+        # nothing generates vhdl so simply copy all files to rtlsimpath
         elif self.model == 'vhdl':
-            shutil.copy(self.vhdlsrc, self.simrtlpath)
+            shutil.copy(self.vhdlsrc, self.rtlsimpath)
             for entfile in self.vhdlentityfiles:
                 srcfile = os.path.join(self.vlogsrcpath, entfile)
-                dstfile = os.path.join(self.simrtlpath, entfile)
+                dstfile = os.path.join(self.rtlsimpath, entfile)
                 self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                 shutil.copyfile(srcfile, dstfile)
 
         # flush cached writes to disk
-        output = subprocess.check_output("sync %s" % self.simrtlpath, shell=True)
+        output = subprocess.check_output("sync %s" % self.rtlsimpath, shell=True)
         output = output.decode('utf-8')
         if len(output) != 0:
             print(output)
@@ -699,6 +699,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # Clean simulation results
             if not self.preserve_iofiles:
                 del(self.iofile_bundle)
+
 
     #This writes all infile
     def write_infile(self):
