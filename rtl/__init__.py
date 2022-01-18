@@ -32,7 +32,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     
     """
 
-    #These need to be converted to abstact properties
+    # These need to be converted to abstact properties
     def __init__(self):
         pass
 
@@ -40,18 +40,30 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def preserve_iofiles(self):  
         """True | False (default)
 
-        If True, do not delete file IO files after 
+        If True, do not delete IO files after 
         simulations. Useful for debugging the file IO"""
 
-        if hasattr(self,'_preserve_iofiles'):
-            return self._preserve_iofiles
-        else:
+        if not hasattr(self,'_preserve_iofiles'):
             self._preserve_iofiles = False
         return self._preserve_iofiles
-
     @preserve_iofiles.setter
     def preserve_iofiles(self,value):
         self._preserve_iofiles=value
+
+    @property
+    def preserve_rtlfiles(self):  
+        """True | False (default)
+
+        If True, do not delete testbench and copy of DUT after simulations. Useful for
+        debugging testbench generation.
+        
+        """
+        if not hasattr(self,'_preserve_rtlfiles'):
+            self._preserve_rtlfiles=False
+        return self._preserve_rtlfiles
+    @preserve_rtlfiles.setter
+    def preserve_rtlfiles(self,value):
+        self._preserve_rtlfiles=value
 
     @property
     def interactive_rtl(self):
@@ -59,12 +71,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         
         Launch simulator in local machine with GUI."""
 
-        if hasattr(self,'_interactive_rtl'):
-            return self._interactive_rtl
-        else:
-            self._interactive_rtl=False
+        if not hasattr(self,'_interactive_rtl'):
+            self._interactive_rtl = False
         return self._interactive_rtl
-
     @interactive_rtl.setter
     def interactive_rtl(self,value):
         self._interactive_rtl=value
@@ -125,6 +134,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             #_classfile is an abstract property that must be defined in the class.
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
+
     @property
     def rtlmisc(self): 
         """List<String>
@@ -153,16 +163,30 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self.entitypath/sv
 
             Returns
-            _______
+            -------
                 self.entitypath/sv
 
 
         '''
         if not hasattr(self, '_vlogsrcpath'):
-            #_classfile is an abstract property that must be defined in the class.
             self._vlogsrcpath  =  self.entitypath + '/sv'
         return self._vlogsrcpath
     #No setter, no deleter.
+
+    @property
+    def vlogsrc(self):
+        '''Verilog source file
+           self.vlogsrcpath/self.name.sv
+
+           Returns
+           -------
+               self.vlogsrcpath + '/' + self.name + self.vlogext
+
+        '''
+        if not hasattr(self, '_vlogsrc'):
+            #_classfile is an abstract property that must be defined in the class.
+            self._vlogsrc=self.vlogsrcpath + '/' + self.name + self.vlogext
+        return self._vlogsrc
 
     @property
     def vhdlsrcpath(self):
@@ -181,19 +205,19 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._vhdlsrcpath
 
     @property
-    def vlogsrc(self):
-        '''Verilog source file
-           self.vlogsrcpath/self.name.sv'
+    def vlogext(self):
+        ''' File extension for verilog files
 
-           Returns
-           -------
-               self.vlogsrcpath + '/' + self.name + '.sv'
+            Default is '.sv', but this can be overridden to support, e.g.
+            generators like Chisel that always use the '.v' prefix.
 
         '''
-        if not hasattr(self, '_vlogsrc'):
-            #_classfile is an abstract property that must be defined in the class.
-            self._vlogsrc=self.vlogsrcpath + '/' + self.name + '.sv'
-        return self._vlogsrc
+        if not hasattr(self, '_vlogext'):
+            self._vlogext = '.sv'
+        return self._vlogext
+    @vlogext.setter
+    def vlogext(self, value):
+        self._vlogext = value
 
     @property
     def vhdlsrc(self):
@@ -211,14 +235,75 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._vhdlsrc
 
     @property
-    def vlogtbsrc(self):
-        '''Verilog testbench source file
+    def rtlsimpath(self):
+        '''HDL source directory for rtl simulations
+           self.simpath + '/rtl'
+
+           Returns
+           -------
+               self.simpath + '/rtl'
+        '''
+        if not hasattr(self, '_rtlsimpath'):
+            self._rtlsimpath = os.path.join(self.simpath, 'rtl')
+            try:
+                if not os.path.exists(self._rtlsimpath):
+                    self.print_log(type='I', msg='Creating %s' % self._rtlsimpath)
+                    os.makedirs(self._rtlsimpath)
+            except:
+                self.print_log(type='E', msg='Failed to create %s' % self.rtlsimpath)
+        return self._rtlsimpath
+
+    @rtlsimpath.deleter
+    def rtlsimpath(self):
+        if os.path.exists(self.rtlsimpath):
+            try:
+                for target in os.listdir(self.rtlsimpath):
+                    targetpath = '%s/%s' % (self.rtlsimpath,target)
+                    if self.preserve_rtlfiles:
+                        self.print_log(type='D',msg='Preserving %s' % targetpath)
+                    else:
+                        if os.path.isdir(targetpath):
+                            shutil.rmtree(targetpath)
+                        else:
+                            os.remove(targetpath)
+                        self.print_log(type='D',msg='Removing %s' % targetpath)
+            except:
+                self.print_log(type='W',msg='Could not remove %s' % targetpath)
+            try:
+                shutil.rmtree(self.rtlsimpath)
+                self.print_log(type='D',msg='Removing %s' % self.rtlsimpath)
+            except:
+                self.print_log(type='W',msg='Could not remove %s' %self.rtlsimpath)
+
+    @property
+    def simdut(self):
+        ''' Source file for Device Under Test in simulations directory
+
+            Returns
+            -------
+                self.rtlsimpath + self.name + self.vlogext for 'sv' model
+                self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
+        '''
+        if not hasattr(self, '_simdut'):
+            extension = None
+            if self.model == 'sv':
+                extension = self.vlogext
+            elif self.model == 'vhdl':
+                extension = '.vhd'
+            else:
+                self.print_log(type='F', msg='Unsupported model %s' % self.model)
+            self._simdut = os.path.join(self.rtlsimpath, self.name+extension)
+        return self._simdut
+
+    @property
+    def simtb(self):
+        ''' Verilog testbench source file in simulations directory
 
         '''
-        if not hasattr(self, '_vlogtbsrc'):
+        if not hasattr(self, '_simtb'):
             #_classfile is an abstract property that must be defined in the class.
-            self._vlogtbsrc=self.vlogsrcpath + '/tb_' + self.name + '.sv'
-        return self._vlogtbsrc
+            self._simtb=self.rtlsimpath + '/tb_' + self.name + '.sv'
+        return self._simtb
 
     @property
     def rtlworkpath(self):
@@ -231,8 +316,17 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_rtlworkpath'):
-            self._rtlworkpath    =  self.simpath +'/work'
+            self._rtlworkpath = self.simpath +'/work'
         return self._rtlworkpath
+
+    @rtlworkpath.deleter
+    def rtlworkpath(self):
+        if os.path.exists(self.rtlworkpath):
+            try:
+                shutil.rmtree(self.rtlworkpath)
+                self.print_log(type='D',msg='Removing %s' % self.rtlworkpath)
+            except:
+                self.print_log(type='W',msg='Could not remove %s' %self.rtlworkpath)
 
     @property
     def rtlparameters(self): 
@@ -241,7 +335,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_rtlparameters'):
-            self._rtlparameters =dict([])
+            self._rtlparameters = dict()
         return self._rtlparameters
     @rtlparameters.setter
     def rtlparameters(self,value): 
@@ -267,7 +361,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vhdlentityfiles(self):
-        '''List of VHDL entity files to be compiled in addiotion to DUT
+        '''List of VHDL entity files to be compiled in addition to DUT
 
         '''
         if not hasattr(self, '_vhdlentityfiles'):
@@ -363,21 +457,22 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         submission=self.verilog_submission
-        rtllibcmd =  'vlib ' +  self.rtlworkpath + ' && sleep 2'
+        rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
 
-        vlogmodulesstring=' '.join([ self.vlogsrcpath + '/'+ 
+        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
 
+        # TODO: use source copied to simulation dir
         vhdlmodulesstring=' '.join([ self.vhdlsrcpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
         if self.model=='sv':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.vlogsrc + ' ' + self.vlogtbsrc )
+                    + ' ' + self.simdut + ' ' + self.simtb )
         elif self.model=='vhdl':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.vlogtbsrc )
+                    + ' ' + self.simtb )
 
         vhdlcompcmd = ( 'vcom -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
@@ -411,6 +506,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self._rtlcmd =  rtllibcmd  +\
                     ' && ' + rtllibmapcmd +\
                     ' && ' + vlogcompcmd +\
+                    ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd
         elif self.model=='vhdl':
@@ -418,6 +514,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     ' && ' + rtllibmapcmd +\
                     ' && ' + vhdlcompcmd +\
                     ' && ' + vlogcompcmd +\
+                    ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd
 
@@ -491,7 +588,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     # Can these be deducted?
     def format_ios(self):
         '''Verilog module does not contain information if 
-        the bus is signed or not
+        the bus is signed or not.
         Prior to writing output file, the type of the 
         connecting wire defines how the bus values are interpreted.
 
@@ -507,6 +604,51 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='F', 
                     msg='List of associated ionames not defined for IO %s\n. Provide it as list of strings' %(ioname))
 
+    def copy_rtl_sources(self):
+        ''' Copy rtl sources to self.rtlsimpath
+
+        '''
+        self.print_log(type='I', msg='Copying rtl sources to %s' % self.rtlsimpath)
+        if self.model == 'sv':
+            # copy dut source
+            vlogsrc_exists = os.path.isfile(self.vlogsrc)   # verilog source present in self.entitypath/sv
+            simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
+            # if neither exist throw an fatal error (missing dut source)
+            if not vlogsrc_exists and not simdut_exists:
+                self.print_log(type='F', msg="Missing verilog source for 'sv' model at: %s" % self.vlogsrc)
+            # vlogsrc exists, simdut doesn't exist => copy vlogsrc to simdut
+            elif vlogsrc_exists and not simdut_exists:
+                self.print_log(type='I', msg='Copying %s to %s' % (self.vlogsrc, self.simdut))
+                shutil.copyfile(self.vlogsrc, self.simdut)
+            # vlogsrc doesn't exist, simdut exists (externally generated) => use externally generated simdut
+            elif not vlogsrc_exists and simdut_exists:
+                self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
+            # if both sources are present throw a fatal error (multiple conflicting source files)
+            else:
+                self.print_log(type='W', msg="Both model 'sv' source %s and generated source %s exist. Using %s."
+                        % (self.vlogsrc, self.simdut, self.simdut))
+
+            # copy other verilog files
+            for modfile in self.vlogmodulefiles:
+                srcfile = os.path.join(self.vlogsrcpath, modfile)
+                dstfile = os.path.join(self.rtlsimpath, modfile)
+                self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
+                shutil.copyfile(srcfile, dstfile)
+
+        # nothing generates vhdl so simply copy all files to rtlsimpath
+        elif self.model == 'vhdl':
+            shutil.copy(self.vhdlsrc, self.rtlsimpath)
+            for entfile in self.vhdlentityfiles:
+                srcfile = os.path.join(self.vlogsrcpath, entfile)
+                dstfile = os.path.join(self.rtlsimpath, entfile)
+                self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
+                shutil.copyfile(srcfile, dstfile)
+
+        # flush cached writes to disk
+        output = subprocess.check_output("sync %s" % self.rtlsimpath, shell=True)
+        output = output.decode('utf-8')
+        if len(output) != 0:
+            print(output)
 
     def execute_rtl_sim(self):
         '''Runs the rtl simulation in external simulator
@@ -542,7 +684,8 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        subprocess.check_output(self._rtlcmd, shell=True);
+        output = subprocess.check_output(self._rtlcmd, shell=True);
+        self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
 
         count=0
         files_ok=False
@@ -557,18 +700,20 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     files_ok=files_ok and os.path.isfile(file.file)
     
     def run_rtl(self):
-        '''1) Creates testbench
-           2) Defines the contens of the testbench
-           3) Creates connectors
-           4) Connects inputs
-           5) Defines IO conditions
-           6) Defines IO formats in testbench
-           7) Generates testbench contents
-           8) Exports the testbench to file
-           9) Writes input files
-           10) Executes the simulation
-           11) Read outputfiles 
-           12) Connects the outputs
+        '''1) Copies rtl sources to a temporary simulation directory
+           2) Creates a testbench
+           3) Defines the contens of the testbench
+           4) Creates connectors
+           5) Connects inputs
+           6) Defines IO conditions
+           7) Defines IO formats in testbench
+           8) Generates testbench contents
+           9) Exports the testbench to file
+           10) Writes input files
+           11) Executes the simulation
+           12) Read outputfiles 
+           13) Connects the outputs
+           14) Cleans up the intermediate files
 
            You should overload this method while creating the simulation 
            and debugging the testbench.
@@ -578,6 +723,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # Loading a previously stored state
             self._read_state()
         else:
+            self.copy_rtl_sources()
             self.tb=vtb(self)             
             self.tb.define_testbench()    
             self.create_connectors()
@@ -600,6 +746,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # Clean simulation results
             if not self.preserve_iofiles:
                 del(self.iofile_bundle)
+            if not self.preserve_rtlfiles:
+                del(self.rtlworkpath)
+                del(self.rtlsimpath)
 
 
     #This writes all infile
@@ -621,8 +770,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                  self.iofile_bundle.Members[name].read()
 
     def connect_outputs(self):
-        '''Connects the ouput data from files to corresponding 
-        output IOs
+        '''Connects the ouput data from files to corresponding output IOs
 
         '''
         for name, val in self.iofile_bundle.Members.items():

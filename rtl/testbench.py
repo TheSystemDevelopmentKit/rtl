@@ -50,18 +50,15 @@ class testbench(verilog_module):
               None
 
         '''
+
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog testbench not given")
         else:
             self.parent=parent
         try:  
-            # Testbench is always verilog
-            self._file=self.parent.vlogsrcpath + '/tb_' + self.parent.name + '.sv'
-            if self.parent.model=='sv':
-                self._dutfile=self.parent.vlogsrcpath + '/' + self.parent.name + '.sv'
-            elif self.parent.model=='vhdl':
-                self._dutfile=self.parent.vhdlsrcpath + '/' + self.parent.name + '.vhd'
-
+            # The proper files are determined in rtl based on simulation model
+            self._file = self.parent.simtb
+            self._dutfile = self.parent.simdut
         except:
             self.print_log(type='F', msg="Verilog Testbench file definition failed")
         
