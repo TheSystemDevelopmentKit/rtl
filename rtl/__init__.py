@@ -58,9 +58,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         debugging testbench generation.
         
         """
-        if not hasattr(self,'_preserve_iofiles'):
+        if not hasattr(self,'_preserve_rtlfiles'):
             self._preserve_rtlfiles=False
-        return self._preserve_iofiles
+        return self._preserve_rtlfiles
     @preserve_rtlfiles.setter
     def preserve_rtlfiles(self,value):
         self._preserve_rtlfiles=value
