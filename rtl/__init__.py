@@ -78,33 +78,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def interactive_rtl(self,value):
         self._interactive_rtl=value
     
-    @property
-    def iofile_bundle(self):
-        """ 
-        Property of type thesdk.Bundle.
-        This property utilises iofile class to maintain list of IO-files
-        that  are automatically handled by simulator specific commands
-        when verilog.rtl_iofile.rtl_iofile(name='<filename>,...) is used to define an IO-file, created file object is automatically
-        appended to this Bundle property as a member. Accessible with self.iofile_bundle.Members['<filename>']
-        """
-        if not hasattr(self,'_iofile_bundle'):
-            self._iofile_bundle=Bundle()
-        return self._iofile_bundle
-
-    @iofile_bundle.setter
-    def iofile_bundle(self,value):
-        self._iofile_bundle=value
-
-    @iofile_bundle.deleter
-    def iofile_bundle(self):
-        for name, val in self.iofile_bundle.Members.items():
-            if val.preserve:
-                self.print_log(type="I", msg="Preserve_value is %s" %(val.preserve))
-                self.print_log(type="I", msg="Preserving file %s" %(val.file))
-            else:
-                val.remove()
-        #self._iofile_bundle=None
-
     @property 
     def verilog_submission(self):
         """
@@ -253,14 +226,16 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='E', msg='Failed to create %s' % self.rtlsimpath)
         return self._rtlsimpath
 
-    @rtlsimpath.deleter
-    def rtlsimpath(self):
+    def delete_rtlsimpath(self):
+        ''' Deletes all files in rtlsimpath
+
+        '''
         if os.path.exists(self.rtlsimpath):
             try:
                 for target in os.listdir(self.rtlsimpath):
                     targetpath = '%s/%s' % (self.rtlsimpath,target)
                     if self.preserve_rtlfiles:
-                        self.print_log(type='D',msg='Preserving %s' % targetpath)
+                        self.print_log(type='I',msg='Preserving %s' % targetpath)
                     else:
                         if os.path.isdir(targetpath):
                             shutil.rmtree(targetpath)
@@ -319,8 +294,12 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self._rtlworkpath = self.simpath +'/work'
         return self._rtlworkpath
 
-    @rtlworkpath.deleter
-    def rtlworkpath(self):
+    def delete_rtlworkpath(self):
+        ''' Deletes compilation directory
+            Not a deleter decorator, because does not delete
+            the property.
+
+        '''
         if os.path.exists(self.rtlworkpath):
             try:
                 shutil.rmtree(self.rtlworkpath)
@@ -744,11 +723,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             if self.save_state:
                 self._write_state()
             # Clean simulation results
-            if not self.preserve_iofiles:
-                del(self.iofile_bundle)
-            if not self.preserve_rtlfiles:
-                del(self.rtlworkpath)
-                del(self.rtlsimpath)
+            self.delete_iofile_bundle()
+            self.delete_rtlworkpath()
+            self.delete_rtlsimpath()
 
 
     #This writes all infile
