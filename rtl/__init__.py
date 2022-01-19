@@ -37,20 +37,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         pass
 
     @property
-    def preserve_iofiles(self):  
-        """True | False (default)
-
-        If True, do not delete IO files after 
-        simulations. Useful for debugging the file IO"""
-
-        if not hasattr(self,'_preserve_iofiles'):
-            self._preserve_iofiles = False
-        return self._preserve_iofiles
-    @preserve_iofiles.setter
-    def preserve_iofiles(self,value):
-        self._preserve_iofiles=value
-
-    @property
     def preserve_rtlfiles(self):  
         """True | False (default)
 
@@ -81,20 +67,15 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     @property 
     def verilog_submission(self):
         """
-        Defines verilog submioddion prefix from thesdk.GLOBALS['LSFSUBMISSION']
+        Defines verilog submission prefix from thesdk.GLOBALS['LSFSUBMISSION']
 
         Usually something like 'bsub -K'
         """
         if not hasattr(self, '_verilog_submission'):
-            try:
+            if self.has_lsf:
                 self._verilog_submission=thesdk.GLOBALS['LSFSUBMISSION']+' '
-            except:
-                self.print_log(type='W',msg='Variable thesdk.GLOBALS incorrectly defined. _verilog_submission defaults to empty string and simulation is ran in localhost.')
+            else:
                 self._verilog_submission=''
-
-        if hasattr(self,'_interactive_rtl'):
-            return self._verilog_submission
-
         return self._verilog_submission
 
     @property
