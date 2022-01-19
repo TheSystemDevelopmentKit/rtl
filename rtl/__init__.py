@@ -79,6 +79,19 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._verilog_submission
 
     @property
+    def rtl_timescale(self):
+        """
+        Defines the rtl timescale. Default '1ps'
+
+        """
+        if not hasattr(self, '_rtl_timescale'):
+            self._rtl_timescale = '1ps'
+        return self._rtl_timescale
+    @rtl_timescale.setter
+    def rtl_timescale(self,val):
+            self._rtl_timescale = val
+
+    @property
     def name(self):
         ''' Name of the entity
             Extracted from the _classfile attribute
@@ -448,7 +461,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if not self.interactive_rtl:
             dostring=' -do "run -all; quit;"'
-            rtlsimcmd = ( 'vsim -64 -batch -t 1ps -voptargs=+acc ' 
+            rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
                     + fileparams + ' ' + gstring
                     +' work.tb_' + self.name  
                     + dostring)
@@ -461,7 +474,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 dostring=''
                 self.print_log(type='I',msg='No interactive control file set.')
             submission="" #Local execution
-            rtlsimcmd = ( 'vsim -64 -t 1ps -novopt ' + fileparams 
+            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring +' work.tb_' + self.name + dostring)
 
         if self.model=='sv':
