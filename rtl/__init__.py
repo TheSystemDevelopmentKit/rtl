@@ -241,14 +241,16 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                             shutil.rmtree(targetpath)
                         else:
                             os.remove(targetpath)
-                        self.print_log(type='D',msg='Removing %s' % targetpath)
+                        self.print_log(type='I',msg='Removing %s' % targetpath)
             except:
                 self.print_log(type='W',msg='Could not remove %s' % targetpath)
-            try:
-                shutil.rmtree(self.rtlsimpath)
-                self.print_log(type='D',msg='Removing %s' % self.rtlsimpath)
-            except:
-                self.print_log(type='W',msg='Could not remove %s' %self.rtlsimpath)
+
+            if not self.preserve_rtlfiles:
+                try:
+                    shutil.rmtree(self.rtlsimpath)
+                    self.print_log(type='I',msg='Removing %s' % self.rtlsimpath)
+                except:
+                    self.print_log(type='W',msg='Could not remove %s' %self.rtlsimpath)
 
     @property
     def simdut(self):
