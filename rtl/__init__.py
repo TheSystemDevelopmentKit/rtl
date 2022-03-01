@@ -425,6 +425,35 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def interactive_controlfile(self,value): 
         self._interactive_controlfile = value
 
+        
+    @property
+    def vlibs(self):
+        '''Command used for simulation invocation
+           Compiled from various parameters. See source for details.
+
+        '''
+        if not hasattr(self, '_vlibs'):
+            self._vlibs = {'work': self.rtlworkpath}
+        return self._vlibs
+   
+    @vlibs.setter
+    def vlibs(self,value):
+        '''Command used for simulation invocation
+           Compiled from various parameters. See source for details.
+
+        '''
+        self._vlibs = value
+
+    @property
+    def vlibsmapper(self):
+        """
+
+        """
+        rtllibmapcmd =''
+        for key, value in self.vlibs:
+            rtllibmapcmd+='vmap ' + key + ' ' + value + ' && '
+        return rtllibmapcmd
+
     @property
     def rtlcmd(self):
         '''Command used for simulation invocation
@@ -433,7 +462,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         '''
         submission=self.verilog_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath
-        rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+        rtllibmapcmd = self.vlibsmapper
 
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
