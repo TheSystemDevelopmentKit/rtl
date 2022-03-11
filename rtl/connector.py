@@ -78,7 +78,6 @@ class verilog_connector_bundle(Bundle):
     def update(self,**kwargs):
         #[TODO]: Write sanity checks
         bundle=kwargs.get('bundle',None)
-        print(bundle)
         for key,val in bundle.items():
             if key not in self.Members: 
                 self.Members[key]=val

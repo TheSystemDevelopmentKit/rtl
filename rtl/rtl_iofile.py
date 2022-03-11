@@ -325,6 +325,8 @@ class rtl_iofile(iofile):
     def Data(self, value):
         # convert value to equivalent SortedDict representation
         if self.iotype=='event':
+            if self.DictData == None:
+                self._DictData = sc.SortedDict()
             for row in value:
                 self.DictData[row[0]] = row[1:]
             # build a numpy array from the dict and sort it by time column
@@ -342,7 +344,7 @@ class rtl_iofile(iofile):
 
     @property
     def DictData(self):
-        if not hasattr(self, '_Data'):
+        if not hasattr(self, '_DictData'):
             self._DictData=None
         return self._DictData
 
