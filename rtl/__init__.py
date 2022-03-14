@@ -614,7 +614,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         elif self.model == 'vhdl':
             shutil.copy(self.vhdlsrc, self.rtlsimpath)
             for entfile in self.vhdlentityfiles:
-                srcfile = os.path.join(self.vlogsrcpath, entfile)
+                srcfile = os.path.join(self.vhdlsrpath, entfile)
                 dstfile = os.path.join(self.rtlsimpath, entfile)
                 self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                 shutil.copyfile(srcfile, dstfile)
