@@ -132,6 +132,8 @@ class testbench(verilog_module):
         name=kwargs.get('name')
         file=kwargs.get('file')
         self.verilog_instances.Members[name]=verilog_module(file=file,instname=name)
+        # Addc connectors from the imported instance 
+        self.connectors.update(bundle=self.verilog_instances.Members[name].io_signals.Members)
     
     @property
     def parameter_definitions(self):
@@ -235,15 +237,19 @@ class testbench(verilog_module):
         #Assign verilog simulation parameters to testbench
         self.parameters=self.parent.rtlparameters
 
-        # Create clock if nonexistent 
+        # Create clock if nonexistent and reset it
         if 'clock' not in self.dut_instance.ios.Members:
             self.connectors.Members['clock']=verilog_connector(
                     name='clock',cls='reg', init='\'b0')
+        elif self.connectors.Members['clock'].init=='':
+            self.connectors.Members['clock'].init='\'b0'
 
-        # Create reset if nonexistent 
+        # Create reset if nonexistent and reset it
         if 'reset' not in self.dut_instance.ios.Members:
             self.connectors.Members['reset']=verilog_connector(
                     name='reset',cls='reg', init='\'b0')
+        #elif self.connectors.Members['reset'].init=='':
+        #    self.connectors.Members['reset'].init='\'b0'
 
         ## Start initializations
         #Init the signals connected to the dut input to zero
