@@ -438,8 +438,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
 
-        # TODO: use source copied to simulation dir
-        vhdlmodulesstring=' '.join([ self.vhdlsrcpath + '/'+ 
+        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
         if self.model=='sv':
