@@ -248,8 +248,8 @@ class testbench(verilog_module):
         if 'reset' not in self.dut_instance.ios.Members:
             self.connectors.Members['reset']=verilog_connector(
                     name='reset',cls='reg', init='\'b0')
-        #elif self.connectors.Members['reset'].init=='':
-        #    self.connectors.Members['reset'].init='\'b0'
+        elif self.connectors.Members['reset'].init=='':
+            self.connectors.Members['reset'].init='\'b0'
 
         ## Start initializations
         #Init the signals connected to the dut input to zero
