@@ -3,33 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+====================================
+RTL Entity - RTL simulator interface
+====================================
+
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
 
-.. automodule:: rtl
-   :members:
-   :undoc-members:
+   sections
 
-.. automodule:: rtl.rtl_iofile
-   :members:
-   :undoc-members:
+   indices_and_tables
 
-.. automodule:: rtl.testbench
-   :members:
-   :undoc-members:
-
-.. automodule:: rtl.module
-   :members:
-   :undoc-members:
-
-.. automodule:: rtl.entity
-   :members:
-   :undoc-members:
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
