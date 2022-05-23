@@ -443,7 +443,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if self.model=='sv':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simdut + ' ' + self.simtb )
+                    + ' ' + self.simdut + ' ' + self.simtb + ' +define+RANDOMIZE_REG_INIT')
         elif self.model=='vhdl':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
@@ -474,7 +474,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='I',msg='No interactive control file set.')
             submission="" #Local execution
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring +' work.tb_' + self.name + dostring)
+                    + ' ' + gstring +' work.tb_' + self.name + dostring )
 
         if self.model=='sv':
             self._rtlcmd =  rtllibcmd  +\
