@@ -189,7 +189,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     @property
     def vhdlsrc(self):
         '''VHDL source file
-           self.vhdlsrcpath/self.name.sv'
+           self.vhdlsrcpath/self.name.vhd'
 
            Returns
            -------
@@ -475,10 +475,11 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             submission="" #Local execution
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring +' work.tb_' + self.name + dostring)
-
+        #These are now identical, just minimized tha changes at the time
         if self.model=='sv':
             self._rtlcmd =  rtllibcmd  +\
                     ' && ' + rtllibmapcmd +\
+                    ' && ' + vhdlcompcmd +\
                     ' && ' + vlogcompcmd +\
                     ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
