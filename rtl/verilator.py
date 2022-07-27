@@ -16,9 +16,69 @@ from thesdk import *
 from rtl import *
 from rtl.module import verilog_module, verilog_connector_bundle, verilog_connector
 
+class verilator(thesdk):
 
-class verilator(verilog_module):
-    '''Verilator class. Extends `verilog_module`
+    @property
+    def _classfile(self):
+        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+
+    def __init__(self, parent=None, **kwargs):
+        '''Parameters
+           ----------
+           parent: object, None (mandatory to define). TheSyDeKick parent entity object for this testbench.
+           **kwargs :
+              None
+
+        '''
+
+        if parent==None:
+            # TODO: replafe type to F
+            self.print_log(type='I', msg="Parent of Verilog testbench not given")
+        else:
+            self.parent=parent
+        try:  
+            # The proper files are determined in rtl based on simulation model
+            self._file = self.parent.simtb
+            self._dutfile = self.parent.simdut
+        except:
+            # TODO: replace type to F
+            self.print_log(type='I', msg="Verilog Testbench file definition failed")
+        
+        #The methods for these are derived from verilog_module
+        self._name=''
+        self._parameters=Bundle()
+        self.connectors=verilog_connector_bundle()
+        self.iofiles=Bundle()
+        self.content_parameters={'c_Ts': ('const int','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
+        self.assignment_matchlist=[]
+
+    @property
+    def rtlcmd(self):
+        vlogmodulesstring=' '.join([ self.parent.rtlsimpath + '/'+ 
+            str(param) for param in self.parent.vlogmodulefiles])
+
+        compile_tool = 'verilator'
+        compile_args = ' '.join(['--cc', '--trace'])
+        compile_dut = self.parent.simdut
+        compile_extra_modules = vlogmodulesstring
+        build_args = ' '.join(['--exe'])
+        build_dut = self.parent.simtb
+
+        #build_cmd = ' '.join([compile_tool, compile_args, compile_dut, compile_extra_modules, build_args, build_dut])
+        build_cmd = ' '.join([compile_tool, compile_args, compile_dut])
+        print(build_cmd)
+        self._rtlcmd = build_cmd
+        return self._rtlcmd
+    @rtlcmd.setter
+    def rtlcmd(self, value):
+        self._rtlcmd = value
+    @rtlcmd.deleter
+    def rtlcmd(self):
+        self._rtlcmd = None
+
+
+class verilatortb(verilog_module):
+    '''Verilator Testbench class. Extends `verilog_module`
     
     '''
     @property
@@ -287,7 +347,12 @@ class verilator(verilog_module):
 #include <verilated.h>
 #include <verilated_vcd_c.h> // Writes VCD - TODO: add only if interactive mode
 
-// INCLUDE THE VERILATED MODULE HEADER (also ___024unit.h)
+// Include the verilated module headers
+""" \
++ \
+"#include V%s.h\n" % self.dut_instance.instname + \
+"#include V%s___024unit.h\n" % self.dut_instance.instname + \
+"""
 
 """ + self.parameter_definitions + \
 """
@@ -301,12 +366,20 @@ int main(int argc, char** argv, char** env) {
     // TODO: rename "top" to correspond the dut
     Vtop* top = new Vtop{contextp};
 
-    // TODO: only if interactive mode
+    // TODO: only if interactive mode (needs --trace in the verilator command as well)
     VerilatedVcdC *m_trace = new VerilatedVcdC;
     top->trace(m_trace, 5); // 5 limits the depth of trace - TODO: make changeable
 
+    // TODO: randomize input values?
+    // Requires arguments for verilator and exe
+    Verilated::commandArgs(argc, argv);
+
     while (True) {
         clk ^= 1; // TODO
+        // TODO: reset procedure
+        if (sim_time > 1 && sim_time < 5){
+            reset_procedure();
+        }
         top -> eval; // TODO: rename top
         m_trace->dump(sim_time) // TODO: define sim_time
         sim_time++; // TODO: define sim_time
@@ -316,6 +389,7 @@ int main(int argc, char** argv, char** env) {
 }
         """
         self.contents=contents
+        print(contents)
 
 if __name__=="__main__":
     testclass = verilator()

@@ -25,6 +25,7 @@ import shutil
 from rtl.connector import intend
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
+from rtl.verilator import verilator, verilatortb
 
 class rtl(thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions 
@@ -267,6 +268,23 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         return self._simdut
 
     @property
+    def simulator(self):
+        '''Simulator to be used.
+
+        'questa' | 'verilator'
+        '''
+        if not hasattr(self, '_simulator'):
+            # Use questasim as default simulator
+            self._simulator = 'questa'
+        return self._simulator
+    @simulator.setter
+    def simulator(self, sim):
+        if sim not in ['questa', 'verilator']:
+            self.print_log(type='E', msg= 'Simulator %s not supported!' % sim)
+        self._simulator = sim
+        return self._simulator
+
+    @property
     def simtb(self):
         ''' Verilog testbench source file in simulations directory
 
@@ -431,67 +449,68 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            Compiled from various parameters. See source for details.
 
         '''
-        submission=self.verilog_submission
-        rtllibcmd =  'vlib ' +  self.rtlworkpath
-        rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+        if not hasattr(self, '_rtlcmd'):
+            submission=self.verilog_submission
+            rtllibcmd =  'vlib ' +  self.rtlworkpath
+            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
 
-        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles])
+            vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+                str(param) for param in self.vlogmodulefiles])
 
-        # TODO: use source copied to simulation dir
-        vhdlmodulesstring=' '.join([ self.vhdlsrcpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
+            # TODO: use source copied to simulation dir
+            vhdlmodulesstring=' '.join([ self.vhdlsrcpath + '/'+ 
+                str(param) for param in self.vhdlentityfiles])
 
-        if self.model=='sv':
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simdut + ' ' + self.simtb )
-        elif self.model=='vhdl':
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simtb )
+            if self.model=='sv':
+                vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                        + ' ' + self.simdut + ' ' + self.simtb )
+            elif self.model=='vhdl':
+                vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                        + ' ' + self.simtb )
 
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
-        
-        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
+            vhdlcompcmd = ( 'vcom -work work ' + ' ' +
+                        vhdlmodulesstring + ' ' + self.vhdlsrc )
+            
+            gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
+                for param,val in iter(self.rtlparameters.items()) ])
 
-        fileparams=''
-        for name, file in self.iofile_bundle.Members.items():
-            fileparams+=' '+file.simparam
+            fileparams=''
+            for name, file in self.iofile_bundle.Members.items():
+                fileparams+=' '+file.simparam
 
-        if not self.interactive_rtl:
-            dostring=' -do "run -all; quit;"'
-            rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
-                    + fileparams + ' ' + gstring
-                    +' work.tb_' + self.name  
-                    + dostring)
-        else:
-            dofile=self.interactive_controlfile
-            if os.path.isfile(dofile):
-                dostring=' -do "'+dofile+'"'
-                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+            if not self.interactive_rtl:
+                dostring=' -do "run -all; quit;"'
+                rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
+                        + fileparams + ' ' + gstring
+                        +' work.tb_' + self.name  
+                        + dostring)
             else:
-                dostring=''
-                self.print_log(type='I',msg='No interactive control file set.')
-            submission="" #Local execution
-            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring +' work.tb_' + self.name + dostring)
+                dofile=self.interactive_controlfile
+                if os.path.isfile(dofile):
+                    dostring=' -do "'+dofile+'"'
+                    self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+                else:
+                    dostring=''
+                    self.print_log(type='I',msg='No interactive control file set.')
+                submission="" #Local execution
+                rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
+                        + ' ' + gstring +' work.tb_' + self.name + dostring)
 
-        if self.model=='sv':
-            self._rtlcmd =  rtllibcmd  +\
-                    ' && ' + rtllibmapcmd +\
-                    ' && ' + vlogcompcmd +\
-                    ' && sync ' + self.rtlworkpath +\
-                    ' && ' + submission +\
-                    rtlsimcmd
-        elif self.model=='vhdl':
-            self._rtlcmd =  rtllibcmd  +\
-                    ' && ' + rtllibmapcmd +\
-                    ' && ' + vhdlcompcmd +\
-                    ' && ' + vlogcompcmd +\
-                    ' && sync ' + self.rtlworkpath +\
-                    ' && ' + submission +\
-                    rtlsimcmd
+            if self.model=='sv':
+                self._rtlcmd =  rtllibcmd  +\
+                        ' && ' + rtllibmapcmd +\
+                        ' && ' + vlogcompcmd +\
+                        ' && sync ' + self.rtlworkpath +\
+                        ' && ' + submission +\
+                        rtlsimcmd
+            elif self.model=='vhdl':
+                self._rtlcmd =  rtllibcmd  +\
+                        ' && ' + rtllibmapcmd +\
+                        ' && ' + vhdlcompcmd +\
+                        ' && ' + vlogcompcmd +\
+                        ' && sync ' + self.rtlworkpath +\
+                        ' && ' + submission +\
+                        rtlsimcmd
 
         return self._rtlcmd
 
@@ -651,7 +670,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 except:
                     pass
 
-        self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
+        self.print_log(type='I', msg="Running external command %s\n" %(self._rtlcmd) )
 
         if self.interactive_rtl:
             self.print_log(type='I', msg="""
@@ -698,30 +717,52 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # Loading a previously stored state
             self._read_state()
         else:
-            self.copy_rtl_sources()
-            self.tb=vtb(self)             
-            self.tb.define_testbench()    
-            self.create_connectors()
-            self.connect_inputs()         
+            if self.simulator == 'questa':
+                self.copy_rtl_sources()
+                self.tb = vtb(self)             
 
-            if hasattr(self,'define_io_conditions'):
-                self.define_io_conditions()   # Local, this is dependent on how you
-                                              # control the simulation
-                                              # i.e. when you want to read an write your IO's
-            self.format_ios()
-            self.tb.generate_contents()
-            self.tb.export(force=True)
-            self.write_infile()
-            self.execute_rtl_sim()
-            self.read_outfile()
-            self.connect_outputs()
-            # Save entity state
-            if self.save_state:
-                self._write_state()
-            # Clean simulation results
-            self.delete_iofile_bundle()
-            self.delete_rtlworkpath()
-            self.delete_rtlsimpath()
+                self.tb.define_testbench()    
+                self.create_connectors()
+                self.connect_inputs()         
+
+                if hasattr(self,'define_io_conditions'):
+                    self.define_io_conditions()   # Local, this is dependent on how you
+                                                # control the simulation
+                                                # i.e. when you want to read an write your IO's
+                self.format_ios()
+                self.tb.generate_contents()
+                self.tb.export(force=True)
+                self.write_infile()
+                self.execute_rtl_sim()
+                self.read_outfile()
+                self.connect_outputs()
+                # Save entity state
+                if self.save_state:
+                    self._write_state()
+                # Clean simulation results
+                self.delete_iofile_bundle()
+                self.delete_rtlworkpath()
+                self.delete_rtlsimpath()
+            elif self.simulator == 'verilator':
+                self.sim = verilator(self)
+                self.copy_rtl_sources()
+                self.tb = verilatortb(self)             
+
+                self.tb.define_testbench()    
+                self.create_connectors()
+                self.connect_inputs()         
+
+                if hasattr(self,'define_io_conditions'):
+                    self.define_io_conditions()   # Local, this is dependent on how you
+                                                # control the simulation
+                                                # i.e. when you want to read an write your IO's
+                self.format_ios()
+                self.tb.generate_contents()
+                self.tb.export(force=True)
+                self.write_infile()
+                self.rtlcmd = self.sim.rtlcmd
+                self.execute_rtl_sim()
+
 
 
     #This writes all infile
