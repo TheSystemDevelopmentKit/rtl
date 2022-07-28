@@ -54,20 +54,21 @@ class verilator(thesdk):
 
     @property
     def rtlcmd(self):
-        vlogmodulesstring=' '.join([ self.parent.rtlsimpath + '/'+ 
-            str(param) for param in self.parent.vlogmodulefiles])
+        if not hasattr(self, '_rtlcmd'):
+            vlogmodulesstring=' '.join([ self.parent.rtlsimpath + '/'+ 
+                str(param) for param in self.parent.vlogmodulefiles])
 
-        compile_tool = 'verilator'
-        compile_args = ' '.join(['--cc', '--trace'])
-        compile_dut = self.parent.simdut
-        compile_extra_modules = vlogmodulesstring
-        build_args = ' '.join(['--exe'])
-        build_dut = self.parent.simtb
+            compile_tool = 'verilator'
+            compile_args = ' '.join(['--cc', '--trace'])
+            compile_dut = self.parent.simdut
+            compile_extra_modules = vlogmodulesstring
+            build_args = ' '.join(['--exe'])
+            build_dut = self.parent.simtb
 
-        #build_cmd = ' '.join([compile_tool, compile_args, compile_dut, compile_extra_modules, build_args, build_dut])
-        build_cmd = ' '.join([compile_tool, compile_args, compile_dut])
-        print(build_cmd)
-        self._rtlcmd = build_cmd
+            #build_cmd = ' '.join([compile_tool, compile_args, compile_dut, compile_extra_modules, build_args, build_dut])
+            build_cmd = ' '.join([compile_tool, compile_args, compile_dut])
+            print(build_cmd)
+            self._rtlcmd = build_cmd
         return self._rtlcmd
     @rtlcmd.setter
     def rtlcmd(self, value):
@@ -180,7 +181,11 @@ class verilatortb(verilog_module):
         '''
         definitions='// Parameter definitions\n'
         for name, val in self.content_parameters.items():
-                definitions+= val[0]+ ' ' + name + '=' + val[1]+';\n'
+            definitions += val[0]+ ' ' + name + '=' + val[1] + ';\n'
+        import pdb; pdb.set_trace()
+        for name, val in self.parameters.Members.items():
+            definitions += 'auto ' + name + '=' + str(val) + ';\n'
+
         return definitions
 
     @property
@@ -390,6 +395,203 @@ int main(int argc, char** argv, char** env) {
         """
         self.contents=contents
         print(contents)
+
+
+class verilator_iofile(rtl_iofile):
+    def __init__(self, parent=None, **kwargs):
+        if parent==None:
+            self.print_log(type='F', msg="Parent of Verilog input file not given")
+        try:
+            super().__init__(parent=parent, **kwargs)
+        except:
+            self.print_log(type='F', msg="Verilog IO file definition failed")
+
+    # @property
+    # def simparam(self):
+    #     self.print_log(type='F', msg='TODO: Do not use simparams with Verilator for now!')
+    #     return None
+
+    # @property
+    # def rtlparam(self):
+    #     self.print_log(type='F', msg='TODO: Do not use simparams with Verilator for now!')
+    #     return None
+
+    @property
+    def stat(self):
+        '''Status variable name to be used in verilator testbench.
+
+        '''
+        if not hasattr(self, '_stat'):
+            self._stat = 'status_%s' % self.name
+        return self._stat
+
+    @property
+    def ctstamp(self):
+        '''Current time stamp variable name to be used in verilator testbench.
+        Used in event type file IO.
+
+        '''
+        if not hasattr(self, '_ctstamp'):
+            self._ctstamp = 'ctstamp_%s' % self.name
+
+    @property
+    def ptstamp(self):
+        '''Past time stamp variable for verilator testbench. Used in event type file IO.
+
+        '''
+        if not hasattr(self,'_ptstamp'):
+            self._ptstamp = 'ptstamp_%s' % self.name
+        return self._ptstamp
+
+    @property
+    def tdiff(self):
+        '''Verilator time difference variable. Used in event based file IO.
+
+        '''
+        if not hasattr(self,'_diff'):
+            self._tdiff = 'tdiff_%s' % self.name
+        return self._tdiff
+
+    @property
+    def statdef(self):
+        '''Verilator file read status integer variable definitions and initializations strings.
+
+        '''
+        if self.iotype == 'sample':
+            self._statdef = 'int %s;\n' % (self.stat)
+        elif self.iotype == 'event':
+            self._statdef = 'int %s;\n' % (self.stat)
+            self._statdef += 'time_t %s, %s, %s;\n' % (self.ctstamp, self.ptstamp, self.tdiff)
+            self._statdef += '%s = 0;\n' % self.ctstamp
+            self._statdef += '%s = 0;\n' % self.ptstamp
+            for connector in self.connectors:
+                self._statdef += 'int buffer_%s;\n' % connector.name
+        return self._statdef
+
+    @property
+    def fptr(self):
+        '''Verilator file pointer name.
+
+        '''
+        if not hasattr(self, '_fptr'):
+            self._fptr='f_%s' %(self.name)
+        return self._fptr
+
+    @property
+    def fopen(self):
+        '''Verilator file open routine string.
+
+        '''
+        if self.dir == 'in':
+            self._fopen = 'std::ifstream %s(%s);\n' % (self.verilog_fptr,next(iter(self.rtlparam)))
+        if self.dir == 'out':
+            self._fopen = 'std::ofstream %s(%s);\n' % (self.verilog_fptr,next(iter(self.rtlparam)))
+        return self._fopen
+
+    @property
+    def fclose(self):
+        '''Verilator file close routine sting.
+
+        '''
+        self._fclose = '%s.close();\n' % self.verilog_fptr
+        return self._fclose
+
+    @property
+    def connectors(self):
+        ''' List for verilator connectors.
+        These are the verilator signals/regs associated with this file
+        Define a separate property for verilator for naming constistence, 
+        but use the same method as long as there is no functional difference needed
+
+        '''
+        return self.verilog_connectors()
+    @connectors.setter
+    def connectors(self, value):
+        self.verilog_connectors = value
+
+    @property
+    def io_condition(self):
+        '''Verilator condition string that must be true in order to file IO read/write to occur.
+        This is true always, because signal values in verilator are always defined, being either 0 or 1.
+        '''
+
+        if not hasattr(self, '_io_condition'):
+            self._io_condition = 'true'
+        return self._io_condition
+    @io_condition.setter
+    def io_condition(self, value):
+        self._io_condition = value
+
+    @property
+    def io_sync(self):
+        '''File io synchronization c:wondition for sample input.
+        Default: clock == 1 (this assumes that clock changes 0->1->0->1 all the time)
+
+        '''
+        if not hasattr(self, '_io_sync'):
+            if self.iotype == 'sample':
+                self._io_sync = 'clock == 1'
+        return self._io_sync
+    @io_sync.setter
+    def io_sync(self, value):
+        self._io_sync = value
+
+    def io_condition_append(self, **kwargs):
+        '''Append new condition string to `io_condition`
+
+        Parameters
+        ----------
+        **kwargs :
+           cond : str
+
+        '''
+        cond=kwargs.get('cond', '')
+        if cond:
+            self.io_condition='%s \n%s' % self.io_condition,cond
+
+    def io(self, **kwargs):
+        '''Verilator  write/read construct for file IO depending on the direction and file type (event/sample).
+
+        Returns 
+        _______
+        str
+            C++ code for file IO to read/write the IO file.
+
+        '''
+        first = True
+        if self.iotype == 'sample':
+            self._io = 'if ( %s ) {\n' % self.io_sync
+            self._io += '\tif ( %s ) {\n' % self.io_condition 
+            self._io += '\t\t%s ' % self.fptr
+
+            iolines = ''
+            if self.dir == 'out':
+                for connector in self.connectors:
+                    if first:
+                        iolines += '<< %s ' % connector.name
+                        first = False
+                    else:
+                        iolines += '<< \'\t\' << %s ' % connector.name
+                self._io += iolines + '<< std::endl;\n\t}\n}\n'
+
+            elif self.dir == 'in':
+                for connector in self.connectors:
+                    iolines += '>> %s ' % connector.name
+                self._io += iolines + ';\n\t}\n}\n'
+
+        elif self.iotype == 'event':
+            self.print_log(type='F', msg='Event based file IO for Verilator has not yet been implemented!')
+            if self.dir == 'out':
+                self.print_log(type='F', msg='Output writing for control files not supported')
+
+        return self._io
+
+
+
+
+
+
+
 
 if __name__=="__main__":
     testclass = verilator()
