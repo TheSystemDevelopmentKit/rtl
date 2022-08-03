@@ -102,7 +102,7 @@ class verilog_module(thesdk):
 
         '''
         if not hasattr(self,'_ios'):
-            startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
+            startmatch=re.compile(r"module *(?="+self.name+r"\s*\()\s*"+r".*.+$")
             iomatch=re.compile(r".*(?<!#)\(.*$")
             parammatch=re.compile(r".*#\(.*$")
             iostopmatch=re.compile(r'.*\);.*$')
@@ -185,7 +185,7 @@ class verilog_module(thesdk):
 
         '''
         if not hasattr(self,'_parameters'):
-            startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
+            startmatch=re.compile(r"module *(?="+self.name+r"\s*\()\s*"+r".*.+$")
             iomatch=re.compile(r".*(?<!#)\(.*$")
             parammatch=re.compile(r".*(?<=#)\(.*$")
             paramstopmatch=re.compile(r".*\).*$")
