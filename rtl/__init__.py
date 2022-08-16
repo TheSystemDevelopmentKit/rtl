@@ -304,6 +304,17 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='W',msg='Could not remove %s' %self.rtlworkpath)
 
     @property
+    def vlogcompargs(self):
+        ''' List of arguments passed to the simulator
+        during the verilog compilation '''
+        if not hasattr(self, '_vlogcompargs'):
+            self._vlogcompargs = []
+        return self._vlogcompargs
+    @vlogcompargs.setter
+    def vlogcompargs(self, value):
+        self._vlogcompargs = value
+
+    @property
     def rtlparameters(self): 
         '''Dictionary of parameters passed to the simulator 
         during the simulation invocation
@@ -443,7 +454,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if self.model=='sv':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simdut + ' ' + self.simtb + ' +define+RANDOMIZE_REG_INIT')
+                    + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
         elif self.model=='vhdl':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
