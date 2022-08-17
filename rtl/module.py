@@ -308,10 +308,10 @@ class verilog_module(thesdk):
                 first=True
                 for name, val in self.parameters.Members.items():
                     if first:
-                        parameters='#(\n    %s = %s' %(name,val)
+                        parameters='#(\n    parameter %s = %s' %(name,val)
                         first=False
                     else:
-                        parameters=parameters+',\n    %s = %s' %(name,val)
+                        parameters=parameters+',\n    parameter %s = %s' %(name,val)
                 parameters=parameters+'\n)'
                 self._definition='module %s %s' %(self.name, parameters)
             else:
