@@ -15,7 +15,8 @@ import os
 import sys
 import subprocess
 import shlex
-from abc import * 
+from abc import *
+from .verilator_iofile import verilator_iofile 
 from thesdk import *
 import numpy as np
 import pandas as pd
@@ -25,7 +26,8 @@ import shutil
 from rtl.connector import intend
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
-from rtl.verilator import verilator, verilatortb
+from rtl.verilator import verilator
+from rtl.verilatortb import verilatortb
 
 class rtl(thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions 
@@ -467,7 +469,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             elif self.model=='vhdl':
                 vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                         + ' ' + self.simtb )
-
             vhdlcompcmd = ( 'vcom -work work ' + ' ' +
                         vhdlmodulesstring + ' ' + self.vhdlsrc )
             
@@ -533,7 +534,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         # See controller.py
         for ioname,io in self.IOS.Members.items():
             # If input is a file, adopt it
-            if isinstance(io.Data,rtl_iofile): 
+            if isinstance(io.Data,rtl_iofile) or isinstance(io.Data, verilator_iofile): 
                 if io.Data.name is not ioname:
                     self.print_log(type='I', 
                             msg='Unifying file %s name to ioname %s' %(io.Data.name,ioname))
@@ -573,7 +574,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             if ioname in self.iofile_bundle.Members:
                 val=self.iofile_bundle.Members[ioname]
                 # File type inputs are driven by the file.Data, not the input field
-                if not isinstance(self.IOS.Members[val.name].Data,rtl_iofile) \
+                if not (isinstance(self.IOS.Members[val.name].Data,rtl_iofile) or isinstance(self.IOS.Members[val.name].Data,verilator_iofile)) \
                         and val.dir is 'in':
                     # Data must be properly shaped
                     self.iofile_bundle.Members[ioname].Data=self.IOS.Members[ioname].Data
@@ -670,7 +671,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 except:
                     pass
 
-        self.print_log(type='I', msg="Running external command %s\n" %(self._rtlcmd) )
+        self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
 
         if self.interactive_rtl:
             self.print_log(type='I', msg="""
@@ -678,7 +679,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        output = subprocess.check_output(self._rtlcmd, shell=True);
+        output = subprocess.check_output(self.rtlcmd, shell=True)
         self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
 
         count=0
@@ -744,9 +745,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.delete_rtlworkpath()
                 self.delete_rtlsimpath()
             elif self.simulator == 'verilator':
-                self.sim = verilator(self)
-                self.copy_rtl_sources()
                 self.tb = verilatortb(self)             
+                self.sim = verilator(tb=self.tb, parent=self)
+                self.copy_rtl_sources()
 
                 self.tb.define_testbench()    
                 self.create_connectors()
