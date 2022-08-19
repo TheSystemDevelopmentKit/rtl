@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from functools import reduce
 import shutil
+import pdb;
 
 from rtl.connector import intend
 from rtl.testbench import testbench as vtb
@@ -257,7 +258,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_simdut'):
             extension = None
-            if self.model == 'sv':
+            if self.model in ['sv', 'icarus']:
                 extension = self.vlogext
             elif self.model == 'vhdl':
                 extension = '.vhd'
@@ -431,9 +432,13 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            Compiled from various parameters. See source for details.
 
         '''
+        #pdb.set_trace()
         submission=self.verilog_submission
-        rtllibcmd =  'vlib ' +  self.rtlworkpath
-        rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+        if self.model == 'icarus':
+            os.mkdir(self.rtlworkpath)
+        else:
+            rtllibcmd =  'vlib ' +  self.rtlworkpath
+            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
 
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
@@ -447,6 +452,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         elif self.model=='vhdl':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
+        elif self.model=='icarus':
+            ivlogcompcmd = ( 'cd ' + self.rtlsimpath + ' && iverilog -Wall -g 2012 -o work' + vlogmodulesstring
+    	            + ' ' + self.simdut + ' ' + self.simtb )
 
         vhdlcompcmd = ( 'vcom -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
@@ -456,7 +464,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         fileparams=''
         for name, file in self.iofile_bundle.Members.items():
-            fileparams+=' '+file.simparam
+            fileparams+=' '+file.simparam       
 
         if not self.interactive_rtl:
             dostring=' -do "run -all; quit;"'
@@ -488,6 +496,11 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     ' && ' + rtllibmapcmd +\
                     ' && ' + vhdlcompcmd +\
                     ' && ' + vlogcompcmd +\
+                    ' && sync ' + self.rtlworkpath +\
+                    ' && ' + submission +\
+                    rtlsimcmd
+        if self.model=='icarus':
+            self._rtlcmd =  ivlogcompcmd +\
                     ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd
@@ -583,7 +596,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         self.print_log(type='I', msg='Copying rtl sources to %s' % self.rtlsimpath)
-        if self.model == 'sv':
+        if self.model in ['sv', 'icarus']:
             # copy dut source
             vlogsrc_exists = os.path.isfile(self.vlogsrc)   # verilog source present in self.entitypath/sv
             simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
@@ -687,7 +700,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            5) Connects inputs
            6) Defines IO conditions
            7) Defines IO formats in testbench
-           8) Generates testbench contents
+           8) Generates testbench contents 
            9) Exports the testbench to file
            10) Writes input files
            11) Executes the simulation

@@ -92,7 +92,7 @@ class testbench(verilog_module):
 
         '''
         if not hasattr(self,'_dut_instance'):
-            if self.parent.model=='sv':
+            if self.parent.model in ['sv', 'icarus']:
                 self._dut_instance=verilog_module(**{'file':self._dutfile})
             elif self.parent.model=='vhdl':
                 self._dut_instance=vhdl_entity(**{'file':self._dutfile})
