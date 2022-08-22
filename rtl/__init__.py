@@ -467,11 +467,14 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             fileparams+=' '+file.simparam       
 
         if not self.interactive_rtl:
-            dostring=' -do "run -all; quit;"'
-            rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
-                    + fileparams + ' ' + gstring
-                    +' work.tb_' + self.name  
-                    + dostring)
+            if self.model == 'icarus':
+                rtlsimcmd = 'vvp work && gtkwave my_dumpfile.vcd'
+            else:
+                dostring=' -do "run -all; quit;"'
+                rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
+                        + fileparams + ' ' + gstring
+                        +' work.tb_' + self.name  
+                        + dostring)
         else:
             dofile=self.interactive_controlfile
             if os.path.isfile(dofile):

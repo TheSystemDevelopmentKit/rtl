@@ -218,6 +218,13 @@ class testbench(verilog_module):
             mcmd = self.parent.rtlmisc
             for cmd in mcmd:
                 self._misccmd += cmd + "\n"
+            if self.parent.model == 'icarus':
+                self._misccmd +=""" //Generates dumpfile with iverilog 
+                                initial begin
+                                  $dumpfile("my_dumpfile.vcd");
+                                  $dumpvars(0, tb_""" + self.parent.name + """);
+                                end \n
+                                """
         return self._misccmd
     
     @misccmd.setter
@@ -226,7 +233,7 @@ class testbench(verilog_module):
     @misccmd.deleter
     def misccmd(self,value):
         self._misccmd=None
-   
+
     # This method 
     def define_testbench(self):
         '''Defines the tb connectivity, creates reset and clock, and initializes them to zero
