@@ -192,7 +192,7 @@ class testbench(verilog_module):
         Create append mechanism to add more clocks.
 
         '''
-        clockdef='//Master clock is omnipresent\nalways #(c_Ts/4.0) clock = !clock;'
+        clockdef='//Master clock is omnipresent\nalways #(c_Ts/2.0) clock = !clock;'
         return clockdef
 
     @property
