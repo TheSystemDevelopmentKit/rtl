@@ -453,7 +453,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
         elif self.model=='icarus':
-            ivlogcompcmd = ( 'cd ' + self.rtlsimpath + ' && iverilog -Wall -g 2012 -o work' + vlogmodulesstring
+            vlogcompcmd = ( 'cd ' + self.rtlsimpath + ' && iverilog -Wall -v -g2012 -o ./../work/' + self.name + vlogmodulesstring
     	            + ' ' + self.simdut + ' ' + self.simtb )
 
         vhdlcompcmd = ( 'vcom -work work ' + ' ' +
@@ -468,7 +468,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if not self.interactive_rtl:
             if self.model == 'icarus':
-                rtlsimcmd = 'vvp work && gtkwave my_dumpfile.vcd'
+                rtlsimcmd = 'vvp -v ./../work/' + self.name + fileparams + ' ' + gstring
             else:
                 dostring=' -do "run -all; quit;"'
                 rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
@@ -503,7 +503,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     ' && ' + submission +\
                     rtlsimcmd
         if self.model=='icarus':
-            self._rtlcmd =  ivlogcompcmd +\
+            self._rtlcmd =  vlogcompcmd +\
                     ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd

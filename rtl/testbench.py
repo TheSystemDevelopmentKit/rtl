@@ -192,7 +192,7 @@ class testbench(verilog_module):
         Create append mechanism to add more clocks.
 
         '''
-        clockdef='//Master clock is omnipresent\nalways #(c_Ts/2.0) clock = !clock;'
+        clockdef='//Master clock is omnipresent\nalways #(c_Ts/4.0) clock = !clock;'
         return clockdef
 
     @property
@@ -218,13 +218,11 @@ class testbench(verilog_module):
             mcmd = self.parent.rtlmisc
             for cmd in mcmd:
                 self._misccmd += cmd + "\n"
-            if self.parent.model == 'icarus':
-                self._misccmd +=""" //Generates dumpfile with iverilog 
-                                initial begin
-                                  $dumpfile("my_dumpfile.vcd");
-                                  $dumpvars(0, tb_""" + self.parent.name + """);
-                                end \n
-                                """
+            if self.parent.model == 'icarus' and self.parent.interactive_rtl:
+                self._misccmd += "//Generates dumpfile with iverilog\n" 
+                self._misccmd += "initial begin\n"
+                self._misccmd += '  $dumpfile("my_dumpfile.vcd");\n'
+                self._misccmd += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
         return self._misccmd
     
     @misccmd.setter
