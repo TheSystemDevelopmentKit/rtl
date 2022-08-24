@@ -18,7 +18,7 @@ from thesdk.iofile import iofile
 import numpy as np
 import pandas as pd
 import sortedcontainers as sc
-from rtl.connector import intend
+from rtl.connector import indent
 
 class rtl_iofile(iofile):
     '''
@@ -425,26 +425,26 @@ class rtl_iofile(iofile):
         first=True
         if self.iotype=='sample':
             if self.dir=='out':
-                self._verilog_io=' always '+self.verilog_io_sync +'begin\n'
-                self._verilog_io+='if ( %s ) begin\n' %(self.verilog_io_condition)
-                self._verilog_io+='$fwrite(%s, ' %(self.verilog_fptr)
+                self._verilog_io='always '+self.verilog_io_sync +'begin\n'
+                self._verilog_io+=indent(text='if ( %s ) begin\n' %(self.verilog_io_condition), level=1)
+                self._verilog_io+=indent(text='$fwrite(%s, ' %(self.verilog_fptr), level=2)
             elif self.dir=='in':
                 self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
-                self._verilog_io+='   %s' %self.verilog_io_sync
-                self._verilog_io+='        if ( %s ) begin\n' %self.verilog_io_condition      
-                self._verilog_io+='        %s = $fscanf(%s, ' \
-                        %(self.verilog_stat, self.verilog_fptr)
+                self._verilog_io+=indent(text='%s' %self.verilog_io_sync, level=0)
+                self._verilog_io+=indent(text='if ( %s ) begin\n' %self.verilog_io_condition, level=1)
+                self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
+                        %(self.verilog_stat, self.verilog_fptr), level=2)
             for connector in self.verilog_connectors:
                 if first:
-                    iolines='    %s' %(connector.name)
+                    iolines='%s' %(connector.name)
                     format='\"%s' %(connector.ioformat)
                     first=False
                 else:
-                    iolines='%s,\n    %s' %(iolines,connector.name)
+                    iolines='%s,\n%s' %(iolines,connector.name)
                     format='%s\\t%s' %(format,connector.ioformat)
 
             format=format+'\\n\",\n'
-            self._verilog_io+=format+iolines+'\n);\n        end\n    end\n'
+            self._verilog_io+=indent(text=format+iolines+'\n);',level=2)+indent(text='end', level=1)+indent(text='end', level=0)
 
         #Control files are handled differently
         elif self.iotype=='event':
