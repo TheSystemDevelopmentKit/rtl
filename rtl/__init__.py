@@ -22,7 +22,7 @@ import pandas as pd
 from functools import reduce
 import shutil
 
-from rtl.connector import intend
+from rtl.connector import indent
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 
