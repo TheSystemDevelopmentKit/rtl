@@ -218,11 +218,6 @@ class testbench(verilog_module):
             mcmd = self.parent.rtlmisc
             for cmd in mcmd:
                 self._misccmd += cmd + "\n"
-            if self.parent.model == 'icarus' and self.parent.interactive_rtl:
-                self._misccmd += "//Generates dumpfile with iverilog\n" 
-                self._misccmd += "initial begin\n"
-                self._misccmd += '  $dumpfile("my_dumpfile.vcd");\n'
-                self._misccmd += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
         return self._misccmd
     
     @misccmd.setter
@@ -231,6 +226,21 @@ class testbench(verilog_module):
     @misccmd.deleter
     def misccmd(self,value):
         self._misccmd=None
+
+    @property
+    def dumpfile(self):
+        """String
+        
+        Code that generates a VCD dumpfile when running the testbench with icarus verilog.
+        This dumpfile can be used with gtkwave. 
+        """
+        dumpStr="// Generates dumpfile with iverilog\n"
+        if self.parent.model == 'icarus' and self.parent.interactive_rtl:
+            dumpStr += "initial begin\n"
+            dumpStr += '  $dumpfile("' + self.parent.name + '_dump.vcd");\n'
+            dumpStr += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
+        return dumpStr
+
 
     # This method 
     def define_testbench(self):
@@ -304,7 +314,8 @@ class testbench(verilog_module):
                 self.connector_definitions
                 self.assignments()
                 self.iofile_definitions
-                sefl.misccmd
+                self.misccmd
+                self.dumpfile
                 self.dut_instance.instance
                 self.verilog_instance_members.items().instance (for all members)
                 self.connectors.verilog_inits()
@@ -323,6 +334,7 @@ self.connector_definitions+\
 self.assignments() +\
 self.iofile_definitions+\
 self.misccmd+\
+self.dumpfile+\
 """
 //DUT definition
 """+\

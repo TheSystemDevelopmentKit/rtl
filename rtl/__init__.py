@@ -468,7 +468,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if not self.interactive_rtl:
             if self.model == 'icarus':
-                rtlsimcmd = 'vvp -v ./../work/' + self.name + fileparams + ' ' + gstring
+                rtlsimcmd = ('vvp -v ./../work/' + self.name + fileparams + ' ' + gstring)
             else:
                 dostring=' -do "run -all; quit;"'
                 rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
@@ -484,8 +484,12 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 dostring=''
                 self.print_log(type='I',msg='No interactive control file set.')
             submission="" #Local execution
-            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring +' work.tb_' + self.name + dostring)
+            if self.model == 'icarus':
+                rtlsimcmd = ('vvp -v ./../work/' + self.name
+                        + ' && gtkwave ' + self.name + '_dump.vcd')
+            else:
+                rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
+                        + ' ' + gstring +' work.tb_' + self.name + dostring)
 
         if self.model=='sv':
             self._rtlcmd =  rtllibcmd  +\
