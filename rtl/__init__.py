@@ -22,7 +22,7 @@ import pandas as pd
 from functools import reduce
 import shutil
 
-from rtl.connector import indent
+from rtl.connector import indent, verilog_connector_bundle
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 
@@ -689,6 +689,40 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 if file.dir=='out':
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
+
+    
+    @property
+    def assignment_matchlist(self):
+        '''List, which signals are connected in assignment stage during testbench generation
+        Should be a list of strings, where a string is the signal name
+        '''
+        if not hasattr(self, '_assignment_matchlist'):
+            self._assignment_matchlist = []
+        return self._assignment_matchlist
+    @assignment_matchlist.setter
+    def assignment_matchlist(self, matchlist):
+        self._assignment_matchlist = matchlist
+
+    @property
+    def custom_connectors(self):
+        '''Custom connectors to be added to the testbench
+        Should be a e.g. a verilog_connector_bundle
+        '''
+        if not hasattr(self, '_custom_connectors'):
+            self._custom_connectors = verilog_connector_bundle()
+        return self._custom_connectors
+    @custom_connectors.setter
+    def custom_connectors(self, bundle):
+        self._custom_connectors = bundle
+
+    def add_custom_connectors(self):
+        '''Adds custom connectors to the testbench. 
+        Also connects rtl matchlist to testbench matchlist.
+        Custom connectors should be saved in self.custom_connectors
+        Matchlist for these connectors should be saved in self.assignment_matchlist 
+        '''
+        self.tb.connectors.update(bundle=self.custom_connectors.Members)
+        self.tb.assignment_matchlist += self.assignment_matchlist
     
     def run_rtl(self):
         '''1) Copies rtl sources to a temporary simulation directory
@@ -717,6 +751,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self.copy_rtl_sources()
             self.tb=vtb(self)             
             self.tb.define_testbench()    
+            self.add_custom_connectors()
             self.create_connectors()
             self.connect_inputs()         
 
