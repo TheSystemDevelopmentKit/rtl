@@ -386,10 +386,16 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         read from this file path. Default path is
         `./interactive_control_files/modelsim/dofile.do`.
         '''
-        dofiledir = '%s/interactive_control_files/modelsim' % self.entitypath
-        dofilepath = '%s/dofile.do' % dofiledir
-        obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
-        newdofilepath = '%s/dofile.do' % self.simpath
+        if self.model == 'icarus':
+            dofiledir = '%s/interactive_control_files/gtkwave' % self.entitypath
+            dofilepath = '%s/general.tcl' % dofiledir
+            obsoletepath = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
+            newdofilepath = '%s/general.tcl' % self.simpath
+        else:    
+            dofiledir = '%s/interactive_control_files/modelsim' % self.entitypath
+            dofilepath = '%s/dofile.do' % dofiledir
+            obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
+            newdofilepath = '%s/dofile.do' % self.simpath
         if not os.path.exists(dofiledir):
             self.print_log(type='I',msg='Creating %s' % dofiledir)
             os.makedirs(dofiledir)
@@ -453,7 +459,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
         elif self.model=='icarus':
-            vlogcompcmd = ( 'cd ' + self.rtlsimpath + ' && iverilog -Wall -v -g2012 -o ./../work/' + self.name + vlogmodulesstring
+            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name + vlogmodulesstring
     	            + ' ' + self.simdut + ' ' + self.simtb )
 
         vhdlcompcmd = ( 'vcom -work work ' + ' ' +
@@ -468,7 +474,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if not self.interactive_rtl:
             if self.model == 'icarus':
-                rtlsimcmd = ('vvp -v ./../work/' + self.name + fileparams + ' ' + gstring)
+                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
             else:
                 dostring=' -do "run -all; quit;"'
                 rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
@@ -485,8 +491,8 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='I',msg='No interactive control file set.')
             submission="" #Local execution
             if self.model == 'icarus':
-                rtlsimcmd = ('vvp -v ./../work/' + self.name
-                        + ' && gtkwave ' + self.name + '_dump.vcd')
+                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
+                        + ' && gtkwave -S ' + self.simpath + '/general.tcl ' + self.name + '_dump.vcd')
             else:
                 rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                         + ' ' + gstring +' work.tb_' + self.name + dostring)
