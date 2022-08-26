@@ -21,7 +21,6 @@ import numpy as np
 import pandas as pd
 from functools import reduce
 import shutil
-import pdb;
 
 from rtl.connector import intend
 from rtl.testbench import testbench as vtb
@@ -438,7 +437,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            Compiled from various parameters. See source for details.
 
         '''
-        #pdb.set_trace()
         submission=self.verilog_submission
         if self.model == 'icarus':
             os.mkdir(self.rtlworkpath)
@@ -470,7 +468,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         fileparams=''
         for name, file in self.iofile_bundle.Members.items():
-            fileparams+=' '+file.simparam       
+            fileparams+=' '+file.simparam
 
         if not self.interactive_rtl:
             if self.model == 'icarus':
@@ -492,7 +490,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             submission="" #Local execution
             if self.model == 'icarus':
                 rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
-                        + ' && gtkwave -S ' + self.simpath + '/general.tcl ' + self.name + '_dump.vcd')
+                        + ' && gtkwave -S' + dofile + ' ' + self.name + '_dump.vcd')
             else:
                 rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                         + ' ' + gstring +' work.tb_' + self.name + dostring)
@@ -713,7 +711,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            5) Connects inputs
            6) Defines IO conditions
            7) Defines IO formats in testbench
-           8) Generates testbench contents 
+           8) Generates testbench contents
            9) Exports the testbench to file
            10) Writes input files
            11) Executes the simulation
