@@ -400,26 +400,25 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         dofilepath = '%s/dofile.do' % dofiledir
         obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
         newdofilepath = '%s/dofile.do' % self.simpath
-        if not os.path.exists(dofiledir):
-            self.print_log(type='I',msg='Creating %s' % dofiledir)
-            os.makedirs(dofiledir)
-        # Property interactive_control_contents already given and new temporary
-        # file not yet created -> create new file and use that
-        if self.interactive_control_contents != '' and not os.path.isfile(newdofilepath):
-            # Check if a custom file path was given
-            if hasattr(self, '_interactive_controlfile'):
-                dofilepath = self._interactive_controlfile
-            # Give a warning if default/custom path contains a do-file already
-            if os.path.isfile(dofilepath):
-                self.print_log(type='W',msg='Interactive control file %s ignored and interactive_control_contents used instead.' % dofilepath)
-            # Write interactive_control_contents to a temporary file
-            self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % newdofilepath)
-            with open(newdofilepath,'w') as dofile:
-                dofile.write(self.interactive_control_contents)
-            self._interactive_controlfile = newdofilepath
-        # No contents or path given -> use default path (or obsolete path)
-        elif not hasattr(self, '_interactive_controlfile'):
-            # Nag about obsolete stuff
+        if not hasattr(self, '_interactive_controlfile'):
+            if not os.path.exists(dofiledir):
+                self.print_log(type='I',msg='Creating %s' % dofiledir)
+                os.makedirs(dofiledir)
+            # Property interactive_control_contents already given and new temporary
+            # file not yet created -> create new file and use that
+            if self.interactive_control_contents != '' and not os.path.isfile(newdofilepath):
+                # Check if a custom file path was given
+                if hasattr(self, '_interactive_controlfile'):
+                    dofilepath = self._interactive_controlfile
+                # Give a warning if default/custom path contains a do-file already
+                if os.path.isfile(dofilepath):
+                    self.print_log(type='W',msg='Interactive control file %s ignored and interactive_control_contents used instead.' % dofilepath)
+                # Write interactive_control_contents to a temporary file
+                self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % newdofilepath)
+                with open(newdofilepath,'w') as dofile:
+                    dofile.write(self.interactive_control_contents)
+                self._interactive_controlfile = newdofilepath
+            # No contents or path given -> use default path (or obsolete path)
             if os.path.exists(obsoletepath):
                 self.print_log(type='O',msg='Found obsoleted do-file in %s' % obsoletepath)
                 self.print_log(type='O',msg='To fix the obsolete warning:')
@@ -435,6 +434,18 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     @interactive_controlfile.setter
     def interactive_controlfile(self,value): 
         self._interactive_controlfile = value
+
+    @property
+    def vlogsimargs(self):
+        '''Custom parameters for verilog simulation (vsim, vvp)
+        Provide as a list of strings
+        '''
+        if not hasattr(self, '_verilog_sim_args'):
+            self._verilog_sim_args = []
+        return self._verilog_sim_args
+    @vlogsimargs.setter
+    def vlogsimargs(self, simparam):
+        self._verilog_sim_args = simparam
 
     @property
     def rtlcmd(self):
@@ -465,27 +476,33 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
             for param,val in iter(self.rtlparameters.items()) ])
 
+        vlogsimargs = ' '.join(self.vlogsimargs)
+
         fileparams=''
         for name, file in self.iofile_bundle.Members.items():
             fileparams+=' '+file.simparam
 
+        dofile=self.interactive_controlfile
+        if os.path.isfile(dofile):
+            dostring=' -do "'+dofile+'"'
+            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+        else:
+            dostring=''
+            self.print_log(type='I',msg='No interactive control file set.')
+
         if not self.interactive_rtl:
-            dostring=' -do "run -all; quit;"'
+
+            if dostring == '':
+                dostring=' -do "run -all; quit;"'
+
             rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
                     + fileparams + ' ' + gstring
-                    +' work.tb_' + self.name  
+                    + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + dostring)
         else:
-            dofile=self.interactive_controlfile
-            if os.path.isfile(dofile):
-                dostring=' -do "'+dofile+'"'
-                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-            else:
-                dostring=''
-                self.print_log(type='I',msg='No interactive control file set.')
             submission="" #Local execution
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring +' work.tb_' + self.name + dostring )
+                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
         if self.model=='sv':
             self._rtlcmd =  rtllibcmd  +\
