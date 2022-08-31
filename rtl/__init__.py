@@ -715,7 +715,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     def custom_connectors(self, bundle):
         self._custom_connectors = bundle
 
-    def add_custom_connectors(self):
+    def add_connectors(self):
         '''Adds custom connectors to the testbench. 
         Also connects rtl matchlist to testbench matchlist.
         Custom connectors should be saved in self.custom_connectors
@@ -751,7 +751,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self.copy_rtl_sources()
             self.tb=vtb(self)             
             self.tb.define_testbench()    
-            self.add_custom_connectors()
+            self.add_connectors()
             self.create_connectors()
             self.connect_inputs()         
 
