@@ -257,7 +257,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_simdut'):
             extension = None
-            if self.model == 'sv':
+            if self.model in ['sv', 'icarus']:
                 extension = self.vlogext
             elif self.model == 'vhdl':
                 extension = '.vhd'
@@ -396,10 +396,16 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         read from this file path. Default path is
         `./interactive_control_files/modelsim/dofile.do`.
         '''
-        dofiledir = '%s/interactive_control_files/modelsim' % self.entitypath
-        dofilepath = '%s/dofile.do' % dofiledir
-        obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
-        newdofilepath = '%s/dofile.do' % self.simpath
+        if self.model == 'icarus':
+            dofiledir = '%s/interactive_control_files/gtkwave' % self.entitypath
+            dofilepath = '%s/general.tcl' % dofiledir
+            obsoletepath = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
+            newdofilepath = '%s/general.tcl' % self.simpath
+        else:    
+            dofiledir = '%s/interactive_control_files/modelsim' % self.entitypath
+            dofilepath = '%s/dofile.do' % dofiledir
+            obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
+            newdofilepath = '%s/dofile.do' % self.simpath
         if not os.path.exists(dofiledir):
             self.print_log(type='I',msg='Creating %s' % dofiledir)
             os.makedirs(dofiledir)
@@ -443,8 +449,11 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         submission=self.verilog_submission
-        rtllibcmd =  'vlib ' +  self.rtlworkpath
-        rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+        if self.model == 'icarus':
+            os.mkdir(self.rtlworkpath)
+        else:
+            rtllibcmd =  'vlib ' +  self.rtlworkpath
+            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
 
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
@@ -458,6 +467,9 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         elif self.model=='vhdl':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
+        elif self.model=='icarus':
+            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name + vlogmodulesstring
+    	            + ' ' + self.simdut + ' ' + self.simtb )
 
         vhdlcompcmd = ( 'vcom -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
@@ -470,11 +482,14 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             fileparams+=' '+file.simparam
 
         if not self.interactive_rtl:
-            dostring=' -do "run -all; quit;"'
-            rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
-                    + fileparams + ' ' + gstring
-                    +' work.tb_' + self.name  
-                    + dostring)
+            if self.model == 'icarus':
+                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
+            else:
+                dostring=' -do "run -all; quit;"'
+                rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
+                        + fileparams + ' ' + gstring
+                        +' work.tb_' + self.name  
+                        + dostring)
         else:
             dofile=self.interactive_controlfile
             if os.path.isfile(dofile):
@@ -484,8 +499,13 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 dostring=''
                 self.print_log(type='I',msg='No interactive control file set.')
             submission="" #Local execution
-            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring +' work.tb_' + self.name + dostring )
+
+            if self.model == 'icarus':
+                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
+                        + ' && gtkwave -S' + dofile + ' ' + self.name + '_dump.vcd')
+            else:
+                rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
+                        + ' ' + gstring +' work.tb_' + self.name + dostring)
 
         if self.model=='sv':
             self._rtlcmd =  rtllibcmd  +\
@@ -499,6 +519,11 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     ' && ' + rtllibmapcmd +\
                     ' && ' + vhdlcompcmd +\
                     ' && ' + vlogcompcmd +\
+                    ' && sync ' + self.rtlworkpath +\
+                    ' && ' + submission +\
+                    rtlsimcmd
+        if self.model=='icarus':
+            self._rtlcmd =  vlogcompcmd +\
                     ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd
@@ -594,7 +619,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         self.print_log(type='I', msg='Copying rtl sources to %s' % self.rtlsimpath)
-        if self.model == 'sv':
+        if self.model in ['sv', 'icarus']:
             # copy dut source
             vlogsrc_exists = os.path.isfile(self.vlogsrc)   # verilog source present in self.entitypath/sv
             simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
