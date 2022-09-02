@@ -112,7 +112,7 @@ class verilog_connector_bundle(Bundle):
         for name, value in self.Members.items():
             if re.match(match,name):
                 assignments=assignments+value.assignment
-        return intend(text=assignments, level=kwargs.get('level',0))
+        return indent(text=assignments, level=kwargs.get('level',0))
 
     def verilog_inits(self,**kwargs):
         #[TODO]: Write sanity checks
@@ -121,7 +121,7 @@ class verilog_connector_bundle(Bundle):
         for name, val in self.Members.items():
             if re.match(match,name) and ( val.init is not None and val.init is not '' ):
                 inits=inits+'%s = %s;\n' %(val.name,val.init)
-        return intend(text=inits, level=kwargs.get('level',0))
+        return indent(text=inits, level=kwargs.get('level',0))
 
     def list(self,**kwargs):
         #[TODO]: Write sanity checks
@@ -132,15 +132,30 @@ class verilog_connector_bundle(Bundle):
                 connectors.append(self.Members[name])
         return connectors
 
-#Helper to intend text blocks
-def intend(**kwargs):
+#Helper to indent text blocks
+def indent(**kwargs):
+    '''
+    Helper for indenting text blocks
+    Also adds a newline after every line (including last one)
+    Parameters
+    -----------
+    **kwargs : 
+        text  : text to indent (may allow line breaks)
+        level : level of indent (level * 4 spaces will be added to each row)
+    '''
+    text = kwargs.get('text', '')
+    nspaces = 4
+    level = kwargs.get('level', 0)
     textout=''
-    nspaces=4
-    for line in (kwargs.get('text')).splitlines():
-        for _ in range(nspaces*kwargs.get('level')):
-            line=line+' '
-        textout=textout+line+'\n'
+    for line in text.splitlines():
+        spaces = ' ' * nspaces*level
+        textout += spaces+line+'\n'
     return textout
+
+# Support the old name for backwards compatibility
+def intend(**kwargs):
+    return indent(**kwargs)
+
 
 if __name__=="__main__":
     pass

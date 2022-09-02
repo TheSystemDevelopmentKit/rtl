@@ -22,7 +22,7 @@ import pandas as pd
 from functools import reduce
 import shutil
 
-from rtl.connector import intend
+from rtl.connector import indent
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 
@@ -304,6 +304,17 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='W',msg='Could not remove %s' %self.rtlworkpath)
 
     @property
+    def vlogcompargs(self):
+        ''' List of arguments passed to the simulator
+        during the verilog compilation '''
+        if not hasattr(self, '_vlogcompargs'):
+            self._vlogcompargs = []
+        return self._vlogcompargs
+    @vlogcompargs.setter
+    def vlogcompargs(self, value):
+        self._vlogcompargs = value
+
+    @property
     def rtlparameters(self): 
         '''Dictionary of parameters passed to the simulator 
         during the simulation invocation
@@ -452,7 +463,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         if self.model=='sv':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simdut + ' ' + self.simtb )
+                    + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
         elif self.model=='vhdl':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
@@ -488,6 +499,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 dostring=''
                 self.print_log(type='I',msg='No interactive control file set.')
             submission="" #Local execution
+
             if self.model == 'icarus':
                 rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
                         + ' && gtkwave -S' + dofile + ' ' + self.name + '_dump.vcd')

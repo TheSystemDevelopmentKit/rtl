@@ -21,7 +21,7 @@ from thesdk import *
 from rtl import *
 from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
-from rtl.connector import intend 
+from rtl.connector import indent
 from rtl.module import verilog_module
 from rtl.entity import vhdl_entity
 
@@ -170,7 +170,7 @@ class testbench(verilog_module):
         assigns='\n//Assignments\n'
         for match in matchlist:
             assigns=assigns+self.connectors.assign(match=match)
-        return intend(text=assigns,level=kwargs.get('level',0))
+        return indent(text=assigns,level=kwargs.get('level',0))
      
     @property
     def iofile_definitions(self):
@@ -347,7 +347,7 @@ self.dut_instance.instance
         contents+="""
 
 //io_out
-        """
+"""
         for key, member in self.iofiles.Members.items():
             if member.dir=='out':
                 contents+=member.verilog_io
@@ -362,11 +362,11 @@ self.connectors.verilog_inits(level=1)+\
 
     // Sequences enabled by initdone
     $display("Ready to read"); 
-    """
+"""
 
         for key, member in self.iofiles.Members.items():
             if member.dir=='in':
-                contents+=member.verilog_io
+                contents+=indent(text=member.verilog_io, level=1)
 
         contents+='\njoin\n'+self.iofile_close+'\n$finish;\nend\n'
         self.contents=contents
