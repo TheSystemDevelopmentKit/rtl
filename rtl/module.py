@@ -153,8 +153,9 @@ class verilog_module(thesdk):
                         signal.name=port_match.group(6)
                         signals.append(signal)
 
-                    # look for port information in module items
-                    # some tools output verilog in a format where the port 
+                    # look for port information in module items since
+                    # some tools output verilog in a format where the port declarations are
+                    # split between the module port list and the module body
                     for signal in signals:
                         # fill in IO information defined in module body
                         signal_regex = re.compile(port_pattern(signal.name))
