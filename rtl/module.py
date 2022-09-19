@@ -102,75 +102,79 @@ class verilog_module(thesdk):
 
         '''
         if not hasattr(self,'_ios'):
-            startmatch=re.compile(r"module *(?="+self.name+r"\s*\()\s*"+r".*.+$")
-            iomatch=re.compile(r".*(?<!#)\(.*$")
-            parammatch=re.compile(r".*#\(.*$")
-            iostopmatch=re.compile(r'.*\);.*$')
-            dut=''
-            # Extract the module definition
+            # multiline regex for parsing relevant sections of a module definition
+            # capture groups:
+            #   0. (full match)
+            #   1. module parameter port list
+            #   2. list of ports
+            #   3. module items
+            #
+            # playground: https://regex101.com/r/n2Zmgn/1
+            module_pattern = r"module\s*"+self.name+r"\s*(\s*#\([\s\S]*?\))?\s*\(([\s\S]*?)\);([\s\S]*?)endmodule"
+            module_regex = re.compile(module_pattern)
+
+            # regex pattern for parsing port declarations
+            # capture groups:
+            #   0. (full match)
+            #   1. port direction   (input|output|inout)
+            #   2. port type        (wire|reg)
+            #   3. port size        [msb:lsb]
+            #     4. msb index
+            #     5. lsb index
+            #   6. port name (identifier)
+            #
+            # playground: https://regex101.com/r/eiZDS0/1
+            # TODO: add support for escaped identifiers
+            def port_pattern(identifier):
+                return fr"\s*(input|output|inout)?\s*(wire|reg)?\s*(\[\s*([0-9]+)\s*:\s*([0-9]+)\s*\])?\s*({identifier})"
+
+            port_identifier_pattern = r"[a-zA-Z_]+[a-zA-Z0-9_$]*"
+            port_regex = re.compile(port_pattern(port_identifier_pattern))
+
             self._ios=verilog_connector_bundle()
             self.print_log(type='I', msg="{}".format(self.file))
-            if os.path.isfile(self.file):
-                with open(self.file) as infile:
-                    wholefile=infile.readlines()
-                    modfind=False
-                    paramfind=False
-                    iofind=False
-                    for line in wholefile:
-                        if (not modfind and startmatch.match(line)):
-                            modfind=True
-                        if modfind and parammatch.match(line):
-                                paramfind=True
-                        if modfind and iomatch.match(line):
-                                iofind=True
-                        if ( modfind and (iofind or paramfind) and iostopmatch.match(line)):
-                            modfind=False
-                            iofind=False
-                            paramfind=False
-                            #Inclusive
-                            dut=dut+re.sub(r"//.*;.*$","\);",line) +'\n'
-                        elif modfind and iofind:
-                            dut=dut+re.sub(r"//.*$","",line)
-                    #Remove the scala comments
-                    dut=re.sub(r",.*$",",",dut)
-                    dut=dut.replace("\n","")
-                    #Generate lambda functions for pattern filtering
-                    fils=[
-                        re.compile(r"module\s*"+self.name+r"\s*"),
-                        re.compile(r"\("),
-                        re.compile(r"\)"),
-                        re.compile(r"^\s*"),
-                        re.compile(r"\s*(?=> )"),
-                        re.compile(r"////.*$"),
-                        re.compile(r";.*")
-                      ]
-                    func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
-                    dut=reduce(lambda s, func: func(s), func_list, dut)
-                    dut=re.sub(r",\s*",",",dut)
-                    if dut:
-                        for ioline in dut.split(','):
-                            extr=ioline.split()
-                            signal=verilog_connector()
-                            signal.cls=extr[0]
-                            if len(extr)==2:
-                                signal.name=extr[1]
-                            elif len(extr)==3:
-                                signal.name=extr[2]
-                                busdef=re.match(r"^.*\[(\d+):(\d+)\]",extr[1])
-                                signal.ll=int(busdef.group(1))
-                                signal.rl=int(busdef.group(2))
-
-                            #By default, we create a connector that is cross connected to the input
-                            signal.connect=deepcopy(signal)
-                            if signal.cls=='input':
-                                signal.connect.cls='reg'
-                            if signal.cls=='output':
-                                signal.connect.cls='wire'
-                            signal.connect.connect=signal
-
-                            self._ios.Members[signal.name]=signal
-            else:
+            if not os.path.isfile(self.file):
                 self.print_log(type='F', msg='File does not exist: %s' % self.file)
+
+            # parse module IO definitions
+            with open(self.file) as infile:
+                file_str = infile.read()
+                module_match = re.search(module_regex, file_str)
+                if module_match is not None:
+                    signals = []
+                    port_list = module_match.group(2).split(',')
+                    for port in port_list:
+                        port_match = re.search(port_regex, port)
+                        signal=verilog_connector()
+                        signal.cls=port_match.group(1)
+                        if port_match.group(3) is not None:
+                            signal.ll=port_match.group(4)
+                            signal.rl=port_match.group(5)
+                        signal.name=port_match.group(6)
+                        signals.append(signal)
+
+                    # look for port information in module items since
+                    # some tools output verilog in a format where the port declarations are
+                    # split between the module port list and the module body
+                    for signal in signals:
+                        # fill in IO information defined in module body
+                        signal_regex = re.compile(port_pattern(signal.name))
+                        match = re.search(signal_regex, module_match.group(3))
+                        if match is not None:
+                            if match.group(1) is not None:
+                                signal.cls = match.group(1)
+                            if match.group(3) is not None:
+                                signal.ll = match.group(4)
+                                signal.rl = match.group(5)
+
+                        # By default, we create a connector that is cross connected to the input
+                        signal.connect=deepcopy(signal)
+                        if signal.cls=='input':
+                            signal.connect.cls='reg'
+                        if signal.cls=='output':
+                            signal.connect.cls='wire'
+                        signal.connect.connect=signal
+                        self._ios.Members[signal.name]=signal
         return self._ios
 
     # Setting principle, assign a dict
