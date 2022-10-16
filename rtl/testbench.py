@@ -64,6 +64,8 @@ class testbench(verilog_module):
         
         #The methods for these are derived from verilog_module
         self._name=''
+        self._directives=['`timescale %s / %s'
+                % (self.parent.rtl_timeunit, self.parent.rtl_timeprecision)]
         self._parameters=Bundle()
         self.connectors=verilog_connector_bundle()
         self.iofiles=Bundle()
@@ -327,9 +329,8 @@ class testbench(verilog_module):
 
         '''
     # Start the testbench contents
-        contents="""
-//timescale 1ps this should probably be a global model parameter
-"""+self.parameter_definitions+\
+        contents = "\n"+\
+self.parameter_definitions+\
 self.connector_definitions+\
 self.assignments() +\
 self.iofile_definitions+\

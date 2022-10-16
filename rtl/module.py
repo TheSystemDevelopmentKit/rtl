@@ -184,6 +184,17 @@ class verilog_module(thesdk):
         self._ios=deepcopy(value)
 
     @property
+    def directives(self):
+        ''' Verilog directives affecting the whole module.
+        '''
+        if not hasattr(self,'_directives'):
+            self._directives = list()
+        return self._directives
+    @directives.setter
+    def directives(self, value):
+        self._directives = value
+
+    @property
     def parameters(self):
         '''Parameters of the verilog module. Bundle of values of type string.
 
@@ -306,7 +317,10 @@ class verilog_module(thesdk):
 
         '''
         if not hasattr(self,'_definition'):
-            #First we print the parameter section
+            self._definition = ''
+            # module-wide directives
+            self._definition += '\n'.join(self.directives) + '\n'
+            # module parameters
             if self.parameters.Members:
                 parameters=''
                 first=True
@@ -317,9 +331,10 @@ class verilog_module(thesdk):
                     else:
                         parameters=parameters+',\n    parameter %s = %s' %(name,val)
                 parameters=parameters+'\n)'
-                self._definition='module %s %s' %(self.name, parameters)
+                self._definition+='module %s %s' %(self.name, parameters)
             else:
-                self._definition='module %s ' %(self.name)
+                self._definition+='module %s ' %(self.name)
+            # module io
             first=True
             if self.ios.Members:
                 for ioname, io in self.ios.Members.items():
@@ -339,6 +354,7 @@ class verilog_module(thesdk):
                         self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
                 self._definition=self._definition+'\n)'
             self._definition=self._definition+';'
+            # module body
             if self.contents:
                 self._definition=self._definition+self.contents+'\nendmodule'
         return self._definition
