@@ -645,7 +645,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             # vlogsrc exists, simdut doesn't exist => copy vlogsrc to simdut
             elif vlogsrc_exists and not simdut_exists:
                 self.print_log(type='I', msg='Copying %s to %s' % (self.vlogsrc, self.simdut))
-                shutil.copyfile(self.vlogsrc, self.simdut)
+                shutil.copyfile(self.vlogsrc, self.simdut, follow_symlinks=False)
             # vlogsrc doesn't exist, simdut exists (externally generated) => use externally generated simdut
             elif not vlogsrc_exists and simdut_exists:
                 self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
@@ -662,11 +662,11 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Using externally generated source: %s' % modfile)
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    shutil.copyfile(srcfile, dstfile)
+                    shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
 
         # nothing generates vhdl so simply copy all files to rtlsimpath
         elif self.model == 'vhdl':
-            shutil.copy(self.vhdlsrc, self.rtlsimpath)
+            shutil.copy(self.vhdlsrc, self.rtlsimpath, follow_symlinks=False)
             for entfile in self.vhdlentityfiles:
                 srcfile = os.path.join(self.vhdlsrcpath, entfile)
                 dstfile = os.path.join(self.rtlsimpath, entfile)
@@ -674,7 +674,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Using externally generated source: %s' % entfile)
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    shutil.copyfile(srcfile, dstfile)
+                    shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
 
         # flush cached writes to disk
         output = subprocess.check_output("sync %s" % self.rtlsimpath, shell=True)
