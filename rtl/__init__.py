@@ -25,8 +25,9 @@ import shutil
 from rtl.connector import indent, verilog_connector_bundle
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
+from rtl.icarus.icarus import icarus as icarus
 
-class rtl(thesdk,metaclass=abc.ABCMeta):
+class rtl(icarus,thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions 
     for rtl simulations in the subclasses.
     
@@ -460,53 +461,38 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
            Compiled from various parameters. See source for details.
 
         '''
-        submission=self.verilog_submission
         if self.model == 'icarus':
-            os.mkdir(self.rtlworkpath)
-        else:
+            return self.icarus_rtlcmd()
+
+        elif self.model=='sv':
+            submission=self.verilog_submission
             rtllibcmd =  'vlib ' +  self.rtlworkpath
             rtllibmapcmd = 'vmap work ' + self.rtlworkpath
-
-        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles])
-
-        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
-
-        if self.model=='sv':
+            vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+                str(param) for param in self.vlogmodulefiles])
+            vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+                str(param) for param in self.vhdlentityfiles])
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
-        elif self.model=='vhdl':
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simtb )
-        elif self.model=='icarus':
-            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name + vlogmodulesstring
-    	            + ' ' + self.simdut + ' ' + self.simtb )
+            vhdlcompcmd = ( 'vcom -work work ' + ' ' +
+                           vhdlmodulesstring + ' ' + self.vhdlsrc )
+            gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
+                for param,val in iter(self.rtlparameters.items()) ])
+            vlogsimargs = ' '.join(self.vlogsimargs)
 
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
-        
-        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
+            fileparams=''
+            for name, file in self.iofile_bundle.Members.items():
+                fileparams+=' '+file.simparam
 
-        vlogsimargs = ' '.join(self.vlogsimargs)
-
-        fileparams=''
-        for name, file in self.iofile_bundle.Members.items():
-            fileparams+=' '+file.simparam
-
-        dofile=self.interactive_controlfile
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-        else:
-            dostring=''
-            self.print_log(type='I',msg='No interactive control file set.')
-
-        if not self.interactive_rtl:
-            if self.model == 'icarus':
-                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
+            dofile=self.interactive_controlfile
+            if os.path.isfile(dofile):
+                dostring=' -do "'+dofile+'"'
+                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
             else:
+                dostring=''
+                self.print_log(type='I',msg='No interactive control file set.')
+
+            if not self.interactive_rtl:
                 if dostring == '':
                     dostring=' -do "run -all; quit;"'
 
@@ -514,23 +500,58 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                         + fileparams + ' ' + gstring
                         + ' ' + vlogsimargs + ' work.tb_' + self.name  
                         + dostring)
-        else:
-            submission="" #Local execution
-            if self.model == 'icarus':
-                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
-                        + ' && gtkwave -S' + dofile + ' ' + self.name + '_dump.vcd')
             else:
                 rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                         + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
-        if self.model=='sv':
             self._rtlcmd =  rtllibcmd  +\
                     ' && ' + rtllibmapcmd +\
                     ' && ' + vlogcompcmd +\
                     ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd
+            return self._rtlcmd
+
         elif self.model=='vhdl':
+            submission=self.verilog_submission
+            rtllibcmd =  'vlib ' +  self.rtlworkpath
+            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+            vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+                str(param) for param in self.vlogmodulefiles])
+            vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+                str(param) for param in self.vhdlentityfiles])
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                    + ' ' + self.simtb )
+            vhdlcompcmd = ( 'vcom -work work ' + ' ' +
+                           vhdlmodulesstring + ' ' + self.vhdlsrc )
+            gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
+                for param,val in iter(self.rtlparameters.items()) ])
+            vlogsimargs = ' '.join(self.vlogsimargs)
+
+            fileparams=''
+            for name, file in self.iofile_bundle.Members.items():
+                fileparams+=' '+file.simparam
+
+            dofile=self.interactive_controlfile
+            if os.path.isfile(dofile):
+                dostring=' -do "'+dofile+'"'
+                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+            else:
+                dostring=''
+                self.print_log(type='I',msg='No interactive control file set.')
+
+            if dostring == '':
+                dostring=' -do "run -all; quit;"'
+
+            if not self.interactive_rtl:
+                rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
+                        + fileparams + ' ' + gstring
+                        + ' ' + vlogsimargs + ' work.tb_' + self.name  
+                        + dostring)
+            else:
+                rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
+                        + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
+
             self._rtlcmd =  rtllibcmd  +\
                     ' && ' + rtllibmapcmd +\
                     ' && ' + vhdlcompcmd +\
@@ -538,13 +559,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
                     rtlsimcmd
-        if self.model=='icarus':
-            self._rtlcmd =  vlogcompcmd +\
-                    ' && sync ' + self.rtlworkpath +\
-                    ' && ' + submission +\
-                    rtlsimcmd
+            return self._rtlcmd
+        else:
+            self.print_log(type='F', msg='Model %s not supported' %(self.model))
 
-        return self._rtlcmd
 
     # Just to give the freedom to set this if needed
     @rtlcmd.setter
