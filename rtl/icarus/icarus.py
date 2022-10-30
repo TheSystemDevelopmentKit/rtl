@@ -1,7 +1,9 @@
 from thesdk import *
-class icarus(thesdk,metaclass=abc.ABCMeta):
+from rtl.sv.sv import sv as sv
+class icarus(sv,thesdk,metaclass=abc.ABCMeta):
+    @property
     def icarus_rtlcmd(self):
-        submission=self.verilog_submission
+        submission=self.lsf_submission
         os.mkdir(self.rtlworkpath)
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
@@ -39,3 +41,37 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
 
         return self._rtlcmd
 
+    @property
+    def icarus_simdut(self):
+        ''' Source file for Device Under Test in simulations directory
+
+            Returns
+            -------
+                self.rtlsimpath + self.name + self.vlogext for 'sv' model
+                self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
+        '''
+        extension = None
+        # Icarus supports only verilog
+        extension = self.vlogext
+        self._simdut = os.path.join(self.rtlsimpath, self.name+extension)
+        print(self.simdut)
+        return self._simdut
+
+    @property
+    def icarus_simtb(self):
+        ''' Icarus Testbench source file in simulations directory.
+
+        This file and it's format is dependent on the language(s)
+        supported by the simulator. Currently we have support only for verilog testbenches.
+
+        '''
+        self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vlogext
+        return self._simtb
+    
+    @property
+    def icarus_dofilepaths(self):
+        dofiledir = '%s/interactive_control_files/gtkwave' % self.entitypath
+        dofilepath = '%s/general.tcl' % dofiledir
+        obsoletepath = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
+        newdofilepath = '%s/general.tcl' % self.simpath
+        return (dofiledir, dofilepath,obsoletepath,newdofilepath)
