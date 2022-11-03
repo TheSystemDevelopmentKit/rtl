@@ -457,8 +457,8 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
         elif self.model=='icarus':
-            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name + vlogmodulesstring
-    	            + ' ' + self.simdut + ' ' + self.simtb )
+            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.simtb + ' ' + self.simdut + ' '  
+            + vlogmodulesstring)
 
         vhdlcompcmd = ( 'vcom -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
