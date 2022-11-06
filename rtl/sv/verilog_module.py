@@ -17,9 +17,9 @@ from rtl import *
 from copy import deepcopy
 from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
-from rtl.module_commons import module_commons
+from rtl.module_common import module_common
 
-class verilog_module(module_commons,thesdk):
+class verilog_module(module_common,thesdk):
     """Objective:
 
         1) 
@@ -43,13 +43,13 @@ class verilog_module(module_commons,thesdk):
     """
 
     def __init__(self, **kwargs):
-        ''' Executes init of module_commons, thus having the same attributes and 
+        ''' Executes init of module_common, thus having the same attributes and 
         parameters.
 
         Parameters
         ----------
             **kwargs :
-               See module module_commons
+               See module module_common
         
         '''
         super().__init__(**kwargs)

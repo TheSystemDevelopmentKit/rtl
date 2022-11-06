@@ -17,7 +17,7 @@ from thesdk import *
 from rtl import *
 from copy import deepcopy
 
-class module_commons(thesdk):
+class module_common(thesdk):
     """ Class containing common properties and methods for all language dependent modules
     """
     def __init__(self, **kwargs):
