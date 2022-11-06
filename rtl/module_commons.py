@@ -16,54 +16,56 @@ import os
 from thesdk import *
 from rtl import *
 from copy import deepcopy
-from rtl.connector import verilog_connector
-from rtl.connector import verilog_connector_bundle
-from rtl.module_commons import module_commons
-from rtl.sv.verilog_module import verilog_module
 
-class module(module_commons,thesdk):
-    """ Currently module class is just an alias for verilog_module.
-
+class module_commons(thesdk):
+    """ Class containing common properties and methods for all language dependent modules
     """
     def __init__(self, **kwargs):
-        ''' Executes init of module_commons, thus having the same attributes and 
-        parameters.
+        '''Parameters
+           ----------
+              **kwargs :
+                 file: str
+                    Verilog file containing the module
+                 name: str
+                    Name of the module
+                 instname: str, self.name
+                    Name of the instance
+                 lang: str, language of the module 'sv' | 'vhdl' not supported yet.
+                     Default: 'sv'
+        '''
 
-        Parameters
-        ----------
-            **kwargs :
-               See module module_commons
+        self.file=kwargs.get('file','')
+        self._name=kwargs.get('name','')
+        self._instname=kwargs.get('instname',self.name)
+        if not self.file and not self._name:
+            self.print_log(type='F', msg='Either name or file must be defined')
         
-        '''
-        super().__init__({**kwargs})
-
     @property
-    def lang(self):
-        '''Description language used.
+    def name(self):
+        """Name of the module. Derived from the file name.
 
-        Default: `sv`
-
-        '''
-        if not hasattr(self,'_lang'):
-            self._lang='sv'
-        return self._lang
-    @lang.setter
-    def lang(self,value):
-            self._lang=value
-
-    @property
-    def langmodule(self):
-        """The language specific operation is defined with an instance of 
-        language specific class. Properties and methods return values from that class.
         """
-        if not hasattr(self,'_langmodule'):
-            if self.lang == 'sv':
-                self._langmodule=verilog_module(file=self.file, name=self.name, instname=self.instname)
-            elif self.lang == 'vhdl':  
-                self._langmodule=vhdl_entity(file=self.file, name=self.name, instname=self.instname)
-        return self._langmodule
+
+        if not self._name:
+            self._name=os.path.splitext(os.path.basename(self.file))[0]
+        return self._name
 
     @property
+    def instname(self):
+        """Name of the instance, when instantiated inside other module.
+
+        Default: `self.name_DUT`
+
+        """
+        if not hasattr(self,'_instname'):
+            self._instname=self.name+'_DUT'
+        return self._instname
+    @instname.setter
+    def instname(self,value):
+            self._instname=value
+
+    @property
+    @abstractmethod
     def ios(self):
         '''Connector bundle containing connectors for all module IOS.
            All the IOs are connected to signal connectors that 
@@ -73,50 +75,37 @@ class module(module_commons,thesdk):
         '''
         return self.langmodule.ios
 
-    # Setting principle, assign a dict
-    # individual parameters can be set externally
-    @ios.setter
-    def ios(self,value):
-        self.langmodule.ios=deepcopy(value)
-
     @property
+    @abstractmethod
     def parameters(self):
         '''Parameters of the verilog module. Bundle of values of type string.
 
         '''
         return self.langmodule.parameters
+
     @parameters.setter
     def parameters(self,value):
         self.langmodule.parameters.Members=deepcopy(value)
 
     @property
+    @abstractmethod
     def contents(self):
         '''Contents of the module. String containing the Verilog code after 
         the module definition.
 
         '''
         return self.langmodule.contents
-    @contents.setter
-    def contents(self,value):
-        self.langmodule.contents=value
-    @contents.deleter
-    def contents(self,value):
-        self.langmodule.contents=None
 
     @property
+    @abstractmethod
     def io_signals(self):
         '''Bundle containing the signal connectors for IO connections.
 
         '''
         return self.langmodule.io_signals
 
-    @io_signals.setter
-    def io_signals(self,value):
-        for conn in value.Members :
-            self.langmodule.io_signals.Members[conn.name].connect=conn
-        return self.langmodule.io_signals
-
     @property
+    @abstractmethod
     def definition(self):
         '''Module definition part extracted for the file. Contains parameters and 
         IO definitions.
@@ -127,6 +116,7 @@ class module(module_commons,thesdk):
     # Instance is defined through the io_signals
     # Therefore it is always regenerated
     @property
+    @abstractmethod
     def instance(self):
         '''Instantioation string of the module. Can be used inside of the other modules.
 
@@ -134,6 +124,7 @@ class module(module_commons,thesdk):
         return self.langmodule.instance
 
     #Methods
+    @abstractmethod
     def export(self,**kwargs):
         '''Method to export the module to a given file.
 

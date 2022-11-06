@@ -17,8 +17,9 @@ from rtl import *
 from copy import deepcopy
 from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
+from rtl.module_commons import module_commons
 
-class verilog_module(thesdk):
+class verilog_module(module_commons,thesdk):
     """Objective:
 
         1) 
@@ -42,51 +43,17 @@ class verilog_module(thesdk):
     """
 
     def __init__(self, **kwargs):
-        '''Parameters
-           ----------
-              **kwargs :
-                 file: str
-                    Verilog file containing the module
-                 name: str
-                    Name of the module
-                 instname: str, self.name
-                    Name of the instance
+        ''' Executes init of module_commons, thus having the same attributes and 
+        parameters.
 
+        Parameters
+        ----------
+            **kwargs :
+               See module module_commons
+        
         '''
-        # No need to propertize these yet
-        self.file=kwargs.get('file','')
-        self._name=kwargs.get('name','')
-        self._instname=kwargs.get('instname',self.name)
-        if not self.file and not self._name:
-            self.print_log(type='F', msg='Either name or file must be defined')
+        super().__init__(**kwargs)
     
-
-    @property
-    def name(self):
-        '''Name of the module. Derived from the file name.
-
-        '''
-
-        if not self._name:
-            self._name=os.path.splitext(os.path.basename(self.file))[0]
-        return self._name
-
-    @property
-    def instname(self):
-        '''Name of the instance, when instantiated inside other module.
-
-        Default: `self.name_DUT`
-
-        '''
-        if not hasattr(self,'_instname'):
-            self._instname=self.name+'_DUT'
-        return self._instname
-    @instname.setter
-    def instname(self,value):
-            self._instname=value
-
-
-
     @property
     def ios(self):
         '''Verilog connector bundle containing connectors for all module IOS.

@@ -21,7 +21,6 @@ from rtl import *
 from rtl.sv.verilog_module import verilog_module
 from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
-from rtl.module_commons import module_commons
 
 class vhdl_entity(verilog_module,thesdk):
 
