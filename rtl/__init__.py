@@ -36,7 +36,6 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     
     """
 
-    # These need to be converted to abstact properties
     def __init__(self):
         pass
 
@@ -104,7 +103,6 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_name'):
-            #_classfile is an abstract property that must be defined in the class.
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
 
@@ -116,7 +114,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         pasted to their own lines (no linebreaks needed), and the syntax is
         unchanged.
 
-        Example: creating a custm clock::
+        Example: creating a custom clock::
 
             self.rtlmisc = []
             self.rtlmisc.append('reg clock2;')

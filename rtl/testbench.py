@@ -39,10 +39,6 @@ class testbench(module):
 
     '''
 
-    @property
-    def _classfile(self):
-        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
-
     def __init__(self, parent=None, **kwargs):
         '''Parameters
            ----------
@@ -281,15 +277,15 @@ class testbench(module):
         # Create TB connectors from the control file
         # See controller.py
         for ioname,val in self.parent.IOS.Members.items():
-            if val.iotype is not 'file':
+            if val.iotype != 'file':
                 self.parent.iofile_bundle.Members[ioname].verilog_connectors=\
                         self.connectors.list(names=val.ionames)
-                if val.dir is 'in': 
+                if val.dir == 'in': 
                     # Data must be properly shaped
                     self.parent.iofile_bundle.Members[ioname].Data=self.parent.IOS.Members[ioname].Data
-            elif val.iotype is 'file': #If the type is file, the Data is a bundle
+            elif val.iotype == 'file': #If the type is file, the Data is a bundle
                 for bname,bval in val.Data.Members.items():
-                    if val.dir is 'in': 
+                    if val.dir == 'in': 
                         # Adoption transfers parenthood of the files to this instance
                         self.IOS.Members[ioname].Data.Members[bname].adopt(parent=self)
                     for connector in bval.verilog_connectors:

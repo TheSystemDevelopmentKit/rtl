@@ -41,13 +41,6 @@ class verilog_module(thesdk):
             
     '''
 
-    @property
-    def _classfile(self):
-        ''' Mandatory because nheriting thesdk class
-        
-        '''
-        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
-
     def __init__(self, **kwargs):
         '''Parameters
            ----------

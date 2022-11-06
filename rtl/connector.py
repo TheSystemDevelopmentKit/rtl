@@ -1,18 +1,38 @@
-# Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
+"""
+=================
+Verilog connector
+=================
+Class for describing signals in wide sense, including IO's
 
+Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
+"""
 import os
 from thesdk import *
-#from verilog import *
 
-## Class for storing signals in wide sense, including IO's
 class verilog_connector(thesdk):
-    @property
-    def _classfile(self):
-        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
-
     def __init__(self,**kwargs):
+        """
+        Parameters
+        ----------
+        name : str
+        cls : str, input | output | inout | reg | wire
+            Default ''
+        type: str, signed (if not unsigned)
+            Default ''
+        ll: int, Left limit of a signal bus
+            Default: 0
+        rl: int, Right limit of a signalbus
+            Default: 0
+        init: str, initial value
+            Default ''
+        connect: verilog_connector instance, An connector this conenctor is connected to.
+            Default: None
+        ioformat: str, Verilog formating string fo the signal for parsing it from a file.
+            Default; '%d', i.e parse as integers.
+            
+        """
         self.name=kwargs.get('name','')
-        self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire,reg,wire
+        self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
         self.type=kwargs.get('type','') # signed
         self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
         self.rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
@@ -119,7 +139,7 @@ class verilog_connector_bundle(Bundle):
         inits=''
         match=kwargs.get('match',r".*") #By default, assign all
         for name, val in self.Members.items():
-            if re.match(match,name) and ( val.init is not None and val.init is not '' ):
+            if re.match(match,name) and ( val.init is not None and val.init != '' ):
                 inits=inits+'%s = %s;\n' %(val.name,val.init)
         return indent(text=inits, level=kwargs.get('level',0))
 
