@@ -1,7 +1,7 @@
 """
-===========
-Module
-===========
+==============
+Verilog Module
+==============
 Verilog module import features for RTL simulation package of 
 The System Development Kit.
 
@@ -19,7 +19,7 @@ from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
 
 class verilog_module(thesdk):
-    '''Objective:
+    """Objective:
 
         1) 
            a) Collect IO's to database
@@ -39,7 +39,7 @@ class verilog_module(thesdk):
 
         5) Add contents, if required, and include that to definition
             
-    '''
+    """
 
     def __init__(self, **kwargs):
         '''Parameters
@@ -60,7 +60,7 @@ class verilog_module(thesdk):
         if not self.file and not self._name:
             self.print_log(type='F', msg='Either name or file must be defined')
     
-    #Name derived from the file
+
     @property
     def name(self):
         '''Name of the module. Derived from the file name.
@@ -84,6 +84,8 @@ class verilog_module(thesdk):
     @instname.setter
     def instname(self,value):
             self._instname=value
+
+
 
     @property
     def ios(self):

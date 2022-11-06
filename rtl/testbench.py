@@ -22,7 +22,6 @@ from rtl import *
 from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
 from rtl.connector import indent
-from rtl.module import module
 from rtl.sv.verilog_module import verilog_module
 from rtl.vhdl.vhdl_entity import vhdl_entity
 
@@ -34,8 +33,8 @@ import textwrap
 ## at least between blocks
 ## Default structure during initialization?
 
-class testbench(module):
-    ''' Testbench class. Extends `module`
+class testbench(verilog_module):
+    ''' Testbench class. Extends `verilog_module`
 
     '''
 
