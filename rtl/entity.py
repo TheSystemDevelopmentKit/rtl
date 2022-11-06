@@ -1,7 +1,7 @@
 """
-===========
+======
 Entity
-===========
+======
 VHDL import features for RTL simulation package of The System Development Kit 
 
 Provides utilities to import VHDL entities to 
@@ -11,16 +11,14 @@ cross language compilations.
 
 Initially written by Marko Kosunen, 2017
 
-Transferred from VHL package in Dec 2019
-
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 19:27
+Transferred from VHDL package in Dec 2019
 
 """
 import os
 from thesdk import *
 from copy import deepcopy
 from rtl import *
-from rtl.module import verilog_module
+from rtl.sv.verilog_module import verilog_module
 from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
 

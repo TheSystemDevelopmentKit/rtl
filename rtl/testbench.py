@@ -7,7 +7,7 @@ Verilog testbench utility mmodule for TheSyDeKick. Contains attributes annd meth
 instance, parse its IO and parameter definitions and construct a structured testbench with clock and file IO.
 
 Utilizes logging method from thesdk.
-Extendsd `verilog_module` with additional properties.
+Extends `verilog_module` with additional properties.
 
 Initially written by Marko Kosunen 20190108, marko.kosunen@aalto.fi
 
@@ -22,7 +22,8 @@ from rtl import *
 from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
 from rtl.connector import indent
-from rtl.module import verilog_module
+from rtl.module import module
+from rtl.sv.verilog_module import verilog_module
 from rtl.entity import vhdl_entity
 
 import numpy as np
@@ -33,8 +34,8 @@ import textwrap
 ## at least between blocks
 ## Default structure during initialization?
 
-class testbench(verilog_module):
-    ''' Testbench class. Extends `verilog_module`
+class testbench(module):
+    ''' Testbench class. Extends `module`
 
     '''
 
