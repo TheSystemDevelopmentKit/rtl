@@ -1,7 +1,7 @@
 """
-======
-Entity
-======
+===========
+VHDL_entity
+===========
 VHDL import features for RTL simulation package of The System Development Kit 
 
 Provides utilities to import VHDL entities to 

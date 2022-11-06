@@ -24,7 +24,7 @@ from rtl.connector import verilog_connector_bundle
 from rtl.connector import indent
 from rtl.module import module
 from rtl.sv.verilog_module import verilog_module
-from rtl.entity import vhdl_entity
+from rtl.vhdl.vhdl_entity import vhdl_entity
 
 import numpy as np
 import pandas as pd
