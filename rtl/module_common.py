@@ -4,7 +4,6 @@ Module common
 =============
 Class containing common properties and methods for all language dependent modules
 
-
 Initially written by Marko Kosunen, 28.10.2022
 """
 import os

@@ -1,89 +1,89 @@
 """
-=================
-Verilog connector
-=================
+=========
+Connector
+=========
 Class for describing signals in wide sense, including IO's
 
 Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
 """
 import os
 from thesdk import *
+from rtl.connector_common import connector_common
+from rtl.sv.verilog_connector import verilog_connector
 
-class verilog_connector(thesdk):
-    def __init__(self,**kwargs):
-        """
+class connector(connector_common,thesdk):
+
+    def __init__(self, **kwargs):
+        ''' Executes init of module_common, thus having the same attributes and 
+        parameters.
+
         Parameters
         ----------
-        name : str
-        cls : str, input | output | inout | reg | wire
-            Default ''
-        type: str, signed (if not unsigned)
-            Default ''
-        ll: int, Left limit of a signal bus
-            Default: 0
-        rl: int, Right limit of a signalbus
-            Default: 0
-        init: str, initial value
-            Default ''
-        connect: verilog_connector instance, An connector this conenctor is connected to.
-            Default: None
-        ioformat: str, Verilog formating string fo the signal for parsing it from a file.
-            Default; '%d', i.e parse as integers.
-            
-        """
-        self.name=kwargs.get('name','')
-        self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
-        self.type=kwargs.get('type','') # signed
-        self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
-        self.rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
-        self.init=kwargs.get('init','') # Initial value
-        self.connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
-        self.ioformat=kwargs.get('ioformat','%d')# By default, connectors are handles as integers in file io.
+            **kwargs :
+               See module module_common
+        
+        '''
+        super().__init__({**kwargs})
 
     @property
-    def width(self):
-        ''' Width of the connector: int | str (for parametrized bounds)'''
-            
-        if (isinstance(self.ll,str) or isinstance(self.rl,str)):
-            self._width=str(self.ll) + '-' + str(self.rl)+'+1'
-        else: 
-            self._width=int(self.ll)-int(self.rl)+1
-        return self._width
+    def lang(self):
+        '''Description language used.
+
+        Default: `sv`
+
+        '''
+        if not hasattr(self,'_lang'):
+            self._lang='sv'
+        return self._lang
+
+    @lang.setter
+    def lang(self,value):
+            self._lang=value
+
+    @property
+    def langobject(self):
+        """The language specific operation is defined with an instance of 
+        language specific class. Properties and methods return values from that class.
+        """
+        if not hasattr(self,'_langmodule'):
+            if self.lang == 'sv':
+                self._langobject=verilog_connector(
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
+        return self._langobject
 
     @property
     def definition(self):
-        if self.width==1:
-            self._definition='%s %s;\n' %(self.cls, self.name)
-        elif self.type:
-            self._definition='%s %s [%s:%s] %s;\n' %(self.cls, self.type, self.ll, self.rl, self.name)
-        else:
-            self._definition='%s [%s:%s] %s;\n' %(self.cls, self.ll, self.rl, self.name)
-        return self._definition
-    
+        return self._langobject.definition
+
+    @property
+    def ioformat(self):
+        return self._langobject.ioformat
+    @ioformat.setter
+    def ioformat(self,value):
+        self._langobject.ioformat = value
+
     @property
     def assignment(self,**kwargs):
-        self._assignment='assign %s = %s;\n' %(self.name,self.connect.name)
-        return self._assignment
+        return self._langobject.assignment
+
+    @property
+    def initialization(self,**kwargs):
+        return self._langobject.initialization
 
     def nbassign(self,**kwargs):
         time=kwargs.get('time','')
         value=kwargs.get('value',self.connect.name)
-        if time:
-            return '%s = #%s %s;\n' %(self.name,time, value)
-        else:
-            return '%s = %s;\n' %(self.name, value)
+        return self._langobject.nbassign(time=time,value=value)
 
     def bassign(self):
         time=kwargs.get('time','')
         value=kwargs.get('value',self.connect.name)
-        if time:
-            return '%s <= #%s %s;\n' %(self.name,time, value)
-        else:
-            return '%s <= %s;\n' %(self.name, value)
+        return self._langobject.bassign(time=time,value=value)
 
-class verilog_connector_bundle(Bundle):
+class rtl_connector_bundle(Bundle):
     def __init__(self,**kwargs):
-        super(verilog_connector_bundle,self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def new(self,**kwargs):
         name=kwargs.get('name','')
@@ -134,13 +134,17 @@ class verilog_connector_bundle(Bundle):
                 assignments=assignments+value.assignment
         return indent(text=assignments, level=kwargs.get('level',0))
 
-    def verilog_inits(self,**kwargs):
+    def rtl_inits(self,**kwargs):
+        """Initialization strings for the coonectors to be used in creating testbench.
+
+        """
         #[TODO]: Write sanity checks
         inits=''
         match=kwargs.get('match',r".*") #By default, assign all
         for name, val in self.Members.items():
             if re.match(match,name) and ( val.init is not None and val.init != '' ):
-                inits=inits+'%s = %s;\n' %(val.name,val.init)
+                #inits=inits+'%s = %s;\n' %(val.name,val.init)
+                inits=inits+val.initialization
         return indent(text=inits, level=kwargs.get('level',0))
 
     def list(self,**kwargs):
@@ -151,6 +155,31 @@ class verilog_connector_bundle(Bundle):
             for name in names:
                 connectors.append(self.Members[name])
         return connectors
+
+class verilog_connector_bundle(rtl_connector_bundle,thesdk):
+    def __init__(self,**kwargs):
+        super(verilog_connector_bundle,self).__init__(**kwargs)
+
+        msg = 'verilog_connector_bundle class is obsolete. Use rtl_connector_bundle instead'
+        typestr = "[OBSOLETE]"
+        cviolet = '\33[35m'
+        cend    = '\33[0m'
+        print("%s %s%s%s %s: %s" %(time.strftime("%H:%M:%S"),cviolet,typestr,cend, 
+            self.__class__.__name__ , msg))
+
+
+    def verilog_inits(self,**kwargs):
+        """ Obsolete method to retain backwards compatibility use 'rtl_inits instead'
+        """
+        #[TODO]: Write sanity checks
+        inits=''
+        match=kwargs.get('match',r".*") #By default, assign all
+        for name, val in self.Members.items():
+            if re.match(match,name) and ( val.init is not None and val.init != '' ):
+                #inits=inits+'%s = %s;\n' %(val.name,val.init)
+                inits=inits+val.initialization
+        #self.print_log(type='O', msg = 'verilog_inits is obsolete. Use rtl_inits instead')
+        return indent(text=inits, level=kwargs.get('level',0))
 
 #Helper to indent text blocks
 def indent(**kwargs):
