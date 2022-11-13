@@ -15,8 +15,8 @@ import os
 from thesdk import *
 from rtl import *
 from copy import deepcopy
-from rtl.connector import verilog_connector
-from rtl.connector import verilog_connector_bundle
+from rtl.sv.verilog_connector import verilog_connector
+from rtl.connector import rtl_connector_bundle
 from rtl.module_common import module_common
 
 class verilog_module(module_common,thesdk):
@@ -92,7 +92,7 @@ class verilog_module(module_common,thesdk):
             port_identifier_pattern = r"[a-zA-Z_]+[a-zA-Z0-9_$]*"
             port_regex = re.compile(port_pattern(port_identifier_pattern))
 
-            self._ios=verilog_connector_bundle()
+            self._ios=rtl_connector_bundle()
             self.print_log(type='I', msg="{}".format(self.file))
             if not os.path.isfile(self.file):
                 self.print_log(type='F', msg='File does not exist: %s' % self.file)
@@ -247,7 +247,7 @@ class verilog_module(module_common,thesdk):
 
         '''
         if not hasattr(self,'_io_signals'):
-            self._io_signals=verilog_connector_bundle()
+            self._io_signals=rtl_connector_bundle()
             for ioname, io in self.ios.Members.items():
                 # Connectior is created already in io definitio
                 # just point to it  

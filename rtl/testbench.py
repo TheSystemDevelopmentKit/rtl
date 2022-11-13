@@ -19,8 +19,8 @@ import shlex
 from abc import * 
 from thesdk import *
 from rtl import *
-from rtl.connector import verilog_connector
-from rtl.connector import verilog_connector_bundle
+from rtl.connector import rtl_connector
+from rtl.connector import rtl_connector_bundle
 from rtl.connector import indent
 from rtl.sv.verilog_module import verilog_module
 from rtl.vhdl.vhdl_entity import vhdl_entity
@@ -61,7 +61,7 @@ class testbench(verilog_module):
         #The methods for these are derived from verilog_module
         self._name=''
         self._parameters=Bundle()
-        self.connectors=verilog_connector_bundle()
+        self.connectors=rtl_connector_bundle()
         self.iofiles=Bundle()
         self.content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
         self.assignment_matchlist=[]
@@ -250,14 +250,14 @@ class testbench(verilog_module):
 
         # Create clock if nonexistent and reset it
         if 'clock' not in self.dut_instance.ios.Members:
-            self.connectors.Members['clock']=verilog_connector(
+            self.connectors.Members['clock']=rtl_connector(lang='sv',
                     name='clock',cls='reg', init='\'b0')
         elif self.connectors.Members['clock'].init=='':
             self.connectors.Members['clock'].init='\'b0'
 
         # Create reset if nonexistent and reset it
         if 'reset' not in self.dut_instance.ios.Members:
-            self.connectors.Members['reset']=verilog_connector(
+            self.connectors.Members['reset']=rtl_connector(lang='sv',
                     name='reset',cls='reg', init='\'b0')
         elif self.connectors.Members['reset'].init=='':
             self.connectors.Members['reset'].init='\'b0'
@@ -353,7 +353,7 @@ self.dut_instance.instance
 initial #0 begin
 fork
 """ + \
-self.connectors.verilog_inits(level=1)+\
+self.connectors.rtl_inits(level=1)+\
 """
 
     // Sequences enabled by initdone

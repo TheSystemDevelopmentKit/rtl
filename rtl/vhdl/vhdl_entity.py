@@ -19,9 +19,8 @@ from thesdk import *
 from copy import deepcopy
 from rtl import *
 from rtl.sv.verilog_module import verilog_module
-from rtl.connector import verilog_connector
-from rtl.connector import verilog_connector_bundle
-from rtl.module_common import module_common
+from rtl.connector import rtl_connector
+from rtl.connector import rtl_connector_bundle
 
 class vhdl_entity(verilog_module,thesdk):
 
@@ -55,7 +54,7 @@ class vhdl_entity(verilog_module,thesdk):
             iostopmatch=re.compile(r'.*\);.*$')
             dut=''
             # Extract the module definition
-            self._ios=verilog_connector_bundle()
+            self._ios=rtl_connector_bundle()
             if os.path.isfile(self.file):
                 with open(self.file) as infile:
                     wholefile=infile.readlines()
@@ -103,7 +102,7 @@ class vhdl_entity(verilog_module,thesdk):
                     if dut:
                         for ioline in dut.split(';'):
                             extr=ioline.split(':')
-                            signal=verilog_connector()
+                            signal=rtl_connector(lang='sv')
                             if extr[1]=='in':
                                 signal.cls='input'
                             elif extr[1]=='out':

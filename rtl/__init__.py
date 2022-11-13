@@ -22,7 +22,7 @@ import pandas as pd
 from functools import reduce
 import shutil
 
-from rtl.connector import indent, verilog_connector_bundle
+from rtl.connector import indent, rtl_connector_bundle, verilog_connector_bundle
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 from rtl.sv.sv import sv as sv
@@ -521,10 +521,10 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def custom_connectors(self):
         '''Custom connectors to be added to the testbench
-        Should be a e.g. a verilog_connector_bundle
+        Should be a e.g. a rtl_connector_bundle
         '''
         if not hasattr(self, '_custom_connectors'):
-            self._custom_connectors = verilog_connector_bundle()
+            self._custom_connectors = rtl_connector_bundle()
         return self._custom_connectors
     @custom_connectors.setter
     def custom_connectors(self, bundle):

@@ -11,8 +11,7 @@ from thesdk import *
 from rtl.connector_common import connector_common
 from rtl.sv.verilog_connector import verilog_connector
 
-class connector(connector_common,thesdk):
-
+class rtl_connector(connector_common,thesdk):
     def __init__(self, **kwargs):
         ''' Executes init of module_common, thus having the same attributes and 
         parameters.
@@ -23,7 +22,7 @@ class connector(connector_common,thesdk):
                See module module_common
         
         '''
-        super().__init__({**kwargs})
+        super().__init__(**kwargs)
 
     @property
     def lang(self):
@@ -45,41 +44,47 @@ class connector(connector_common,thesdk):
         """The language specific operation is defined with an instance of 
         language specific class. Properties and methods return values from that class.
         """
-        if not hasattr(self,'_langmodule'):
+        if not hasattr(self,'_langobject'):
             if self.lang == 'sv':
                 self._langobject=verilog_connector(
-                        file=self.file, name=self.name, 
-                        instname=self.instname)
+                        name=self.name,
+                        cls=self.cls,
+                        type = self.type,
+                        ll = self.ll,
+                        rl = self.rl,
+                        init = self.init,
+                        connect = self.connect
+                        )
         return self._langobject
 
     @property
     def definition(self):
-        return self._langobject.definition
+        return self.langobject.definition
 
     @property
     def ioformat(self):
-        return self._langobject.ioformat
+        return self.langobject.ioformat
     @ioformat.setter
     def ioformat(self,value):
-        self._langobject.ioformat = value
+        self.langobject.ioformat = value
 
     @property
     def assignment(self,**kwargs):
-        return self._langobject.assignment
+        return self.langobject.assignment
 
     @property
     def initialization(self,**kwargs):
-        return self._langobject.initialization
+        return self.langobject.initialization
 
     def nbassign(self,**kwargs):
         time=kwargs.get('time','')
         value=kwargs.get('value',self.connect.name)
-        return self._langobject.nbassign(time=time,value=value)
+        return self.langobject.nbassign(time=time,value=value)
 
     def bassign(self):
         time=kwargs.get('time','')
         value=kwargs.get('value',self.connect.name)
-        return self._langobject.bassign(time=time,value=value)
+        return self.langobject.bassign(time=time,value=value)
 
 class rtl_connector_bundle(Bundle):
     def __init__(self,**kwargs):
