@@ -1,16 +1,11 @@
 """
-======
-Module
-======
-Module import features for RTL simulation package of 
-The System Development Kit. 'Module' represents verilog 
-module or VHDL entity.
+=============
+Module common
+=============
+Class containing common properties and methods for all language dependent modules
 
-Provides utilities to import Verilog modules to 
-python environment.
 
-Initially written by Marko Kosunen, 2017
-
+Initially written by Marko Kosunen, 28.10.2022
 """
 import os
 from thesdk import *
@@ -18,8 +13,6 @@ from rtl import *
 from copy import deepcopy
 
 class module_common(thesdk):
-    """ Class containing common properties and methods for all language dependent modules
-    """
     def __init__(self, **kwargs):
         '''Parameters
            ----------

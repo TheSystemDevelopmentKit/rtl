@@ -58,9 +58,13 @@ class module(module_common,thesdk):
         """
         if not hasattr(self,'_langmodule'):
             if self.lang == 'sv':
-                self._langmodule=verilog_module(file=self.file, name=self.name, instname=self.instname)
+                self._langmodule=verilog_module(
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
             elif self.lang == 'vhdl':  
-                self._langmodule=vhdl_entity(file=self.file, name=self.name, instname=self.instname)
+                self._langmodule=vhdl_entity(
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
         return self._langmodule
 
     @property
@@ -128,7 +132,7 @@ class module(module_common,thesdk):
     # Therefore it is always regenerated
     @property
     def instance(self):
-        '''Instantioation string of the module. Can be used inside of the other modules.
+        '''Instantiation string of the module. Can be used inside of the other modules.
 
         '''
         return self.langmodule.instance
