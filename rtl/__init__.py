@@ -547,7 +547,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         if self.model=='sv':
             self._rtlcmd =  rtllibcmd  +\
                     ' && ' + rtllibmapcmd +\
-                    [(' && ' + vhdlcompcmd) if cosim else ''] +\
+                    ((' && ' + vhdlcompcmd) if cosim else '') +\
                     ' && ' + vlogcompcmd +\
                     ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
