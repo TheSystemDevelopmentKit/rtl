@@ -315,6 +315,17 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self._vlogcompargs = value
 
     @property
+    def vhdlcompargs(self):
+        ''' List of arguments passed to the simulator
+        during vhdl compilation'''
+        if not hasattr(self, '_vhdlcompargs'):
+            self._vhdlcompargs = []
+        return self._vhdlcompargs
+    @vhdlcompargs.setter
+    def vhdlcompargs(self, value):
+        self._vhdlcompargs = value
+
+    @property
     def rtlparameters(self): 
         '''Dictionary of parameters passed to the simulator 
         during the simulation invocation
@@ -473,18 +484,28 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
+        # If both verilog and vhdl modules exist, this is a co-simulation
+        cosim = (vlogmodulesstring != '') and (vhdlmodulesstring != '')
+
         if self.model=='sv':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
         elif self.model=='vhdl':
+            if cosim:
+                self.print_log(type='F', msg="Cosimulation with vhdl top not yet supported!")
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
         elif self.model=='icarus':
+            if cosim:
+                self.print_log(type='F', msg="Icarus does not support VHDL/Verilog cosimulation!")
             vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name
     	            + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
 
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
+
+        vhdlcompcmd = 'vcom -work work ' + ' '.join(self.vhdlcompargs) +  ' ' + vhdlmodulesstring
+        if not cosim:
+            # Add the DUT to test string
+            vhdlcompcmd += ' ' + self.vhdlsrc
         
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
             for param,val in iter(self.rtlparameters.items()) ])
@@ -526,6 +547,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         if self.model=='sv':
             self._rtlcmd =  rtllibcmd  +\
                     ' && ' + rtllibmapcmd +\
+                    [(' && ' + vhdlcompcmd) if cosim else ''] +\
                     ' && ' + vlogcompcmd +\
                     ' && sync ' + self.rtlworkpath +\
                     ' && ' + submission +\
@@ -663,6 +685,16 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                     shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
+
+            for entfile in self.vhdlentityfiles:
+                srcfile = os.path.join(self.vhdlsrcpath, entfile)
+                dstfile = os.path.join(self.rtlsimpath, entfile)
+                if os.path.isfile(dstfile):
+                    self.print_log(type='I', msg='Using externally generated source: %s' % entfile)
+                else:
+                    self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
+                    shutil.copyfile(srcfile, dstfile)
+
 
         # nothing generates vhdl so simply copy all files to rtlsimpath
         elif self.model == 'vhdl':
