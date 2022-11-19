@@ -14,6 +14,7 @@ from thesdk import *
 from rtl import *
 from rtl.module import module
 from rtl.sv.verilog_module import verilog_module
+from rtl.vhdl.vhdl_entity import vhdl_entity
 
 class testbench_common(module):
     ''' Testbench class. Extends `module`
