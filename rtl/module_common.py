@@ -29,9 +29,26 @@ class module_common(thesdk):
         self.file=kwargs.get('file','')
         self._name=kwargs.get('name','')
         self._instname=kwargs.get('instname',self.name)
+        self._lang=kwargs.get('lang',self.lang)
+
         if not self.file and not self._name:
             self.print_log(type='F', msg='Either name or file must be defined')
         
+    @property
+    def lang(self):
+        '''Description language used.
+
+        Default: `sv`
+
+        '''
+        if not hasattr(self,'_lang'):
+            self._lang='sv'
+        return self._lang
+
+    @lang.setter
+    def lang(self,value):
+            self._lang=value
+
     @property
     def name(self):
         """Name of the module. Derived from the file name.
