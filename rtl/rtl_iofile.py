@@ -96,7 +96,7 @@ class rtl_iofile(iofile):
         return self._ioformat
     
     @ioformat.setter
-    def ioformat(self,velue):
+    def ioformat(self,value):
         self._ioformat=value
 
     @property
