@@ -484,15 +484,15 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
-        # If both verilog and vhdl modules exist, this is a co-simulation
-        cosim = (vlogmodulesstring != '') and (vhdlmodulesstring != '')
+        # If there are additional VHDL files and model is something else than VHDL, this is a cosimulation
+        cosim = (self.model != 'vhdl') and (vhdlmodulesstring != '')
 
+        # Generate Verilog compilation command
         if self.model=='sv':
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
         elif self.model=='vhdl':
-            if cosim:
-                self.print_log(type='F', msg="Cosimulation with vhdl top not yet supported!")
+            # This has only the testbench and additional Verilog sources
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                     + ' ' + self.simtb )
         elif self.model=='icarus':
@@ -501,11 +501,12 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name
     	            + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
 
-
+        # Compilation command for additional VHDL sources
         vhdlcompcmd = 'vcom -work work ' + ' '.join(self.vhdlcompargs) +  ' ' + vhdlmodulesstring
-        if not cosim:
-            # Add the DUT to test string
-            vhdlcompcmd += ' ' + self.vhdlsrc
+
+        if self.model=='vhdl':
+            # Add the DUT to compilation command
+            vhdlcompcmd += ' ' + self.simdut
         
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
             for param,val in iter(self.rtlparameters.items()) ])
@@ -686,6 +687,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                     shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
 
+            # copy other VHDL files 
             for entfile in self.vhdlentityfiles:
                 srcfile = os.path.join(self.vhdlsrcpath, entfile)
                 dstfile = os.path.join(self.rtlsimpath, entfile)
