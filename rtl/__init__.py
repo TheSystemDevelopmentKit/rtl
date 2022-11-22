@@ -438,6 +438,16 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                     shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
 
+            # copy additional VHDL files 
+            for entfile in self.vhdlentityfiles:
+                srcfile = os.path.join(self.vhdlsrcpath, entfile)
+                dstfile = os.path.join(self.rtlsimpath, entfile)
+                if os.path.isfile(dstfile):
+                    self.print_log(type='I', msg='Using externally generated source: %s' % entfile)
+                else:
+                    self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
+                    shutil.copyfile(srcfile, dstfile)
+
         # nothing generates vhdl so simply copy all files to rtlsimpath
         elif self.model == 'vhdl':
             shutil.copy(self.vhdlsrc, self.rtlsimpath, follow_symlinks=False)
