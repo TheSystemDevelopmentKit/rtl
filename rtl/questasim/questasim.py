@@ -1,6 +1,11 @@
+"""
+Questasim is a mixin class it is used to provide simulator specific
+properties and methods for RTL class
+
+Initially written by Marko kosunen 20221117
+"""
 from thesdk import *
-from rtl.sv.sv import sv as sv
-class questasim(sv,thesdk,metaclass=abc.ABCMeta):
+class questasim(thesdk,metaclass=abc.ABCMeta):
     @property
     def questasim_svcmd(self):
         submission=self.lsf_submission
