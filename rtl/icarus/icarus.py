@@ -9,8 +9,8 @@ class icarus(sv,thesdk,metaclass=abc.ABCMeta):
             str(param) for param in self.vlogmodulefiles])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
-        vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name + vlogmodulesstring
-                + ' ' + self.simdut + ' ' + self.simtb )
+        vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name
+    	            + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
             for param,val in iter(self.rtlparameters.items()) ])
         vlogsimargs = ' '.join(self.vlogsimargs)
@@ -32,7 +32,7 @@ class icarus(sv,thesdk,metaclass=abc.ABCMeta):
         else:
             submission="" #Local execution
             rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
-                    + ' && gtkwave -S' + dofile + ' ' + self.name + '_dump.vcd')
+                         + ' && gtkwave -S ' + dofile + ' ' + self.name + '_dump.vcd')
 
         self._rtlcmd =  vlogcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
