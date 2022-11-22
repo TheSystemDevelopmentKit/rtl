@@ -1,19 +1,30 @@
 from thesdk import *
 from rtl.sv.sv import sv as sv
+
+
 class questasim(sv,thesdk,metaclass=abc.ABCMeta):
+
     @property
     def questasim_svcmd(self):
         submission=self.lsf_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+
+        # Additional sources
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
+
+        # If there are additional VHDL source files, handle as co-simulation
+        cosim = vhdlmodulesstring != ''
+        
         vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
+
+        vhdlcompcmd = ( 'vcom -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
+                       
+
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
             for param,val in iter(self.rtlparameters.items()) ])
         vlogsimargs = ' '.join(self.vlogsimargs)
@@ -44,6 +55,7 @@ class questasim(sv,thesdk,metaclass=abc.ABCMeta):
 
         self._rtlcmd =  rtllibcmd  +\
                 ' && ' + rtllibmapcmd +\
+                ((' && ' + vhdlcompcmd) if cosim else '') +\
                 ' && ' + vlogcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
                 ' && ' + submission +\
