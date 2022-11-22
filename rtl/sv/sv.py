@@ -3,7 +3,7 @@
 System verilog class
 ====================
 
-This class contains all system verilog and verilog related properties that
+This mixin class contains all system verilog and verilog related properties that
 are used by simulator specific classes.
 
 Initially written by Marko Kosunen 30.10.20200, marko.kosunen@aalto.fi 
