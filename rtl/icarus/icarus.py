@@ -75,3 +75,4 @@ class icarus(sv,thesdk,metaclass=abc.ABCMeta):
         obsoletepath = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
         newdofilepath = '%s/general.tcl' % self.simpath
         return (dofiledir, dofilepath,obsoletepath,newdofilepath)
+

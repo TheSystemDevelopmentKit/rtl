@@ -94,7 +94,6 @@ class sv(thesdk,metaclass=abc.ABCMeta):
         if not hasattr(self, '_verilog_sim_args'):
             self._verilog_sim_args = []
         return self._verilog_sim_args
-
     @vlogsimargs.setter
     def vlogsimargs(self, simparam):
         self._verilog_sim_args = simparam
@@ -140,3 +139,4 @@ class sv(thesdk,metaclass=abc.ABCMeta):
         # Define the iofiles of the testbench. '
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle
+

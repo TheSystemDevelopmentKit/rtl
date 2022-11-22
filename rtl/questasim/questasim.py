@@ -138,3 +138,4 @@ class questasim(sv,thesdk,metaclass=abc.ABCMeta):
         obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
         newdofilepath = '%s/dofile.do' % self.simpath
         return (dofiledir, dofilepath,obsoletepath,newdofilepath)
+

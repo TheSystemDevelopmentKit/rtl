@@ -184,11 +184,11 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_simdut'):
             if self.model == 'icarus':
-                return self.icarus_simdut
+                self._simdut = self.icarus_simdut
             elif self.model == 'sv':
-                return self.questasim_simdut
+                self._simdut = self.questasim_simdut
             elif self.model == 'vhdl':
-                return self.questasim_simdut
+                self._simdut = self.questasim_simdut
             else:
                 self.print_log(type='F', msg='Unsupported model %s' % self.model)
         return self._simdut

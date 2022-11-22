@@ -37,7 +37,6 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_vhdlsrc'):
-            #_classfile is an abstract property that must be defined in the class.
             self._vhdlsrc=self.vhdlsrcpath + '/' + self.name + '.vhd'
         return self._vhdlsrc
 
