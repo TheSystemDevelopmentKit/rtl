@@ -6,5 +6,6 @@
 *.nfs
 *.svn
 *.asv
+tags
 Makefile
 doc/build/**

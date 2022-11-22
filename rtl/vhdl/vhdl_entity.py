@@ -1,6 +1,6 @@
 """
 ===========
-Entity
+VHDL_entity
 ===========
 VHDL import features for RTL simulation package of The System Development Kit 
 
@@ -11,26 +11,18 @@ cross language compilations.
 
 Initially written by Marko Kosunen, 2017
 
-Transferred from VHL package in Dec 2019
-
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 19:27
+Transferred from VHDL package in Dec 2019
 
 """
 import os
 from thesdk import *
 from copy import deepcopy
 from rtl import *
-from rtl.module import verilog_module
-from rtl.connector import verilog_connector
-from rtl.connector import verilog_connector_bundle
+from rtl.sv.verilog_module import verilog_module
+from rtl.connector import rtl_connector
+from rtl.connector import rtl_connector_bundle
 
-class vhdl_entity(verilog_module):
-    @property
-    def _classfile(self):
-        ''' Mandatory because of thesdk class 
-        
-        '''
-        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+class vhdl_entity(verilog_module,thesdk):
 
     def __init__(self, **kwargs):
         ''' Executes init of verilog_module, thus having the same attributes and 
@@ -62,7 +54,7 @@ class vhdl_entity(verilog_module):
             iostopmatch=re.compile(r'.*\);.*$')
             dut=''
             # Extract the module definition
-            self._ios=verilog_connector_bundle()
+            self._ios=rtl_connector_bundle()
             if os.path.isfile(self.file):
                 with open(self.file) as infile:
                     wholefile=infile.readlines()
@@ -110,7 +102,7 @@ class vhdl_entity(verilog_module):
                     if dut:
                         for ioline in dut.split(';'):
                             extr=ioline.split(':')
-                            signal=verilog_connector()
+                            signal=rtl_connector(lang='sv')
                             if extr[1]=='in':
                                 signal.cls='input'
                             elif extr[1]=='out':

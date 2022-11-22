@@ -22,17 +22,20 @@ import pandas as pd
 from functools import reduce
 import shutil
 
-from rtl.connector import indent, verilog_connector_bundle
+from rtl.connector import indent, rtl_connector_bundle, verilog_connector_bundle
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
+from rtl.sv.sv import sv as sv
+from rtl.vhdl.vhdl import vhdl as vhdl
+from rtl.icarus.icarus import icarus as icarus
+from rtl.questasim.questasim import questasim as questasim
 
-class rtl(thesdk,metaclass=abc.ABCMeta):
+class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions 
     for rtl simulations in the subclasses.
     
     """
 
-    # These need to be converted to abstact properties
     def __init__(self):
         pass
 
@@ -65,18 +68,20 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self._interactive_rtl=value
     
     @property 
-    def verilog_submission(self):
+    def lsf_submission(self):
         """
-        Defines verilog submission prefix from thesdk.GLOBALS['LSFSUBMISSION']
+        Defines submission prefix from thesdk.GLOBALS['LSFSUBMISSION'].
+        [ ToDo ] Transfer definition to thesdk entity. 
 
         Usually something like 'bsub -K'
+        
         """
-        if not hasattr(self, '_verilog_submission'):
+        if not hasattr(self, '_lsf_submission'):
             if self.has_lsf:
-                self._verilog_submission=thesdk.GLOBALS['LSFSUBMISSION']+' '
+                self._lsf_submission=thesdk.GLOBALS['LSFSUBMISSION']+' '
             else:
-                self._verilog_submission=''
-        return self._verilog_submission
+                self._lsf_submission=''
+        return self._lsf_submission
 
     @property
     def rtl_timescale(self):
@@ -98,7 +103,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_name'):
-            #_classfile is an abstract property that must be defined in the class.
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
 
@@ -110,7 +114,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         pasted to their own lines (no linebreaks needed), and the syntax is
         unchanged.
 
-        Example: creating a custm clock::
+        Example: creating a custom clock::
 
             self.rtlmisc = []
             self.rtlmisc.append('reg clock2;')
@@ -123,83 +127,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     @rtlmisc.setter
     def rtlmisc(self,value): 
             self._rtlmisc = value
-
-    @property
-    def vlogsrcpath(self):
-        ''' Search path for the verilogfiles
-            self.entitypath/sv
-
-            Returns
-            -------
-                self.entitypath/sv
-
-
-        '''
-        if not hasattr(self, '_vlogsrcpath'):
-            self._vlogsrcpath  =  self.entitypath + '/sv'
-        return self._vlogsrcpath
-    #No setter, no deleter.
-
-    @property
-    def vlogsrc(self):
-        '''Verilog source file
-           self.vlogsrcpath/self.name.sv
-
-           Returns
-           -------
-               self.vlogsrcpath + '/' + self.name + self.vlogext
-
-        '''
-        if not hasattr(self, '_vlogsrc'):
-            #_classfile is an abstract property that must be defined in the class.
-            self._vlogsrc=self.vlogsrcpath + '/' + self.name + self.vlogext
-        return self._vlogsrc
-
-    @property
-    def vhdlsrcpath(self):
-        ''' VHDL search path
-            self.entitypath/vhdl
-
-            Returns
-            -------
-                self.entitypath/vhdl
-
-
-        '''
-        if not hasattr(self, '_vhdlsrcpath'):
-            #_classfile is an abstract property that must be defined in the class.
-            self._vhdlsrcpath  =  self.entitypath + '/vhdl'
-        return self._vhdlsrcpath
-
-    @property
-    def vlogext(self):
-        ''' File extension for verilog files
-
-            Default is '.sv', but this can be overridden to support, e.g.
-            generators like Chisel that always use the '.v' prefix.
-
-        '''
-        if not hasattr(self, '_vlogext'):
-            self._vlogext = '.sv'
-        return self._vlogext
-    @vlogext.setter
-    def vlogext(self, value):
-        self._vlogext = value
-
-    @property
-    def vhdlsrc(self):
-        '''VHDL source file
-           self.vhdlsrcpath/self.name.sv'
-
-           Returns
-           -------
-               self.vhdlsrcpath + '/' + self.name + '.vhd'
-
-        '''
-        if not hasattr(self, '_vhdlsrc'):
-            #_classfile is an abstract property that must be defined in the class.
-            self._vhdlsrc=self.vhdlsrcpath + '/' + self.name + '.vhd'
-        return self._vhdlsrc
 
     @property
     def rtlsimpath(self):
@@ -256,24 +183,31 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
         '''
         if not hasattr(self, '_simdut'):
-            extension = None
-            if self.model in ['sv', 'icarus']:
-                extension = self.vlogext
+            if self.model == 'icarus':
+                self._simdut = self.icarus_simdut
+            elif self.model == 'sv':
+                self._simdut = self.questasim_simdut
             elif self.model == 'vhdl':
-                extension = '.vhd'
+                self._simdut = self.questasim_simdut
             else:
                 self.print_log(type='F', msg='Unsupported model %s' % self.model)
-            self._simdut = os.path.join(self.rtlsimpath, self.name+extension)
         return self._simdut
 
     @property
     def simtb(self):
-        ''' Verilog testbench source file in simulations directory
+        ''' Testbench source file in simulations directory.
+
+        This file and it's format is dependent on the language(s)
+        supported by the simulator. Currently we have support only for verilog testbenches.
 
         '''
         if not hasattr(self, '_simtb'):
-            #_classfile is an abstract property that must be defined in the class.
-            self._simtb=self.rtlsimpath + '/tb_' + self.name + '.sv'
+            if self.model == 'icarus':
+                return self.icarus_simtb
+            elif self.model == 'sv':
+                return self.questasim_simtb
+            elif self.model == 'vhdl':
+                return self.questasim_simtb
         return self._simtb
 
     @property
@@ -304,17 +238,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='W',msg='Could not remove %s' %self.rtlworkpath)
 
     @property
-    def vlogcompargs(self):
-        ''' List of arguments passed to the simulator
-        during the verilog compilation '''
-        if not hasattr(self, '_vlogcompargs'):
-            self._vlogcompargs = []
-        return self._vlogcompargs
-    @vlogcompargs.setter
-    def vlogcompargs(self, value):
-        self._vlogcompargs = value
-
-    @property
     def rtlparameters(self): 
         '''Dictionary of parameters passed to the simulator 
         during the simulation invocation
@@ -323,42 +246,13 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         if not hasattr(self, '_rtlparameters'):
             self._rtlparameters = dict()
         return self._rtlparameters
+
     @rtlparameters.setter
     def rtlparameters(self,value): 
             self._rtlparameters = value
     @rtlparameters.deleter
     def rtlparameters(self): 
             self._rtlparameters = None
-
-    @property
-    def vlogmodulefiles(self):
-        '''List of verilog modules to be compiled in addition of DUT
-
-        '''
-        if not hasattr(self, '_vlogmodulefiles'):
-            self._vlogmodulefiles =list([])
-        return self._vlogmodulefiles
-    @vlogmodulefiles.setter
-    def vlogmodulefiles(self,value): 
-            self._vlogmodulefiles = value
-    @vlogmodulefiles.deleter
-    def vlogmodulefiles(self): 
-            self._vlogmodulefiles = None 
-
-    @property
-    def vhdlentityfiles(self):
-        '''List of VHDL entity files to be compiled in addition to DUT
-
-        '''
-        if not hasattr(self, '_vhdlentityfiles'):
-            self._vhdlentityfiles =list([])
-        return self._vhdlentityfiles
-    @vhdlentityfiles.setter
-    def vhdlentityfiles(self,value): 
-            self._vhdlentityfiles = value
-    @vhdlentityfiles.deleter
-    def vhdlentityfiles(self): 
-            self._vhdlentityfiles = None 
 
     @property
     def interactive_control_contents(self):
@@ -397,15 +291,13 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         `./interactive_control_files/modelsim/dofile.do`.
         '''
         if self.model == 'icarus':
-            dofiledir = '%s/interactive_control_files/gtkwave' % self.entitypath
-            dofilepath = '%s/general.tcl' % dofiledir
-            obsoletepath = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
-            newdofilepath = '%s/general.tcl' % self.simpath
-        else:    
-            dofiledir = '%s/interactive_control_files/modelsim' % self.entitypath
-            dofilepath = '%s/dofile.do' % dofiledir
-            obsoletepath = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
-            newdofilepath = '%s/dofile.do' % self.simpath
+            (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.icarus_dofilepaths
+        elif self.model == 'sv':
+            (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.questasim_dofilepaths
+        elif self.model == 'vhdl':
+            (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.questasim_dofilepaths
+        else:
+            self.print_log(type='F', msg='Unsupported model %s' % self.model)
 
         if not hasattr(self, '_interactive_controlfile'):
             if not os.path.exists(dofiledir):
@@ -443,107 +335,20 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self._interactive_controlfile = value
 
     @property
-    def vlogsimargs(self):
-        '''Custom parameters for verilog simulation (vsim, vvp)
-        Provide as a list of strings
-        '''
-        if not hasattr(self, '_verilog_sim_args'):
-            self._verilog_sim_args = []
-        return self._verilog_sim_args
-    @vlogsimargs.setter
-    def vlogsimargs(self, simparam):
-        self._verilog_sim_args = simparam
-
-    @property
     def rtlcmd(self):
         '''Command used for simulation invocation
            Compiled from various parameters. See source for details.
 
         '''
-        submission=self.verilog_submission
-        if self.model == 'icarus':
-            os.mkdir(self.rtlworkpath)
-        else:
-            rtllibcmd =  'vlib ' +  self.rtlworkpath
-            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
-
-        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles])
-
-        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
-
-        if self.model=='sv':
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
-        elif self.model=='vhdl':
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simtb )
-        elif self.model=='icarus':
-            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name
-    	            + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
-
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
-        
-        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
-
-        vlogsimargs = ' '.join(self.vlogsimargs)
-
-        fileparams=''
-        for name, file in self.iofile_bundle.Members.items():
-            fileparams+=' '+file.simparam
-
-        dofile=self.interactive_controlfile
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-        else:
-            dostring=''
-            self.print_log(type='I',msg='No interactive control file set.')
-
-        if not self.interactive_rtl:
+        if not hasattr(self, '_rtlcmd'):
             if self.model == 'icarus':
-                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
+                return self.icarus_rtlcmd
+            elif self.model=='sv':
+                return self.questasim_svcmd
+            elif self.model=='vhdl':
+                return self.questasim_vhdlcmd
             else:
-                if dostring == '':
-                    dostring=' -do "run -all; quit;"'
-
-                rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
-                        + fileparams + ' ' + gstring
-                        + ' ' + vlogsimargs + ' work.tb_' + self.name  
-                        + dostring)
-        else:
-            submission="" #Local execution
-            if self.model == 'icarus':
-                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
-                        + ' && gtkwave -S ' + dofile + ' ' + self.name + '_dump.vcd')
-            else:
-                rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                        + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
-
-        if self.model=='sv':
-            self._rtlcmd =  rtllibcmd  +\
-                    ' && ' + rtllibmapcmd +\
-                    ' && ' + vlogcompcmd +\
-                    ' && sync ' + self.rtlworkpath +\
-                    ' && ' + submission +\
-                    rtlsimcmd
-        elif self.model=='vhdl':
-            self._rtlcmd =  rtllibcmd  +\
-                    ' && ' + rtllibmapcmd +\
-                    ' && ' + vhdlcompcmd +\
-                    ' && ' + vlogcompcmd +\
-                    ' && sync ' + self.rtlworkpath +\
-                    ' && ' + submission +\
-                    rtlsimcmd
-        if self.model=='icarus':
-            self._rtlcmd =  vlogcompcmd +\
-                    ' && sync ' + self.rtlworkpath +\
-                    ' && ' + submission +\
-                    rtlsimcmd
-
+                self.print_log(type='F', msg='Model %s not supported' %(self.model))
         return self._rtlcmd
 
     # Just to give the freedom to set this if needed
@@ -555,46 +360,14 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         self._rtlcmd=None
     
     def create_connectors(self):
-        '''Cretes verilog connector definitions from 
+        '''Creates connector definitions from 
            1) From a iofile that is provided in the Data 
            attribute of an IO.
            2) IOS of the verilog DUT
 
         '''
-        # Create TB connectors from the control file
-        # See controller.py
-        for ioname,io in self.IOS.Members.items():
-            # If input is a file, adopt it
-            if isinstance(io.Data,rtl_iofile): 
-                if io.Data.name is not ioname:
-                    self.print_log(type='I', 
-                            msg='Unifying file %s name to ioname %s' %(io.Data.name,ioname))
-                    io.Data.name=ioname
-                io.Data.adopt(parent=self)
-                self.tb.parameters.Members.update(io.Data.rtlparam)
-
-                for connector in io.Data.verilog_connectors:
-                    self.tb.connectors.Members[connector.name]=connector
-                    # Connect them to DUT
-                    try: 
-                        self.dut.ios.Members[connector.name].connect=connector
-                    except:
-                        pass
-            # If input is not a file, look for corresponding file definition
-            elif ioname in self.iofile_bundle.Members:
-                val=self.iofile_bundle.Members[ioname]
-                for name in val.ionames:
-                    # [TODO] Sanity check, only floating inputs make sense.
-                    if not name in self.tb.connectors.Members.keys():
-                        self.print_log(type='I', 
-                                msg='Creating non-existent IO connector %s for testbench' %(name))
-                        self.tb.connectors.new(name=name, cls='reg')
-                self.iofile_bundle.Members[ioname].verilog_connectors=\
-                        self.tb.connectors.list(names=val.ionames)
-                self.tb.parameters.Members.update(val.rtlparam)
-        # Define the iofiles of the testbench. '
-        # Needed for creating file io routines 
-        self.tb.iofiles=self.iofile_bundle
+        #currently only sv connectors are supported
+        self.sv_create_connectors()
                
     def connect_inputs(self):
         '''Assigns all IOS.Members[name].Data to
@@ -606,7 +379,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
                 val=self.iofile_bundle.Members[ioname]
                 # File type inputs are driven by the file.Data, not the input field
                 if not isinstance(self.IOS.Members[val.name].Data,rtl_iofile) \
-                        and val.dir is 'in':
+                        and val.dir == 'in':
                     # Data must be properly shaped
                     self.iofile_bundle.Members[ioname].Data=self.IOS.Members[ioname].Data
 
@@ -622,8 +395,8 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         for ioname,val in self.iofile_bundle.Members.items():
             if val.ionames:
                 for assocname in val.ionames:
-                    if val.dir is 'out':
-                        if ((val.datatype is 'sint' ) or (val.datatype is 'scomplex')):
+                    if val.dir == 'out':
+                        if ((val.datatype == 'sint' ) or (val.datatype == 'scomplex')):
                             self.tb.connectors.Members[assocname].type='signed'
                     self.tb.connectors.Members[assocname].ioformat=val.ioformat
             else:
@@ -634,6 +407,7 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
         ''' Copy rtl sources to self.rtlsimpath
 
         '''
+        # I think these should not be model dependent MK
         self.print_log(type='I', msg='Copying rtl sources to %s' % self.rtlsimpath)
         if self.model in ['sv', 'icarus']:
             # copy dut source
@@ -747,10 +521,10 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
     @property
     def custom_connectors(self):
         '''Custom connectors to be added to the testbench
-        Should be a e.g. a verilog_connector_bundle
+        Should be a e.g. a rtl_connector_bundle
         '''
         if not hasattr(self, '_custom_connectors'):
-            self._custom_connectors = verilog_connector_bundle()
+            self._custom_connectors = rtl_connector_bundle()
         return self._custom_connectors
     @custom_connectors.setter
     def custom_connectors(self, bundle):
@@ -814,7 +588,6 @@ class rtl(thesdk,metaclass=abc.ABCMeta):
             self.delete_iofile_bundle()
             self.delete_rtlworkpath()
             self.delete_rtlsimpath()
-
 
     #This writes all infile
     def write_infile(self):
