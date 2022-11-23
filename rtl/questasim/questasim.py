@@ -52,6 +52,7 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + dostring)
         else:
+            submission = ''
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
@@ -102,6 +103,7 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + dostring)
         else:
+            submission = ''
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
