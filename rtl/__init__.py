@@ -419,7 +419,10 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             # vlogsrc exists, simdut doesn't exist => copy vlogsrc to simdut
             elif vlogsrc_exists and not simdut_exists:
                 self.print_log(type='I', msg='Copying %s to %s' % (self.vlogsrc, self.simdut))
-                shutil.copyfile(self.vlogsrc, self.simdut, follow_symlinks=False)
+                if os.path.islink(self.vlogsrc):
+                    os.symlink(os.path.join(os.path.dirname(self.vlogsrc), os.readlink(self.vlogsrc)), self.simdut)
+                else:
+                    shutil.copyfile(self.vlogsrc, self.simdut, follow_symlinks=False)
             # vlogsrc doesn't exist, simdut exists (externally generated) => use externally generated simdut
             elif not vlogsrc_exists and simdut_exists:
                 self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
@@ -436,7 +439,10 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Using externally generated source: %s' % modfile)
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
+                    if os.path.islink(srcfile):
+                        os.symlink(os.path.join(os.path.dirname(srcfile), os.readlink(srcfile)), dstfile)
+                    else:
+                        shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
 
         # nothing generates vhdl so simply copy all files to rtlsimpath
         elif self.model == 'vhdl':
