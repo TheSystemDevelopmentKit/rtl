@@ -1,8 +1,9 @@
 """
+==========
 VHDL class
 ==========
 
-This class contains all VHDL related properties that
+This mixin contains all VHDL related properties that
 are used by the simulator specific classes.
 
 Initially written by Marko Kosunen 30.10.20200, marko.kosunen@aalto.fi 
