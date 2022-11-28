@@ -2,7 +2,7 @@
 Questasim is a mixin class it is used to provide simulator specific
 properties and methods for RTL class
 
-Initially written by Marko kosunen 20221117
+Initially written by Marko kosunen 20221030
 """
 from thesdk import *
 class questasim(thesdk,metaclass=abc.ABCMeta):
