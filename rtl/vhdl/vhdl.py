@@ -42,6 +42,19 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
         return self._vhdlsrc
 
     @property
+    def vhdlcompargs(self):
+        ''' List of arguments passed to the simulator
+        during VHDL compilation
+        
+        '''
+        if not hasattr(self, '_vhdlcompargs'):
+            self._vhdlcompargs = []
+        return self._vhdlcompargs
+    @vhdlcompargs.setter
+    def vhdlcompargs(self, value):
+        self._vhdlcompargs = value
+
+    @property
     def vhdlentityfiles(self):
         '''List of VHDL entity files to be compiled in addition to DUT
 
