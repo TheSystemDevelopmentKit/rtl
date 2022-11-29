@@ -11,14 +11,22 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         submission=self.lsf_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+
+        # Additional sources
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
+
+        # If there are additional VHDL source files, handle as co-simulation
+        cosim = vhdlmodulesstring != ''
+        
         vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
+
+        vhdlcompcmd = ( 'vcom -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
+                       
+
         gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
             for param,val in iter(self.rtlparameters.items()) ])
         vlogsimargs = ' '.join(self.vlogsimargs)
@@ -44,11 +52,13 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + dostring)
         else:
+            submission = ''
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
         self._rtlcmd =  rtllibcmd  +\
                 ' && ' + rtllibmapcmd +\
+                ((' && ' + vhdlcompcmd) if cosim else '') +\
                 ' && ' + vlogcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
                 ' && ' + submission +\
@@ -93,6 +103,7 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + dostring)
         else:
+            submission = ''
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
