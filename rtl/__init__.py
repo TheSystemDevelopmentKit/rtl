@@ -403,6 +403,24 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='F', 
                     msg='List of associated ionames not defined for IO %s\n. Provide it as list of strings' %(ioname))
 
+    def copy_or_relink(self,**kwargs):
+        ''' If the source is a symlink, create the target as a link to original target.
+        otherwise, copy the file.
+
+        Parameters
+        ----------
+        src : str
+            Path to source file
+        dst : str
+            Path to destination file.
+        '''
+        src=kwargs.get('src')
+        dst=kwargs.get('dst')
+        if os.path.islink(src):
+            os.symlink(os.path.join(os.path.dirname(src), os.readlink(src)), dst)
+        else:
+            shutil.copyfile(src, dst, follow_symlinks=False)
+
     def copy_rtl_sources(self):
         ''' Copy rtl sources to self.rtlsimpath
 
@@ -419,10 +437,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             # vlogsrc exists, simdut doesn't exist => copy vlogsrc to simdut
             elif vlogsrc_exists and not simdut_exists:
                 self.print_log(type='I', msg='Copying %s to %s' % (self.vlogsrc, self.simdut))
-                if os.path.islink(self.vlogsrc):
-                    os.symlink(os.path.join(os.path.dirname(self.vlogsrc), os.readlink(self.vlogsrc)), self.simdut)
-                else:
-                    shutil.copyfile(self.vlogsrc, self.simdut, follow_symlinks=False)
+                self.copy_or_relink(src=self.vlogsrc,dst=self.simdut)
             # vlogsrc doesn't exist, simdut exists (externally generated) => use externally generated simdut
             elif not vlogsrc_exists and simdut_exists:
                 self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
@@ -439,10 +454,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Using externally generated source: %s' % modfile)
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    if os.path.islink(srcfile):
-                        os.symlink(os.path.join(os.path.dirname(srcfile), os.readlink(srcfile)), dstfile)
-                    else:
-                        shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
+                    self.copy_or_relink(src=srcfile,dst=dstfile)
 
             # copy additional VHDL files 
             for entfile in self.vhdlentityfiles:
@@ -452,11 +464,11 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Using externally generated source: %s' % entfile)
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    shutil.copyfile(srcfile, dstfile)
+                    self.copy_or_relink(src=srcfile,dst=dstfile)
 
         # nothing generates vhdl so simply copy all files to rtlsimpath
         elif self.model == 'vhdl':
-            shutil.copy(self.vhdlsrc, self.rtlsimpath, follow_symlinks=False)
+            self.copy_or_relink(src=self.vhdlsrc,dst=self.rtlsimpath)
             for entfile in self.vhdlentityfiles:
                 srcfile = os.path.join(self.vhdlsrcpath, entfile)
                 dstfile = os.path.join(self.rtlsimpath, entfile)
@@ -464,7 +476,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Using externally generated source: %s' % entfile)
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    shutil.copyfile(srcfile, dstfile, follow_symlinks=False)
+                    self.copy_or_relink(src=self.vhdlsrc,dst=self.rtlsimpath)
 
         # flush cached writes to disk
         output = subprocess.check_output("sync %s" % self.rtlsimpath, shell=True)
