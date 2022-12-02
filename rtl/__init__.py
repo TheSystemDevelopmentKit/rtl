@@ -29,8 +29,10 @@ from rtl.sv.sv import sv as sv
 from rtl.vhdl.vhdl import vhdl as vhdl
 from rtl.icarus.icarus import icarus as icarus
 from rtl.questasim.questasim import questasim as questasim
+from rtl.cocotb.cocotb import cocotb
+from rtl.cocotb.cocob_testbench import cocotb_testbench
 
-class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
+class rtl(questasim,icarus,vhdl,sv,cocotb,thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions 
     for rtl simulations in the subclasses.
     
@@ -500,8 +502,14 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        output = subprocess.check_output(self._rtlcmd, shell=True);
-        self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
+        simulator = 'cocotb'
+        if simulator == 'cocotb':
+            self.run_cocotb()
+        else:
+            output = subprocess.check_output(self._rtlcmd, shell=True);
+            self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
+
+        exit()
 
         count=0
         files_ok=False
@@ -574,9 +582,22 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._read_state()
         else:
             self.copy_rtl_sources()
+            #TODO: make a property
             testbench = 'cocotb'
             if testbench == 'cocotb':
-                pass
+                self.tb = cocotb_testbench(self)
+                self.tb.define_testbench()    
+                self.add_connectors()
+                self.create_connectors()
+                self.connect_inputs()         
+                if hasattr(self,'define_io_conditions'):
+                    self.define_io_conditions()   # Local, this is dependent on how you
+                                                # control the simulation
+                                                # i.e. when you want to read an write your IO's
+                self.format_ios()
+                #self.tb.entity_test()
+                self.write_infile()
+                self.execute_rtl_sim()
             else:
                 self.tb=vtb(self)             
                 self.tb.define_testbench()    
