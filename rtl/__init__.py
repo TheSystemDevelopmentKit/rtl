@@ -574,26 +574,30 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._read_state()
         else:
             self.copy_rtl_sources()
-            self.tb=vtb(self)             
-            self.tb.define_testbench()    
-            self.add_connectors()
-            self.create_connectors()
-            self.connect_inputs()         
+            testbench = 'cocotb'
+            if testbench == 'cocotb':
+                pass
+            else:
+                self.tb=vtb(self)             
+                self.tb.define_testbench()    
+                self.add_connectors()
+                self.create_connectors()
+                self.connect_inputs()         
 
-            if hasattr(self,'define_io_conditions'):
-                self.define_io_conditions()   # Local, this is dependent on how you
-                                              # control the simulation
-                                              # i.e. when you want to read an write your IO's
-            self.format_ios()
-            self.tb.generate_contents()
-            self.tb.export(force=True)
-            self.write_infile()
-            self.execute_rtl_sim()
-            self.read_outfile()
-            self.connect_outputs()
-            # Save entity state
-            if self.save_state:
-                self._write_state()
+                if hasattr(self,'define_io_conditions'):
+                    self.define_io_conditions()   # Local, this is dependent on how you
+                                                # control the simulation
+                                                # i.e. when you want to read an write your IO's
+                self.format_ios()
+                self.tb.generate_contents()
+                self.tb.export(force=True)
+                self.write_infile()
+                self.execute_rtl_sim()
+                self.read_outfile()
+                self.connect_outputs()
+                # Save entity state
+                if self.save_state:
+                    self._write_state()
             # Clean simulation results
             self.delete_iofile_bundle()
             self.delete_rtlworkpath()
