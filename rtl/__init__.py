@@ -419,6 +419,8 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         if os.path.islink(src):
             os.symlink(os.path.join(os.path.dirname(src), os.readlink(src)), dst)
         else:
+            print(dst)
+            pdb.set_trace()
             shutil.copyfile(src, dst, follow_symlinks=False)
 
     def copy_rtl_sources(self):
@@ -468,7 +470,33 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
         # nothing generates vhdl so simply copy all files to rtlsimpath
         elif self.model == 'vhdl':
-            self.copy_or_relink(src=self.vhdlsrc,dst=self.rtlsimpath)
+            vhdlsrc_exists = os.path.isfile(self.vhdlsrc)   # verilog source present in self.entitypath/sv
+            simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
+            if not vhdlsrc_exists and not simdut_exists:
+                self.print_log(type='F', msg="Missing vhdl source for 'vhdl' model at: %s" % self.vlogsrc)
+            # vhdlsrc exists, simdut doesn't exist => copy vhdlsrc to simdut
+            elif vhdlsrc_exists and not simdut_exists:
+                self.print_log(type='I', msg='Copying %s to %s' % (self.vhdlsrc, self.simdut))
+                self.copy_or_relink(src=self.vhdlsrc,dst=self.simdut)
+            # vhdlsrc doesn't exist, simdut exists (externally generated) => use externally generated simdut
+            elif not vhdlsrc_exists and simdut_exists:
+                self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
+            # if both sources are present throw a fatal error (multiple conflicting source files)
+            else:
+                self.print_log(type='W', msg="Both model 'sv' source %s and generated source %s exist. Using %s."
+                        % (self.vhdlsrc, self.simdut, self.simdut))
+
+            # copy other verilog files
+            for modfile in self.vlogmodulefiles:
+                srcfile = os.path.join(self.vlogsrcpath, modfile)
+                dstfile = os.path.join(self.rtlsimpath, modfile)
+                if os.path.isfile(dstfile):
+                    self.print_log(type='I', msg='Using externally generated source: %s' % modfile)
+                else:
+                    self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
+                    self.copy_or_relink(src=srcfile,dst=dstfile)
+
+            # copy additional VHDL files 
             for entfile in self.vhdlentityfiles:
                 srcfile = os.path.join(self.vhdlsrcpath, entfile)
                 dstfile = os.path.join(self.rtlsimpath, entfile)
@@ -476,7 +504,8 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Using externally generated source: %s' % entfile)
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    self.copy_or_relink(src=self.vhdlsrc,dst=self.rtlsimpath)
+                    self.copy_or_relink(src=srcfile,dst=dstfile)
+                    self.copy_or_relink(src=self.vhdlsrc,dst=dstfile)
 
         # flush cached writes to disk
         output = subprocess.check_output("sync %s" % self.rtlsimpath, shell=True)
