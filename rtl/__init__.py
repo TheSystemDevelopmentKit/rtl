@@ -419,8 +419,6 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         if os.path.islink(src):
             os.symlink(os.path.join(os.path.dirname(src), os.readlink(src)), dst)
         else:
-            print(dst)
-            pdb.set_trace()
             shutil.copyfile(src, dst, follow_symlinks=False)
 
     def copy_rtl_sources(self):
