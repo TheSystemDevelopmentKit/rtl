@@ -34,7 +34,7 @@ class testbench(testbench_common):
         """
 
         #This should be language specific.
-        super().__init__(parent,**kwargs)
+        super().__init__(parent=parent,**kwargs)
 
     @property
     def lang(self):
