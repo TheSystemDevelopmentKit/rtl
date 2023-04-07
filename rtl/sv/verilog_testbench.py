@@ -17,11 +17,11 @@ from rtl.connector import rtl_connector
 from rtl.testbench_common import testbench_common
 
 class verilog_testbench(testbench_common):
-    ''' Verilog testbench class.
+    """ Verilog testbench class.
 
-    '''
+    """
     def __init__(self, parent=None, **kwargs):
-        ''' Executes init of testbench_common, thus having the same attributes and 
+        """ Executes init of testbench_common, thus having the same attributes and 
         parameters.
 
         Parameters
@@ -29,15 +29,15 @@ class verilog_testbench(testbench_common):
             **kwargs :
                See module module_common
         
-        '''
+        """
         super().__init__(parent,**kwargs)
 
         
     @property
     def parameter_definitions(self):
-        '''Parameter  and variable definition strings of the testbench
+        """Parameter  and variable definition strings of the testbench
 
-        '''
+        """
         definitions='//Parameter definitions\n'
         for name, val in self.content_parameters.items():
                 definitions+='parameter '+ val[0]+' '+name+'='+ val[1]+';\n'
@@ -49,9 +49,13 @@ class verilog_testbench(testbench_common):
             
             Dict :  {name: (type,value)}
             
-            Example:
-            --------
-            {'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
+            Example
+            -------
+
+                ::
+
+                {'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
+
         """
         if not hasattr(self,'_content_parameters'):
             self._content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
@@ -62,9 +66,9 @@ class verilog_testbench(testbench_common):
     
     @property
     def connector_definitions(self):
-        '''Verilog register and wire definition strings
+        """Verilog register and wire definition strings
 
-        '''
+        """
         # Registers first
         definitions='//Register definitions\n'
         for name, val in self.connectors.Members.items():
@@ -78,9 +82,9 @@ class verilog_testbench(testbench_common):
         return definitions
 
     def assignments(self,**kwargs):
-        '''Wire assingment strings
+        """Wire assingment strings
 
-        '''
+        """
         matchlist=kwargs.get('matchlist',self.assignment_matchlist)
         assigns='\n//Assignments\n'
         for match in matchlist:
@@ -89,9 +93,9 @@ class verilog_testbench(testbench_common):
      
     @property
     def iofile_definitions(self):
-        '''IOfile definition strings
+        """IOfile definition strings
 
-        '''
+        """
         iofile_defs='//Variables for the io_files\n'
         for name, val in self.iofiles.Members.items():
             iofile_defs=iofile_defs+val.verilog_statdef
@@ -101,20 +105,20 @@ class verilog_testbench(testbench_common):
 
     @property
     def clock_definition(self):
-        '''Clock definition string
+        """Clock definition string
 
         Todo
         Create append mechanism to add more clocks.
 
-        '''
+        """
         clockdef='//Master clock is omnipresent\nalways #(c_Ts/2.0) clock = !clock;'
         return clockdef
 
     @property
     def iofile_close(self):
-        '''File close procedure for all IO files.
+        """File close procedure for all IO files.
 
-        '''
+        """
         iofile_close='\n//Close the io_files\n'
         for name, val in self.iofiles.Members.items():
             iofile_close=iofile_close+val.verilog_fclose
@@ -143,9 +147,9 @@ class verilog_testbench(testbench_common):
         self._misccmd=None
 
     def define_testbench(self):
-        '''Defines the tb connectivity, creates reset and clock, and initializes them to zero
+        """Defines the tb connectivity, creates reset and clock, and initializes them to zero
 
-        '''
+        """
         # Dut is creted automaticaly, if verilog file for it exists
         self.connectors.update(bundle=self.dut_instance.io_signals.Members)
         #Assign verilog simulation parameters to testbench
@@ -173,9 +177,9 @@ class verilog_testbench(testbench_common):
     
     # Automate this based in dir
     def connect_inputs(self):
-        '''Define connections to DUT inputs.
+        """Define connections to DUT inputs.
 
-        '''
+        """
         # Create TB connectors from the control file
         # See controller.py
         for ioname,val in self.parent.IOS.Members.items():
@@ -205,7 +209,7 @@ class verilog_testbench(testbench_common):
         self.tb.iofiles=self.iofile_bundle
 
     def generate_contents(self):
-        ''' This is the method to generate testbench contents. Override if needed
+        """ This is the method to generate testbench contents. Override if needed
             Contents of the testbench is constructed from attributes in the 
             following order ::
             
@@ -224,7 +228,7 @@ class verilog_testbench(testbench_common):
              Addtional code may be currently injected by appending desired 
              strings (Verilog sytax) to the relevant string attributes.
 
-        '''
+        """
     # Start the testbench contents
         contents="""
 //timescale 1ps this should probably be a global model parameter
