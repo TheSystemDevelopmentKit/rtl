@@ -166,7 +166,7 @@ class testbench(testbench_common):
         """Verilog register and wire definition, VHDL signal strings.
 
         """
-        return self.langmodule.definitions
+        return self.langmodule.connector_definitions
 
     def assignments(self,**kwargs):
         """Wire/signal assingment strings
