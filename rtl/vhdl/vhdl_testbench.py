@@ -1,23 +1,24 @@
 """
-=================
-verilog_testbench
-=================
+==============
+vhdl_testbench
+==============
 
-Verilog testbench generator utility module for TheSyDeKick. Documentation provided in 'testbench' class
+VHDL testbench generator utility module for TheSyDeKick. Documentation provided in 'testbench' class
 
 Extends `testbench_common`.
 
 Initially written by Marko Kosunen 20190108, marko.kosunen@aalto.fi
-Refactored from 'testbench' by Marko Kosunen 20221119, marko.kosunen@aalto.fi
+Derived from 'verilog_testbench' by Marko Kosunen 20230523, marko.kosunen@aalto.fi
 """
 import os
 import sys
+import pdb
 from rtl import indent
 from rtl.connector import rtl_connector
 from rtl.testbench_common import testbench_common
 
-class verilog_testbench(testbench_common):
-    """ Verilog testbench class.
+class vhdl_testbench(testbench_common):
+    """ vhdl testbench class.
 
     """
     def __init__(self, parent=None, **kwargs):
@@ -38,9 +39,9 @@ class verilog_testbench(testbench_common):
         """Parameter  and variable definition strings of the testbench
 
         """
-        definitions='//Parameter definitions\n'
+        definitions='--Parameter definitions\n'
         for name, val in self.content_parameters.items():
-                definitions+='parameter '+ val[0]+' '+name+'='+ val[1]+';\n'
+            definitions+='constant '+ val[0]+' : '+name+':='+ val[1]+';\n'
         return definitions
 
     @property
@@ -66,27 +67,27 @@ class verilog_testbench(testbench_common):
     
     @property
     def connector_definitions(self):
-        """Verilog register and wire definition strings
+        """VHDL signal definition strings
 
         """
         # Registers first
-        definitions='//Register definitions\n'
+        definitions='-- Driving signal definitions\n'
         for name, val in self.connectors.Members.items():
             if val.cls=='reg':
                 definitions=definitions+val.definition
 
-        definitions=definitions+'\n//Wire definitions\n'
+        definitions=definitions+'\n--Driven signal definitions\n'
         for name, val in self.connectors.Members.items():
             if val.cls=='wire':
                 definitions=definitions+val.definition
         return definitions
 
     def assignments(self,**kwargs):
-        """Wire assingment strings
+        """Signal assingment strings
 
         """
         matchlist=kwargs.get('matchlist',self.assignment_matchlist)
-        assigns='\n//Assignments\n'
+        assigns='\n--Assignments\n'
         for match in matchlist:
             assigns=assigns+self.connectors.assign(match=match)
         return indent(text=assigns,level=kwargs.get('level',0))
@@ -111,7 +112,7 @@ class verilog_testbench(testbench_common):
         Create append mechanism to add more clocks.
 
         """
-        clockdef='//Master clock is omnipresent\nalways #(c_Ts/2.0) clock = !clock;'
+        clockdef='--Master clock is omnipresent\nprocess #(c_Ts/2.0) clock = !clock;'
         return clockdef
 
     @property
@@ -119,7 +120,7 @@ class verilog_testbench(testbench_common):
         """File close procedure for all IO files.
 
         """
-        iofile_close='\n//Close the io_files\n'
+        iofile_close='\n--Close the io_files\n'
         for name, val in self.iofiles.Members.items():
             iofile_close=iofile_close+val.verilog_fclose
         iofile_close=iofile_close+'\n'
@@ -133,7 +134,7 @@ class verilog_testbench(testbench_common):
         the parent entity.
         """
         if not hasattr(self,'_misccmd'):
-            self._misccmd="// Manual commands\n"
+            self._misccmd="-- Manual commands\n"
             mcmd = self.parent.rtlmisc
             for cmd in mcmd:
                 self._misccmd += cmd + "\n"

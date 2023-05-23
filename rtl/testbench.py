@@ -14,8 +14,10 @@ Refactored from 'testbench' by Marko Kosunen 20221119, marko.kosunen@aalto.fi
 """
 import os
 import sys
+import pdb
 from rtl.testbench_common import testbench_common
 from rtl.sv.verilog_testbench import verilog_testbench
+from rtl.vhdl.vhdl_testbench import vhdl_testbench
 
 class testbench(testbench_common):
     """ Testbench class. Extends `module` through 'testbench_commom'
@@ -37,20 +39,6 @@ class testbench(testbench_common):
         super().__init__(parent=parent,**kwargs)
 
     @property
-    def lang(self):
-        """Description language used.
-
-        Default: `sv`
-
-        """
-        if not hasattr(self,'_lang'):
-            self._lang='sv'
-        return self._lang
-    @lang.setter
-    def lang(self,value):
-            self._lang=value
-
-    @property
     def langmodule(self):
         """The language specific operation is defined with an instance of 
         language specific class. Properties and methods return values from that class.
@@ -62,10 +50,10 @@ class testbench(testbench_common):
                         file=self.file, name=self.name, 
                         instname=self.instname)
             elif self.lang == 'vhdl':  
-                parent.print_log(type='F', msg='VHDL testbenches not supported')
-                #self._langmodule=vhdl_testbench(
-                #        file=self.file, name=self.name, 
-                #        instname=self.instname)
+                self._langmodule=vhdl_testbench(
+                        parent=self.parent,
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
         return self._langmodule
     @property
     def iofiles(self):
@@ -166,7 +154,7 @@ class testbench(testbench_common):
         """Verilog register and wire definition, VHDL signal strings.
 
         """
-        return self.langmodule.definitions
+        return self.langmodule.connector_definitions
 
     def assignments(self,**kwargs):
         """Wire/signal assingment strings

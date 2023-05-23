@@ -15,6 +15,12 @@ from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 class sv(thesdk,metaclass=abc.ABCMeta):
 
     @property
+    def vlogsimtb(self):
+        ''' Name of the VHDL testbench
+        '''
+        return self.rtlsimpath + '/tb_' + self.name + self.vlogext
+
+    @property
     def vlogsrcpath(self):
         ''' Search path for the verilogfiles
             self.entitypath/sv

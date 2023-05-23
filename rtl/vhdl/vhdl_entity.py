@@ -18,25 +18,45 @@ import os
 from thesdk import *
 from copy import deepcopy
 from rtl import *
-from rtl.sv.verilog_module import verilog_module
 from rtl.connector import rtl_connector
 from rtl.connector import rtl_connector_bundle
+from rtl.module_common import module_common
 
-class vhdl_entity(verilog_module,thesdk):
+class vhdl_entity(module_common,thesdk):
+    """Objective:
+
+        1) 
+           a) Collect IO's to database
+           b) collect parameters to dict
+
+        2) Reconstruct the entity definition
+
+        3) 
+           a) Implement methods provide signal connections
+           b) Implement methods to provide generic assingments   
+              
+        4) Create a method to create assigned module \
+           definition, where signals are \
+           
+           a) assigned by name
+           b) to arbitrary name vector.
+
+        5) Add contents, if required, and include that to definition
+            
+    """
 
     def __init__(self, **kwargs):
-        ''' Executes init of verilog_module, thus having the same attributes and 
+        ''' Executes init of module_common, thus having the same attributes and 
         parameters.
 
         Parameters
         ----------
             **kwargs :
-               See module module
+               See module module_common
         
         '''
         super().__init__(**kwargs)
     
-
     @property
     def ios(self):
         '''Verilog connector bundle containing connectors for all module IOS.
@@ -45,7 +65,6 @@ class vhdl_entity(verilog_module,thesdk):
            that all signals are connectors. 
 
         '''
-        
         if not hasattr(self,'_ios'):
             startmatch=re.compile(r"entity *(?="+self.name+r"\s*is)"+r".*.+$")
             iomatch=re.compile(r".*port\(.*$")
@@ -108,8 +127,7 @@ class vhdl_entity(verilog_module,thesdk):
                             elif extr[1]=='out':
                                 signal.cls='output'
                             signal.name=extr[0]
-                            #signal.type=extr[2]
-                            signal.type=''
+                            signal.type=extr[2]
                             busdef=re.match(r"^.*\(\s*(.*)(\s+downto\s+|\s+to\s+)(.*)\s*\)",extr[2])
                             if busdef:
                                 signal.ll=busdef.group(1)
@@ -134,7 +152,7 @@ class vhdl_entity(verilog_module,thesdk):
 
     @property
     def parameters(self):
-        '''Verilog parameters extracted from generics of the VHDL entity
+        '''Generics of the VHDL entity
 
         '''
         if not hasattr(self,'_parameters'):
@@ -222,6 +240,132 @@ class vhdl_entity(verilog_module,thesdk):
     @contents.deleter
     def contents(self,value):
         self._contents=None
+
+    @property
+    def io_signals(self):
+        '''Bundle containing the signal connectors for IO connections.
+
+        '''
+        if not hasattr(self,'_io_signals'):
+            self._io_signals=rtl_connector_bundle()
+            for ioname, io in self.ios.Members.items():
+                # Connectior is created already in io definitio
+                # just point to it  
+                self._io_signals.Members[ioname]=io.connect
+        return self._io_signals
+
+    @io_signals.setter
+    def io_signals(self,value):
+        for conn in value.Members :
+            self._io_signals.Members[conn.name].connect=conn
+        return self._io_signals
+
+    @property
+    def definition(self):
+        '''Entity definition part extracted for the file. Contains generics and 
+        IO definitions.
+
+        '''
+        if not hasattr(self,'_definition'):
+            #First we print the parameter section
+            if self.parameters.Members:
+                parameters=''
+                first=True
+                for name, val in self.parameters.Members.items():
+                    if first:
+                        parameters='generic(\n %s := %s' %(name,val)
+                        first=False
+                    else:
+                        parameters=parameters+',\n %s := %s' %(name,val)
+                parameters=parameters+'\n);'
+                self._definition='entity %s is\n%s' %(self.name, parameters)
+            else:
+                self._definition='entity%s is ' %(self.name)
+            first=True
+            if self.ios.Members:
+                for ioname, io in self.ios.Members.items():
+                    if first:
+                        self._definition=self._definition+'\nport(\n'
+                        first=False
+                    else:
+                        self._definition=self._definition+',\n'
+                    if io.cls in [ 'input', 'output', 'inout' ]:
+                        if io.width==1:
+                            self._definition=(self._definition+
+                                    ('    %s %s' %(io.cls, io.name)))
+                        else:
+                            self._definition=(self._definition+
+                                    ('    %s [%s:%s] %s' %(io.cls, io.ll, io.rl, io.name)))
+                    else:
+                        self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
+                self._definition=self._definition+'\n)'
+            self._definition=self._definition+';'
+            if self.contents:
+                self._definition=self._definition+self.contents+'\nendmodule'
+        return self._definition
+
+    # Instance is defined through the io_signals
+    # Therefore it is always regenerated
+    @property
+    def instance(self):
+        '''Instantioation string of the module. Can be used inside of the other modules.
+
+        '''
+        #First we write the parameter section
+        if self.parameters.Members:
+            parameters=''
+            first=True
+            for name, val in self.parameters.Members.items():
+                if first:
+                    parameters='#(\n    .%s(%s)' %(name,name)
+                    first=False
+                else:
+                    parameters=parameters+',\n    .%s(%s)' %(name,name)
+            parameters=parameters+'\n)'
+            self._instance='%s  %s %s' %(self.name, parameters, self.instname)
+        else:
+            self._instance='%s %s ' %(self.name, self.instname)
+        first=True
+        # Then we write the IOs
+        if self.ios.Members:
+            for ioname, io in self.ios.Members.items():
+                if first:
+                    self._instance=self._instance+'(\n'
+                    first=False
+                else:
+                    self._instance=self._instance+',\n'
+                if io.cls in [ 'input', 'output', 'inout' ]:
+                        self._instance=(self._instance+
+                                ('    .%s(%s)' %(io.name, io.connect.name)))
+                else:
+                    self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
+            self._instance=self._instance+('\n)')
+        self._instance=self._instance+(';\n')
+        return self._instance
+
+    #Methods
+    def export(self,**kwargs):
+        '''Method to export the module to a given file.
+
+        Parameters
+        ----------
+           **kwargs :
+
+               force: Bool
+
+        '''
+        if not os.path.isfile(self.file):
+            self.print_log(msg='Exporting vhdl_entity to %s.' %(self.file))
+            with open(self.file, "w") as module_file:
+                module_file.write(self.definition)
+
+        elif os.path.isfile(self.file) and not kwargs.get('force'):
+            self.print_log(type='F', msg=('Export target file %s exists.\n Force overwrite with force=True.' %(self.file)))
+
+        elif kwargs.get('force'):
+            self.print_log(msg='Forcing overwrite of vhdl_entity to %s.' %(self.file))
+            with open(self.file, "w") as module_file:
+                module_file.write(self.definition)
 
 if __name__=="__main__":
     pass

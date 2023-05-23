@@ -203,11 +203,9 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_simtb'):
             if self.model == 'icarus':
-                return self.icarus_simtb
-            elif self.model == 'sv':
-                return self.questasim_simtb
-            elif self.model == 'vhdl':
-                return self.questasim_simtb
+                self._simtb = self.icarus_simtb
+            elif self.model == 'sv' or self.model=='vhdl':
+                self._simtb = self.questasim_simtb
         return self._simtb
 
     @property
@@ -470,6 +468,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         elif self.model == 'vhdl':
             vhdlsrc_exists = os.path.isfile(self.vhdlsrc)   # verilog source present in self.entitypath/sv
             simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
+
             if not vhdlsrc_exists and not simdut_exists:
                 self.print_log(type='F', msg="Missing vhdl source for 'vhdl' model at: %s" % self.vlogsrc)
             # vhdlsrc exists, simdut doesn't exist => copy vhdlsrc to simdut
@@ -619,18 +618,18 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._read_state()
         else:
             self.copy_rtl_sources()
-            self.tb=vtb(self)             
+            self.tb=vtb(parent=self,lang=self.lang)             
             self.tb.define_testbench()    
             self.add_connectors()
             self.create_connectors()
             self.connect_inputs()         
-
             if hasattr(self,'define_io_conditions'):
                 self.define_io_conditions()   # Local, this is dependent on how you
                                               # control the simulation
                                               # i.e. when you want to read an write your IO's
             self.format_ios()
             self.tb.generate_contents()
+            pdb.set_trace()
             self.tb.export(force=True)
             self.write_infile()
             self.execute_rtl_sim()

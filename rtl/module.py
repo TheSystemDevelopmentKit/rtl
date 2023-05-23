@@ -20,6 +20,7 @@ from rtl.connector import verilog_connector
 from rtl.connector import verilog_connector_bundle
 from rtl.module_common import module_common
 from rtl.sv.verilog_module import verilog_module
+from rtl.vhdl.vhdl_entity import vhdl_entity
 
 class module(module_common,thesdk):
     """ Currently module class is just an alias for verilog_module.
@@ -37,34 +38,33 @@ class module(module_common,thesdk):
         '''
         super().__init__({**kwargs})
 
-    @property
-    def lang(self):
-        '''Description language used.
+    #@property
+    #def lang(self)
+    #    '''Description language used.
 
-        Default: `sv`
+    #    Default: `sv`
 
-        '''
-        if not hasattr(self,'_lang'):
-            self._lang='sv'
-        return self._lang
-    @lang.setter
-    def lang(self,value):
-            self._lang=value
+    #    '''
+    #    if not hasattr(self,'_lang'):
+    #        self._lang='sv'
+    #    return self._lang
+    #@lang.setter
+    #def lang(self,value):
+    #        self._lang=value
 
     @property
     def langmodule(self):
         """The language specific operation is defined with an instance of 
         language specific class. Properties and methods return values from that class.
         """
-        if not hasattr(self,'_langmodule'):
-            if self.lang == 'sv':
-                self._langmodule=verilog_module(
-                        file=self.file, name=self.name, 
-                        instname=self.instname)
-            elif self.lang == 'vhdl':  
-                self._langmodule=vhdl_entity(
-                        file=self.file, name=self.name, 
-                        instname=self.instname)
+        if self.lang == 'sv':
+            self._langmodule=verilog_module(
+                    file=self.file, name=self.name, 
+                    instname=self.instname)
+        elif self.lang == 'vhdl':  
+            self._langmodule=vhdl_entity(
+                    file=self.file, name=self.name, 
+                    instname=self.instname)
         return self._langmodule
 
     @property

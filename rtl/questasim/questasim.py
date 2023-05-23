@@ -141,10 +141,10 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         supported by the simulator. Currently we have support only for verilog testbenches.
 
         '''
-        if self.model == 'sv':
-            self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vlogext
-        if self.model == 'vhdl':
-            self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vlogext
+        if self.lang == 'sv':
+            self._simtb=self.vlogsimtb
+        if self.lang == 'vhdl':
+            self._simtb=self.vhdlsimtb
         return self._simtb
 
     @property
