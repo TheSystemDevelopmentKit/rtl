@@ -93,23 +93,6 @@ class testbench(testbench_common):
     def content_parameters(self,val):
         self.langmodule.content_parameters=val
 
-    @property
-    def dut_instance(self):
-        """RTL module parsed from the verilog or VHDL file of the parent depending on `parent.model`
-
-        """
-        if not hasattr(self,'_dut_instance'):
-            if self.parent.model in ['sv', 'icarus']:
-                self._dut_instance=verilog_module(**{'file':self._dutfile})
-            elif self.parent.model=='vhdl':
-                self._dut_instance=vhdl_entity(**{'file':self._dutfile})
-        return self._dut_instance
-
-    
-    #We should not need this, but it is wise to enable override
-    @dut_instance.setter
-    def dut_instance(self,value):
-        self._dut_instance=value
 
     @property
     def verilog_instances(self):

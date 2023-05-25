@@ -220,7 +220,7 @@ class verilog_testbench(testbench_common):
                 self.iofile_definitions
                 self.misccmd
                 self.dumpfile
-                self.dut_instance.instance
+                self.dut_instance.verilog_instance
                 self.verilog_instance_members.items().instance (for all members)
                 self.connectors.verilog_inits()
                 self.iofiles.Members.items().verilog_io (for all members)
@@ -242,7 +242,7 @@ self.dumpfile+\
 """
 //DUT definition
 """+\
-self.dut_instance.instance
+self.dut_instance.verilog_instance
 
         for inst, module in self.verilog_instances.Members.items():
             contents+=module.instance

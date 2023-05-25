@@ -310,7 +310,7 @@ class verilog_module(module_common,thesdk):
     # Instance is defined through the io_signals
     # Therefore it is always regenerated
     @property
-    def instance(self):
+    def verilog_instance(self):
         '''Instantioation string of the module. Can be used inside of the other modules.
 
         '''

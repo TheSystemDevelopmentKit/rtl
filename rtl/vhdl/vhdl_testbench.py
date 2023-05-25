@@ -243,10 +243,9 @@ self.iofile_definitions+\
 self.misccmd+\
 self.dumpfile+\
 """
-//DUT definition
+-- DUT definition
 """+\
-self.dut_instance.instance
-
+self.dut_instance.vhdl_instance
         for inst, module in self.verilog_instances.Members.items():
             contents+=module.instance
 

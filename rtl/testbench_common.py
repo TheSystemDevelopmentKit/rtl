@@ -76,11 +76,19 @@ class testbench_common(module):
 
         """
         if not hasattr(self,'_dut_instance'):
-            if self.parent.model in ['sv', 'icarus']:
+            if self.parent.model == 'icarus':
                 self._dut_instance=verilog_module(**{'file':self._dutfile})
-            elif self.parent.model=='vhdl':
-                self._dut_instance=vhdl_entity(**{'file':self._dutfile})
+            if self.parent.model == 'sv':
+                    self._dut_instance=verilog_module(**{'file':self._dutfile})
+            elif self.parent.model == 'vhdl':
+                    self._dut_instance=vhdl_entity(**{'file':self._dutfile})
         return self._dut_instance
+
+    
+    #We should not need this, but it is wise to enable override
+    @dut_instance.setter
+    def dut_instance(self,value):
+        self._dut_instance=value
 
     @property
     def verilog_instances(self):
