@@ -140,7 +140,7 @@ class module_common(thesdk):
     # Therefore it is always regenerated
     @property
     def verilog_instance(self):
-        '''Instantioation string of the module. Can be used inside of the other modules.
+        '''Instantioation string of the module/entity for use inside of verilog modules.
 
         '''
         #First we write the parameter section
@@ -178,7 +178,7 @@ class module_common(thesdk):
 
     @property
     def vhdl_instance(self):
-        '''Instantioation string of the module. Can be used inside of the other modules.
+        '''Instantioation string of the module/entity for use inside of vhdl entities.
 
         '''
         #First we write the parameter section
