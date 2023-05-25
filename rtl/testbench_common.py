@@ -56,7 +56,7 @@ class testbench_common(module):
     @property
     def connectors(self):
         if not hasattr(self,'_connectors'):
-            self._connectors=rtl_connector_bundle()
+            self._connectors=rtl_connector_bundle(lang=self.lang)
         return self._connectors
     @connectors.setter
     def connectors(self,val):

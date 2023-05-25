@@ -40,6 +40,18 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         pass
 
     @property
+    def lang(self):
+        """ str : Language of the testbench to support multilanguage simulators.
+        Default vhdl | sv (default)
+        """
+        if not hasattr(self,'_lang'):
+            self._lang = 'sv'
+        return self._lang
+    @lang.setter
+    def lang(self,value):
+        self._lang = value
+
+    @property
     def preserve_rtlfiles(self):  
         """True | False (default)
 

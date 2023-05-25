@@ -67,7 +67,7 @@ class testbench(testbench_common):
         """Overload to pass values to langmodule.
         """
         if not hasattr(self.langmodule,'_connectors'):
-            self.langmodule.connectors=rtl_connector_bundle()
+            self.langmodule.connectors=rtl_connector_bundle(lang=self.lang)
         return self.langmodule.connectors
     @connectors.setter
     def connectors(self,val):

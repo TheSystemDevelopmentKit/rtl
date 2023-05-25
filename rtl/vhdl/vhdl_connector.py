@@ -35,16 +35,22 @@ class vhdl_connector(connector_common,thesdk):
     @property
     def definition(self):
         if self.width==1:
-            self._definition='signal %s :  %s;\n' %(self.name, self.type,)
-        elif not self.init:
-            self._definition='signal %s : %s(%s downto %s);\n' %(self.name, self.type, self.ll, self.rl)
+            if not self.init:
+                self._definition='signal %s :  %s;\n' %(self.name, self.type,)
+            else:
+                self._definition='signal %s :  %s := %s;\n' %(self.name, self.type,self.init)
+
         else:
-            self._definition='signal %s : %s(%s downto %s) := ;\n' %(self.name, self.type, self.ll, self.rlself.init)
+            if not self.init:
+                self._definition='signal %s : %s(%s downto %s);\n' %(self.name, self.type, self.ll, self.rl)
+            else:
+                self._definition='signal %s : %s(%s downto %s) := ;\n' %(self.name, self.type, self.ll, self.rl, self.init)
         return self._definition
 
     @property
     def initialization(self):
-        return '%s = %s;\n' %(self.name,self.init)
+        self.print_log(type='W', msg='Initialization is not effective for VHDL')
+        return ''
     
     @property
     def assignment(self,**kwargs):

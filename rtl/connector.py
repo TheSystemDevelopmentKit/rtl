@@ -25,20 +25,6 @@ class rtl_connector(connector_common,thesdk):
         '''
         super().__init__(**kwargs)
 
-    @property
-    def lang(self):
-        '''Description language used.
-
-        Default: `sv`
-
-        '''
-        if not hasattr(self,'_lang'):
-            self._lang='sv'
-        return self._lang
-
-    @lang.setter
-    def lang(self,value):
-            self._lang=value
 
     @property
     def langobject(self):
@@ -100,6 +86,22 @@ class rtl_connector(connector_common,thesdk):
 class rtl_connector_bundle(Bundle):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
+        self.lang=kwargs.get('lang','sv')
+
+    @property
+    def lang(self):
+        '''Description language used.
+
+        Default: `sv`
+
+        '''
+        if not hasattr(self,'_lang'):
+            self._lang='sv'
+        return self._lang
+    @lang.setter
+    def lang(self,val):
+        self._lang = val
+
 
     def new(self,**kwargs):
         name=kwargs.get('name','')
@@ -109,7 +111,7 @@ class rtl_connector_bundle(Bundle):
         rl=kwargs.get('rl',0)              # Bus bus range right limit 0 by default
         init=kwargs.get('init','')         # Initial value
         connect=kwargs.get('connect',None) # Can't be verilog connector by default. Would be recursive
-        self.Members[name]=verilog_connector(name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
+        self.Members[name]=rtl_connector(lang=self.lang,name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
 
     def update(self,**kwargs):
         #[TODO]: Write sanity checks

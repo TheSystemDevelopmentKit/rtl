@@ -153,7 +153,7 @@ class vhdl_testbench(testbench_common):
         """Defines the tb connectivity, creates reset and clock, and initializes them to zero
 
         """
-        # Dut is creted automaticaly, if verilog file for it exists
+        # Dut is creted automaticaly, if vhdl file for it exists
         self.connectors.update(bundle=self.dut_instance.io_signals.Members)
         #Assign verilog simulation parameters to testbench
         self.parameters=self.parent.rtlparameters
@@ -161,23 +161,23 @@ class vhdl_testbench(testbench_common):
 
         # Create clock if nonexistent and reset it
         if 'clock' not in self.dut_instance.ios.Members:
-            self.connectors.Members['clock']=rtl_connector(lang='sv',
-                    name='clock',cls='reg', init='\'b0')
+            self.connectors.Members['clock']=rtl_connector(lang=self.parent.lang,
+                    name='clock',cls='reg', type='std_logic',init='\'0\'')
         elif self.connectors.Members['clock'].init=='':
-            self.connectors.Members['clock'].init='\'b0'
+            self.connectors.Members['clock'].init='\'0\''
 
         # Create reset if nonexistent and reset it
         if 'reset' not in self.dut_instance.ios.Members:
-            self.connectors.Members['reset']=rtl_connector(lang='sv',
-                    name='reset',cls='reg', init='\'b0')
+            self.connectors.Members['reset']=rtl_connector(lang=self.parent.lang,
+                    name='reset',cls='reg', init='\'0\'')
         elif self.connectors.Members['reset'].init=='':
-            self.connectors.Members['reset'].init='\'b0'
+            self.connectors.Members['reset'].init='\'0\''
 
         ## Start initializations
         #Init the signals connected to the dut input to zero
         for name, val in self.dut_instance.ios.Members.items():
             if val.cls=='input':
-                val.connect.init='\'b0'
+                val.connect.init='(others => \'0\')'
     
     # Automate this based in dir
     def connect_inputs(self):
@@ -276,6 +276,7 @@ self.connectors.rtl_inits(level=1)+\
                 contents+=indent(text=member.verilog_io, level=1)
 
         contents+='\njoin\n'+self.iofile_close+'\n'
+        contents+='\nend architecture;\n'
         self.contents=contents
 
 

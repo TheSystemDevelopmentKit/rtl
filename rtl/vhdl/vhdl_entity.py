@@ -273,10 +273,10 @@ class vhdl_entity(module_common,thesdk):
                     if type(val) is not tuple:
                         self.print_log(type='F', msg='Parameter %s must be defined as {\'<name>\': (\'<type>\',value)}' %(name))
                     if first:
-                        parameters='generic(\n %s := %s' %(name,val)
+                        parameters='generic(\n %s : %s := %s' %(name,val[0],val[1])
                         first=False
                     else:
-                        parameters=parameters+',\n %s := %s' %(name,val)
+                        parameters=parameters+';\n %s : %s := %s' %(name,val[0],val[1])
                 parameters=parameters+'\n);'
                 self._definition='entity %s is\n%s' %(self.name, parameters)
             else:
@@ -299,9 +299,9 @@ class vhdl_entity(module_common,thesdk):
                     else:
                         self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
                 self._definition=self._definition+'\n)'
-            self._definition=self._definition
+            self._definition=self._definition+'\nend entity;\n'
             if self.contents:
-                self._definition=self._definition+self.contents+'end architecture;\nend entity;\n'
+                self._definition=self._definition+self.contents
         return self._definition
 
     # Instance is defined through the io_signals

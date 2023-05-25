@@ -40,6 +40,21 @@ class connector_common(thesdk):
         self.lang=kwargs.get('lang','sv')
 
     @property
+    def lang(self):
+        '''Description language used.
+
+        Default: `sv`
+
+        '''
+        if not hasattr(self,'_lang'):
+            self._lang='sv'
+        return self._lang
+
+    @lang.setter
+    def lang(self,value):
+            self._lang=value
+
+    @property
     def width(self):
         ''' Width of the connector: int | str (for parametrized bounds)'''
             
