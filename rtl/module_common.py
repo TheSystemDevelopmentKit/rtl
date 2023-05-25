@@ -192,26 +192,26 @@ class module_common(thesdk):
                 else:
                     parameters=parameters+',\n    %s > %s' %(name,name)
             parameters=parameters+'\n)'
-            self.vhdl_instance='%s  is entity work.%s\n%s\n' %(self.instname, self.name, parameters)
+            self._vhdl_instance='%s  is entity work.%s\n%s\n' %(self.instname, self.name, parameters)
         else:
-            self.vhdl_instance='%s is entity work.%s\n ' %(self.instname, self.name)
+            self._vhdl_instance='%s is entity work.%s\n ' %(self.instname, self.name)
         first=True
         # Then we write the IOs
         if self.ios.Members:
             for ioname, io in self.ios.Members.items():
                 if first:
-                    self.vhdl_instance=self.vhdl_instance+'port map(\n'
+                    self._vhdl_instance=self._vhdl_instance+'port map(\n'
                     first=False
                 else:
-                    self.vhdl_instance=self.vhdl_instance+',\n'
+                    self._vhdl_instance=self._vhdl_instance+',\n'
                 if io.cls in [ 'input', 'output', 'inout' ]:
-                        self.vhdl_instance=(self.vhdl_instance+
+                        self._vhdl_instance=(self._vhdl_instance+
                                 ('    %s => %s' %(io.name, io.connect.name)))
                 else:
                     self.print_log(type='F', msg='Assigning signal direction %s to VHDL entity IO.' %(io.cls))
-            self.vhdl_instance=self.vhdl_instance+('\n    )')
-        self.vhdl_instance=self.vhdl_instance+(';\n')
-        return self.vhdl_instance
+            self._vhdl_instance=self._vhdl_instance+('\n    )')
+        self._vhdl_instance=self._vhdl_instance+(';\n')
+        return self._vhdl_instance
 
 if __name__=="__main__":
     pass
