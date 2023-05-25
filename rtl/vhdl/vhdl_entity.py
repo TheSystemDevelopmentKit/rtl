@@ -166,7 +166,6 @@ class vhdl_entity(module_common,thesdk):
             if os.path.isfile(self.file):
                 with open(self.file) as infile:
                     wholefile=infile.readlines()
-                    pdb.set_trace()
                     modfind=False
                     parafind=False
                     for line in wholefile:
@@ -305,44 +304,6 @@ class vhdl_entity(module_common,thesdk):
                 self._definition=self._definition+self.contents
         return self._definition
 
-    # Instance is defined through the io_signals
-    # Therefore it is always regenerated
-    @property
-    def vhdl_instance(self):
-        '''Instantioation string of the module. Can be used inside of the other modules.
-
-        '''
-        #First we write the parameter section
-        if self.parameters.Members:
-            parameters=''
-            first=True
-            for name, val in self.parameters.Members.items():
-                if first:
-                    parameters='generic map(\n    %s => %s' %(name,name)
-                    first=False
-                else:
-                    parameters=parameters+',\n    %s > %s' %(name,name)
-            parameters=parameters+'\n)'
-            self._instance='%s  is entity work.%s\n%s\n' %(self.instname, self.name, parameters)
-        else:
-            self._instance='%s is entity work.%s\n ' %(self.instname, self.name)
-        first=True
-        # Then we write the IOs
-        if self.ios.Members:
-            for ioname, io in self.ios.Members.items():
-                if first:
-                    self._instance=self._instance+'port map(\n'
-                    first=False
-                else:
-                    self._instance=self._instance+',\n'
-                if io.cls in [ 'input', 'output', 'inout' ]:
-                        self._instance=(self._instance+
-                                ('    %s => %s' %(io.name, io.connect.name)))
-                else:
-                    self.print_log(type='F', msg='Assigning signal direction %s to VHDL entity IO.' %(io.cls))
-            self._instance=self._instance+('\n    )')
-        self._instance=self._instance+(';\n')
-        return self._instance
 
     #Methods
     def export(self,**kwargs):

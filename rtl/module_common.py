@@ -144,7 +144,6 @@ class module_common(thesdk):
 
         '''
         #First we write the parameter section
-        pdb.set_trace()
         if self.parameters.Members:
             parameters=''
             first=True
