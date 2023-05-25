@@ -238,7 +238,10 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def rtlparameters(self): 
         '''Dictionary of parameters passed to the simulator 
-        during the simulation invocation
+        during the simulation invocation.
+
+        Example:
+        {'name' : (type,value) }
 
         '''
         if not hasattr(self, '_rtlparameters'):
@@ -629,7 +632,6 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                                               # i.e. when you want to read an write your IO's
             self.format_ios()
             self.tb.generate_contents()
-            pdb.set_trace()
             self.tb.export(force=True)
             self.write_infile()
             self.execute_rtl_sim()

@@ -15,6 +15,7 @@ Transferred from VHDL package in Dec 2019
 
 """
 import os
+import pdb
 from thesdk import *
 from copy import deepcopy
 from rtl import *
@@ -59,7 +60,7 @@ class vhdl_entity(module_common,thesdk):
     
     @property
     def ios(self):
-        '''Verilog connector bundle containing connectors for all module IOS.
+        '''Rtl connector bundle containing connectors for all module IOS.
            All the IOs are connected to signal connectors that 
            have the same name than the IOs. This is due to fact the we have decided 
            that all signals are connectors. 
@@ -121,7 +122,7 @@ class vhdl_entity(module_common,thesdk):
                     if dut:
                         for ioline in dut.split(';'):
                             extr=ioline.split(':')
-                            signal=rtl_connector(lang='sv')
+                            signal=rtl_connector(lang='vhdl')
                             if extr[1]=='in':
                                 signal.cls='input'
                             elif extr[1]=='out':
@@ -237,9 +238,6 @@ class vhdl_entity(module_common,thesdk):
     @contents.setter
     def contents(self,value):
         self._contents=value
-    @contents.deleter
-    def contents(self,value):
-        self._contents=None
 
     @property
     def io_signals(self):
@@ -272,6 +270,8 @@ class vhdl_entity(module_common,thesdk):
                 parameters=''
                 first=True
                 for name, val in self.parameters.Members.items():
+                    if type(val) is not tuple:
+                        self.print_log(type='F', msg='Parameter %s must be defined as {\'<name>\': (\'<type>\',value)}' %(name))
                     if first:
                         parameters='generic(\n %s := %s' %(name,val)
                         first=False
@@ -280,7 +280,7 @@ class vhdl_entity(module_common,thesdk):
                 parameters=parameters+'\n);'
                 self._definition='entity %s is\n%s' %(self.name, parameters)
             else:
-                self._definition='entity%s is ' %(self.name)
+                self._definition='entity %s is\n' %(self.name)
             first=True
             if self.ios.Members:
                 for ioname, io in self.ios.Members.items():
@@ -299,9 +299,9 @@ class vhdl_entity(module_common,thesdk):
                     else:
                         self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
                 self._definition=self._definition+'\n)'
-            self._definition=self._definition+';'
+            self._definition=self._definition
             if self.contents:
-                self._definition=self._definition+self.contents+'\nendmodule'
+                self._definition=self._definition+self.contents+'end architecture;\nend entity;\n'
         return self._definition
 
     # Instance is defined through the io_signals

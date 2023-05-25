@@ -41,6 +41,8 @@ class vhdl_testbench(testbench_common):
         """
         definitions='--Parameter definitions\n'
         for name, val in self.content_parameters.items():
+            if type(val) is not tuple:
+                self.print_log(type='F',msg='Parameter %s definition must be given as { \'name\' : (type,value) }' %(name))
             definitions+='constant '+ val[0]+' : '+name+':='+ val[1]+';\n'
         return definitions
 
@@ -156,6 +158,7 @@ class vhdl_testbench(testbench_common):
         #Assign verilog simulation parameters to testbench
         self.parameters=self.parent.rtlparameters
 
+
         # Create clock if nonexistent and reset it
         if 'clock' not in self.dut_instance.ios.Members:
             self.connectors.Members['clock']=rtl_connector(lang='sv',
@@ -232,7 +235,7 @@ class vhdl_testbench(testbench_common):
         """
     # Start the testbench contents
         contents="""
-//timescale 1ps this should probably be a global model parameter
+architecture behavioural of tb_"""+ self.name + """ is
 """+self.parameter_definitions+\
 self.connector_definitions+\
 self.assignments() +\
@@ -272,8 +275,9 @@ self.connectors.rtl_inits(level=1)+\
             if member.dir=='in':
                 contents+=indent(text=member.verilog_io, level=1)
 
-        contents+='\njoin\n'+self.iofile_close+'\n$finish;\nend\n'
+        contents+='\njoin\n'+self.iofile_close+'\n'
         self.contents=contents
+
 
 if __name__=="__main__":
     pass

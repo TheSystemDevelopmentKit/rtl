@@ -12,6 +12,7 @@ Refactored from 'testbench' by Marko Kosunen 20221119, marko.kosunen@aalto.fi
 """
 import os
 import sys
+import pdb
 from rtl import indent
 from rtl.connector import rtl_connector
 from rtl.testbench_common import testbench_common
@@ -229,12 +230,12 @@ class verilog_testbench(testbench_common):
              strings (Verilog sytax) to the relevant string attributes.
 
         """
-    # Start the testbench contents
+        # Start the testbench contents
         contents="""
 //timescale 1ps this should probably be a global model parameter
 """+self.parameter_definitions+\
 self.connector_definitions+\
-self.assignments() +\
+self.assignments()+\
 self.iofile_definitions+\
 self.misccmd+\
 self.dumpfile+\

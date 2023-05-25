@@ -57,14 +57,15 @@ class module(module_common,thesdk):
         """The language specific operation is defined with an instance of 
         language specific class. Properties and methods return values from that class.
         """
-        if self.lang == 'sv':
-            self._langmodule=verilog_module(
-                    file=self.file, name=self.name, 
-                    instname=self.instname)
-        elif self.lang == 'vhdl':  
-            self._langmodule=vhdl_entity(
-                    file=self.file, name=self.name, 
-                    instname=self.instname)
+        if not hasattr(self, '_langmodule'):
+            if self.lang == 'sv':
+                self._langmodule=verilog_module(
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
+            elif self.lang == 'vhdl':  
+                self._langmodule=vhdl_entity(
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
         return self._langmodule
 
     @property

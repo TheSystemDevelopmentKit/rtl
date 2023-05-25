@@ -10,6 +10,7 @@ import os
 from thesdk import *
 from rtl.connector_common import connector_common
 from rtl.sv.verilog_connector import verilog_connector
+from rtl.vhdl.vhdl_connector import vhdl_connector
 
 class rtl_connector(connector_common,thesdk):
     def __init__(self, **kwargs):
@@ -47,6 +48,16 @@ class rtl_connector(connector_common,thesdk):
         if not hasattr(self,'_langobject'):
             if self.lang == 'sv':
                 self._langobject=verilog_connector(
+                        name=self.name,
+                        cls=self.cls,
+                        type = self.type,
+                        ll = self.ll,
+                        rl = self.rl,
+                        init = self.init,
+                        connect = self.connect
+                        )
+            elif self.lang == 'vhdl':
+                self._langobject=vhdl_connector(
                         name=self.name,
                         cls=self.cls,
                         type = self.type,

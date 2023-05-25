@@ -27,8 +27,10 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         vhdlcompcmd = ( 'vcom -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
                        
 
-        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
+        gstring = ' '.join([ 
+                                ('-g ' + str(param) +'='+ str(val[1])) 
+                                for param,val in self.rtlparameters.items() 
+                            ])
         vlogsimargs = ' '.join(self.vlogsimargs)
 
         fileparams=''
@@ -78,8 +80,10 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
                 + ' ' + self.simtb )
         vhdlcompcmd = ( 'vcom -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
-        gstring = ' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
+        gstring = ' '.join([ 
+                                ('-g ' + str(param) +'='+ str(val[1])) 
+                                for param,val in self.rtlparameters.items() 
+                            ])
         vlogsimargs = ' '.join(self.vlogsimargs)
 
         fileparams = ''

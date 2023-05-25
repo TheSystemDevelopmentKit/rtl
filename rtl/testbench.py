@@ -147,6 +147,7 @@ class testbench(testbench_common):
         """Parameter  and variable definition strings of the testbench
 
         """
+
         return self.langmodule.parameter_definitions
     
     @property

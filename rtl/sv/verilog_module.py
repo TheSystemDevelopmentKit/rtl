@@ -272,11 +272,14 @@ class verilog_module(module_common,thesdk):
                 parameters=''
                 first=True
                 for name, val in self.parameters.Members.items():
+                    if type(val) is not tuple:
+                        self.print_log(type='F', msg='Parameter %s must be defined as {\'<name>\': (\'<type>\',value)}' %(name))
+
                     if first:
-                        parameters='#(\n    parameter %s = %s' %(name,val)
+                        parameters='#(\n    parameter %s = %s' %(name,val[1])
                         first=False
                     else:
-                        parameters=parameters+',\n    parameter %s = %s' %(name,val)
+                        parameters=parameters+',\n    parameter %s = %s' %(name,val[1])
                 parameters=parameters+'\n)'
                 self._definition='module %s %s' %(self.name, parameters)
             else:
