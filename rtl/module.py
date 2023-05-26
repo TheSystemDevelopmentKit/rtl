@@ -129,6 +129,14 @@ class module(module_common,thesdk):
         '''
         return self.langmodule.definition
 
+    @property
+    def header(self):
+        """Header configuring the e.g. libraries if needed"""
+        return self.langmodule.header
+    @header.setter
+    def header(self,value):
+        self.langmodule.header=value
+
     # Instance is defined through the io_signals
     # Therefore it is always regenerated
     @property

@@ -240,6 +240,17 @@ class testbench(testbench_common):
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle
 
+    @property
+    def definition(self):
+        '''Entity definition part extracted for the file. Contains generics and 
+        IO definitions.
+
+        Overloads the property inherited from 'module', as wish to control whan we generate the heasders.
+        [TO BE RECONSIDERED]
+        '''
+        self._definition=self.langmodule.definition
+        return self._definition
+
     def generate_contents(self):
         """Call language specific contents generator.
         """

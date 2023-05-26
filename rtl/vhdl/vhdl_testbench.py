@@ -32,6 +32,7 @@ class vhdl_testbench(testbench_common):
         
         """
         super().__init__(parent,**kwargs)
+        self.header="""library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.numeric_std.all;\nuse std.textio.all;\n\n"""
 
         
     @property
@@ -214,6 +215,8 @@ class vhdl_testbench(testbench_common):
         # Define the iofiles of the testbench. '
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle
+
+
 
     def generate_contents(self):
         """ This is the method to generate testbench contents. Override if needed

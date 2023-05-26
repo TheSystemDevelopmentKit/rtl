@@ -32,7 +32,7 @@ class verilog_testbench(testbench_common):
         
         """
         super().__init__(parent,**kwargs)
-
+        self.header=''
         
     @property
     def parameter_definitions(self):

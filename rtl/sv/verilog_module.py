@@ -260,6 +260,18 @@ class verilog_module(module_common,thesdk):
         return self._io_signals
 
     @property
+    def header(self):
+        """Header configuring the e.g. libraries if needed"""
+        if not hasattr(self,'_header'):
+            self._header=''
+        return self._header
+    @header.setter
+    def header(self,value):
+        if not hasattr(self,'_header'):
+            self._header=value
+
+
+    @property
     def definition(self):
         '''Module definition part extracted for the file. Contains parameters and 
         IO definitions.
@@ -347,7 +359,7 @@ class verilog_module(module_common,thesdk):
 
     #Methods
     def export(self,**kwargs):
-        '''Method to export the module to a given file.
+        '''Method to export the module. Exports self.headers+self.definition to a given file.
 
         Parameters
         ----------
@@ -367,7 +379,7 @@ class verilog_module(module_common,thesdk):
         elif kwargs.get('force'):
             self.print_log(msg='Forcing overwrite of verilog_module to %s.' %(self.file))
             with open(self.file, "w") as module_file:
-                module_file.write(self.definition)
+                module_file.write(self.header+self.definition)
 
 
 if __name__=="__main__":

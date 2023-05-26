@@ -49,9 +49,6 @@ class vhdl_connector(connector_common,thesdk):
                 self._definition='signal %s : %s(%s downto %s);\n' %(self.name, self.type, self.ll, self.rl)
             else:
                 self._definition='signal %s : %s(%s downto %s) := ;\n' %(self.name, self.type, self.ll, self.rl, self.init)
-        print(self.name)
-        print(self._definition)
-        pdb.set_trace()
         return self._definition
 
     @property
