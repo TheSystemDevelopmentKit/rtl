@@ -35,16 +35,23 @@ class vhdl_connector(connector_common,thesdk):
     @property
     def definition(self):
         if self.width==1:
+            if not self.type:
+                self.type='std_logic'
             if not self.init:
                 self._definition='signal %s :  %s;\n' %(self.name, self.type,)
             else:
                 self._definition='signal %s :  %s := %s;\n' %(self.name, self.type,self.init)
 
         else:
+            if not self.type:
+                self.type='std_logic_vector'
             if not self.init:
                 self._definition='signal %s : %s(%s downto %s);\n' %(self.name, self.type, self.ll, self.rl)
             else:
                 self._definition='signal %s : %s(%s downto %s) := ;\n' %(self.name, self.type, self.ll, self.rl, self.init)
+        print(self.name)
+        print(self._definition)
+        pdb.set_trace()
         return self._definition
 
     @property
