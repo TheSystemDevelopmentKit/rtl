@@ -118,7 +118,12 @@ class vhdl_testbench(testbench_common):
         Create append mechanism to add more clocks.
 
         """
-        clockdef='--Master clock is omnipresent\nprocess #(c_Ts/2.0) clock = !clock;'
+        clockdef='--Master clock is omnipresent\n'
+        clockdef+='clock_proc : process (clock)\n' 
+        clockdef+='begin\n'
+        clockdef+='    clock <= not clock;\n' 
+        clockdef+='    wait for c_Ts;\n' 
+        clockdef+='end process;' 
         return clockdef
 
     @property
