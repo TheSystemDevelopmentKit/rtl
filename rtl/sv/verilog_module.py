@@ -15,8 +15,7 @@ import os
 from thesdk import *
 from rtl import *
 from copy import deepcopy
-from rtl.sv.verilog_connector import verilog_connector
-from rtl.connector import rtl_connector_bundle
+from rtl.connector import *
 from rtl.module_common import module_common
 
 class verilog_module(module_common,thesdk):
@@ -106,7 +105,7 @@ class verilog_module(module_common,thesdk):
                     port_list = module_match.group(2).split(',')
                     for port in port_list:
                         port_match = re.search(port_regex, port)
-                        signal=verilog_connector()
+                        signal=rtl_connector(lang='sv')
                         signal.cls=port_match.group(1)
                         if port_match.group(3) is not None:
                             signal.ll=port_match.group(4)

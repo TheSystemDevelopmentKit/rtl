@@ -28,6 +28,7 @@ class verilog_connector(connector_common,thesdk):
         if not hasattr(self, '_ioformat') or self._ioformat == None:
             self._ioformat='%d' #Language specific formatting
         return self._ioformat
+
     @ioformat.setter
     def ioformat(self,value):
         self._ioformat = value

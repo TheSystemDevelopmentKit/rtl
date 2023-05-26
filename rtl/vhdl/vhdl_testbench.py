@@ -72,6 +72,9 @@ class vhdl_testbench(testbench_common):
         """VHDL signal definition strings
 
         """
+        #Update the language formatting. We are operating in verilog
+        for name, val in self.connectors.Members.items():
+            val.lang='vhdl'
         # Registers first
         definitions='-- Driving signal definitions\n'
         for name, val in self.connectors.Members.items():

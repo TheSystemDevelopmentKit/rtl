@@ -70,6 +70,10 @@ class verilog_testbench(testbench_common):
         """Verilog register and wire definition strings
 
         """
+        #Update the language formatting. We are operating in verilog
+        for name, val in self.connectors.Members.items():
+            val.lang='sv'
+
         # Registers first
         definitions='//Register definitions\n'
         for name, val in self.connectors.Members.items():

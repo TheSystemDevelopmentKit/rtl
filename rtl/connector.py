@@ -4,6 +4,9 @@ Connector
 =========
 Class for describing signals in wide sense, including IO's
 
+This class stores signal parameters as name, type widt and indexes, and 
+returns definition strings according to given 'lang' paramenter
+
 Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
 """
 import os
@@ -30,10 +33,13 @@ class rtl_connector(connector_common,thesdk):
     def langobject(self):
         """The language specific operation is defined with an instance of 
         language specific class. Properties and methods return values from that class.
+
+        Two instances are created to have the lanquage dependent content available
+        in both languages for mixed lanquage simulations. This can be further clarified later,
+        as the strings returned should not be fixed at creation. 
         """
-        if not hasattr(self,'_langobject'):
-            if self.lang == 'sv':
-                self._langobject=verilog_connector(
+        if not hasattr(self,'_verilog_langobject'):
+            self._verilog_langobject=verilog_connector(
                         name=self.name,
                         cls=self.cls,
                         type = self.type,
@@ -42,8 +48,8 @@ class rtl_connector(connector_common,thesdk):
                         init = self.init,
                         connect = self.connect
                         )
-            elif self.lang == 'vhdl':
-                self._langobject=vhdl_connector(
+        if not hasattr(self,'_vhdl_langobject'):
+            self._vhdl_langobject=vhdl_connector(
                         name=self.name,
                         cls=self.cls,
                         type = self.type,
@@ -52,7 +58,10 @@ class rtl_connector(connector_common,thesdk):
                         init = self.init,
                         connect = self.connect
                         )
-        return self._langobject
+        if self.lang == 'sv':
+            return self._verilog_langobject
+        if self.lang == 'vhdl':
+            return self._vhdl_langobject
 
     @property
     def definition(self):
