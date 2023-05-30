@@ -3,12 +3,10 @@
 RTL IOfile module 
 ======================
 
-Provides verilog- file-io related attributes and methods 
+Provides Verilog- and VHDL file-io related attributes and methods 
 for TheSyDeKick RTL intereface.
 
-Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
-Yue Dai, 2018
-
+Restructured from verilog_iofile by Marko Kosunen, marko.kosunen@aalto.fi 2023
 """
 import os
 import sys
@@ -19,11 +17,13 @@ from thesdk.iofile import iofile
 import numpy as np
 import pandas as pd
 import sortedcontainers as sc
+from rtl.rtl_iofile_common import rtl_iofile_common
+from rtl.sv.verilog_iofile import verilog_iofile
 from rtl.connector import indent
 
-class rtl_iofile(iofile):
+class rtl_iofile(rtl_iofile_common):
     '''
-    Class to provide file IO for verilog simulations. When created, 
+    Class to provide file IO for rtl simulations. When created, 
     adds a rtl_iofile object to the parents iofile_bundle attribute.
     Accessible as self.iofile_bundle.Members['name'].
 
@@ -56,33 +56,25 @@ class rtl_iofile(iofile):
                 ioformat : str, %d
                    sets the ioformat attribute.
         '''
-        #This is a redundant check, but doens not hurt.to have it here too.
+        #This is a redundant check, but does not hurt.to have it here too.
         if parent==None:
-            self.print_log(type='F', msg="Parent of Verilog input file not given")
+            self.print_log(type='F', msg="Parent of RTL input file not given")
         try:  
-            super(rtl_iofile,self).__init__(parent=parent,**kwargs)
+            super(rtl_iofile_common,self).__init__(parent=parent,**kwargs)
             self.paramname=kwargs.get('param','-g g_file_')
 
             self._ioformat=kwargs.get('ioformat','%d') #by default, the io values are decimal integer numbers
 
         except:
-            self.print_log(type='F', msg="Verilog IO file definition failed")
+            self.print_log(type='F', msg="RTL IO file definition failed")
 
         self._DictData = None  # data structure for event-based IO data
 
-
-    #Overload from iofile package
     @property
-    def file(self):
-        ''' Name of the IO file to be read or written.
-
-        '''
-        if not hasattr(self,'_file'):
-            self._file=self.parent.simpath +'/' + self.name \
-                    + '_' + self.rndpart +'.txt'
-        return self._file
-
-
+    def langmodule(self):
+        if not hasattr(self,'_langmodule'):
+            if self.parent.lang=='sv': 
+                self._langmodule = verilog_iofile(self)
     @property
     def ioformat(self):
         '''Formatting string for verilog file reading
