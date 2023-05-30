@@ -75,6 +75,7 @@ class rtl_iofile(rtl_iofile_common):
         if not hasattr(self,'_langmodule'):
             if self.parent.lang=='sv': 
                 self._langmodule = verilog_iofile(self)
+        return self._langmodule
     @property
     def ioformat(self):
         '''Formatting string for verilog file reading
@@ -82,15 +83,11 @@ class rtl_iofile(rtl_iofile_common):
            integers.
            
         '''
-        if hasattr(self,'_ioformat'):
-            return self._ioformat
-        else:
-            self._ioformat='%d'
-        return self._ioformat
+        return self.langmodule.ioformat
     
     @ioformat.setter
     def ioformat(self,value):
-        self._ioformat=value
+        self.langmodule.ioformat=value
 
     @property
     def simparam(self):

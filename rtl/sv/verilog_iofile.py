@@ -31,5 +31,18 @@ class verilog_iofile(iofile):
     file io routines, file io format strings and read/write conditions.
     """
 
-    pass
+    @property
+    def ioformat(self):
+        '''Formatting string for verilog file reading
+           Default %d, i.e. content of the file is single column of
+           integers.
+           
+        '''
+        if not hasattr(self,'_ioformat'):
+            self._ioformat='%d'
+        return self._ioformat
+    
+    @ioformat.setter
+    def ioformat(self,value):
+        self._ioformat=value
 
