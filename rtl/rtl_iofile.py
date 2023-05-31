@@ -75,6 +75,9 @@ class rtl_iofile(rtl_iofile_common):
     def langmodule(self):
         if not hasattr(self,'_langmodule'):
             if self.parent.lang=='sv': 
+                #Here we give self.as a parent. A bit unclear still why it works
+                # self.rtlparent should work as well
+                # [TODO] figure a mnethod for value inherintace
                 self._langmodule = verilog_iofile(self)
                 self.langmodule.file=self.file
                 self.langmodule.paramname=self.paramname
@@ -101,6 +104,7 @@ class rtl_iofile(rtl_iofile_common):
         Default {'g_file_<self.name>', ('string',self.file) }
 
         '''
+        #This should be simulators, not lang dependent.
         return self.langmodule.rtlparam
     
     # Status parameter
@@ -139,30 +143,15 @@ class rtl_iofile(rtl_iofile_common):
         return self.langmodule.verilog_tdiff
     
 
-    ## Status integer verilog definitions
-    #@property
-    #def verilog_statdef(self):
-    #    '''Verilog file read status integer variable definitions and initializations strings.
-
-    #    '''
-    #    return self.langmodule.verilog_statdef
-
     # Status integer verilog definitions
     @property
     def verilog_statdef(self):
         '''Verilog file read status integer variable definitions and initializations strings.
 
         '''
-        if self.iotype=='sample':
-            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
-        elif self.iotype=='event':
-            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
-            self._verilog_statdef+='time %s, %s, %s;\n' %(self.verilog_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
-            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
-            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ptstamp) 
-            for connector in self.verilog_connectors:
-                self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
-        return self._verilog_statdef
+        return self.langmodule.verilog_statdef
+
+    #Status integer verilog definitions
 
     # File pointer
     @property
@@ -182,11 +171,7 @@ class rtl_iofile(rtl_iofile_common):
         '''Verilog file open routine string.
 
         '''
-        if self.dir=='in':
-            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
-        if self.dir=='out':
-            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
-        return self._verilog_fopen
+        return self.langmodule.verilog_fopen
 
     # File close
     @property

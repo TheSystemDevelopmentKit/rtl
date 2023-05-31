@@ -56,9 +56,6 @@ class verilog_iofile(rtl_iofile_common):
 
         '''
         if not hasattr(self,'_rtlparam'):
-            print(self.paramname)
-            print(self.name)
-            print(self.file)
             key=re.sub(r"-g ",'',self.simparam).split('=')[0]
             val=re.sub(r"-g ",'',self.simparam).split('=')[1]
             self._rtlparam={key:('string','\"%s\"'%(val))}
@@ -135,16 +132,14 @@ class verilog_iofile(rtl_iofile_common):
         #Ordered list.
         self._verilog_connectors=value
 
-
-    # Status integer verilog definitions
     @property
     def verilog_statdef(self):
         '''Verilog file read status integer variable definitions and initializations strings.
 
         '''
-        if self.iotype=='sample':
+        if self.parent.iotype=='sample':
             self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
-        elif self.iotype=='event':
+        elif self.parent.iotype=='event':
             self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
             self._verilog_statdef+='time %s, %s, %s;\n' %(self.verilog_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
             self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
@@ -152,4 +147,16 @@ class verilog_iofile(rtl_iofile_common):
             for connector in self.verilog_connectors:
                 self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
         return self._verilog_statdef
+
+    # File opening, direction dependent 
+    @property
+    def verilog_fopen(self):
+        '''Verilog file open routine string.
+
+        '''
+        if self.parent.dir=='in':
+            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
+        if self.parent.dir=='out':
+            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
+        return self._verilog_fopen
 
