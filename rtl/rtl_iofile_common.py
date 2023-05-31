@@ -30,6 +30,13 @@ class rtl_iofile_common(iofile):
                     + '_' + self.rndpart +'.txt'
         return self._file
     
+    @property
+    def simparam(self):
+        ''' String definition for parameter to be passed to the simulator
+        as a command line argument
 
-
+        '''
+        self._simparam=self.paramname \
+            + self.name + '=' + self.file
+        return self._simparam
 

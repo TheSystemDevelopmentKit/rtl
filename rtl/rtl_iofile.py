@@ -90,16 +90,6 @@ class rtl_iofile(rtl_iofile_common):
         self.langmodule.ioformat=value
 
     @property
-    def simparam(self):
-        ''' String definition for parameter to be passed to the simulator
-        as a command line argument
-
-        '''
-        self._simparam=self.paramname \
-            + self.name + '=' + self.file
-        return self._simparam
-
-    @property
     def rtlparam(self):
         '''Extracts the parameter name and value from simparam attribute. 
         Used to construct the parameter definitions for Verilog testbench. 
