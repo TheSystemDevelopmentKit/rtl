@@ -180,18 +180,32 @@ class rtl_iofile(rtl_iofile_common):
 
         '''
         return self.langmodule.verilog_fclose
-    
     @property
     def verilog_connectors(self):
         ''' List for verilog connectors.
         These are the verilog signals/regs associated with this file
 
         '''
-        return self.langmodule.verilog_connectors
+        if not hasattr(self,'_verilog_connectors'):
+            self._verilog_connectors=[]
+        return self._verilog_connectors
 
     @verilog_connectors.setter
     def verilog_connectors(self,value):
-        self.langmodule.verilog_connectors=value
+        #Ordered list.
+        self._verilog_connectors=value
+    
+    #@property
+    #def verilog_connectors(self):
+    #    ''' List for verilog connectors.
+    #    These are the verilog signals/regs associated with this file
+
+    #    '''
+    #    return self.langmodule.verilog_connectors
+
+    #@verilog_connectors.setter
+    #def verilog_connectors(self,value):
+    #    self.langmodule.verilog_connectors=value
 
     def connector_datamap(self,**kwargs):
         '''Verilog_connectors is an ordered list. Order defines the assumed order of columns in the 

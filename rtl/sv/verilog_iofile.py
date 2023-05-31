@@ -117,20 +117,6 @@ class verilog_iofile(rtl_iofile_common):
     def verilog_fptr(self,value):
         self._verilog_fptr=value
 
-    @property
-    def verilog_connectors(self):
-        ''' List for verilog connectors.
-        These are the verilog signals/regs associated with this file
-
-        '''
-        if not hasattr(self,'_verilog_connectors'):
-            self._verilog_connectors=[]
-        return self._verilog_connectors
-
-    @verilog_connectors.setter
-    def verilog_connectors(self,value):
-        #Ordered list.
-        self._verilog_connectors=value
 
     @property
     def verilog_statdef(self):
@@ -144,7 +130,7 @@ class verilog_iofile(rtl_iofile_common):
             self._verilog_statdef+='time %s, %s, %s;\n' %(self.verilog_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
             self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
             self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ptstamp) 
-            for connector in self.verilog_connectors:
+            for connector in self.parent.verilog_connectors:
                 self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
         return self._verilog_statdef
 
