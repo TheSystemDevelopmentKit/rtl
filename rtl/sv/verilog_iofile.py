@@ -183,3 +183,19 @@ class verilog_iofile(rtl_iofile_common):
     def verilog_io_condition(self,value):
         self._verilog_io_condition=value
 
+    @property 
+    def verilog_io_sync(self):
+        '''File io synchronization condition for sample type input.
+        Default: `@(posedge clock)`
+
+        '''
+
+        if not hasattr(self,'_verilog_io_sync'):
+            if self.iotype=='sample':
+                self._verilog_io_sync= '@(posedge clock)\n'
+        return self._verilog_io_sync
+
+    @verilog_io_sync.setter
+    def verilog_io_sync(self,value):
+        self._verilog_io_sync=value
+

@@ -338,15 +338,11 @@ class rtl_iofile(rtl_iofile_common):
         Default: `@(posedge clock)`
 
         '''
-
-        if not hasattr(self,'_verilog_io_sync'):
-            if self.iotype=='sample':
-                self._verilog_io_sync= '@(posedge clock)\n'
-        return self._verilog_io_sync
+        return self.langmodule.verilog_io_sync
 
     @verilog_io_sync.setter
     def verilog_io_sync(self,value):
-        self._verilog_io_sync=value
+        self.langmodule.verilog_io_sync=value
 
     def verilog_io_condition_append(self,**kwargs ):
         '''Append new condition string to `verilog_io_condition`
