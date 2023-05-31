@@ -49,16 +49,16 @@ class verilog_iofile_obsoletes():
         return self.langmodule.rtl_tdiff
     
     # Status integer verilog definitions
-#    @property
-#    def verilog_statdef(self):
-#        '''Verilog file read status integer vari'
-#able definitions and initializations strings.
-#
-#        '''
-#        self.print_log(type='O', msg='Parameter verilog_statdef is obsolete. Use rtl_statdef instead' )
-#        return self.langmodule.rtl_statdef
-#
-#
+    @property
+    def verilog_statdef(self):
+        '''Verilog file read status integer vari'
+able definitions and initializations strings.
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_statdef is obsolete. Use rtl_statdef instead' )
+        return self.langmodule.rtl_statdef
+
+
 #    # File pointer
 #    @property
 #    def verilog_fptr(self):

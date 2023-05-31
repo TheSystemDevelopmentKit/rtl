@@ -146,11 +146,11 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
     # Status integer verilog definitions
     @property
-    def verilog_statdef(self):
+    def rtl_statdef(self):
         '''Verilog file read status integer variable definitions and initializations strings.
 
         '''
-        return self.langmodule.verilog_statdef
+        return self.langmodule.rtl_statdef
 
     #Status integer verilog definitions
 

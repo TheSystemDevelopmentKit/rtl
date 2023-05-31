@@ -120,20 +120,20 @@ class verilog_iofile(rtl_iofile_common):
 
 
     @property
-    def verilog_statdef(self):
+    def rtl_statdef(self):
         '''Verilog file read status integer variable definitions and initializations strings.
 
         '''
         if self.parent.iotype=='sample':
-            self._verilog_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
+            self._rtl_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
         elif self.parent.iotype=='event':
-            self._verilog_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
-            self._verilog_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff)
-            self._verilog_statdef+='initial %s=0;\n' %(self.rtl_ctstamp) 
-            self._verilog_statdef+='initial %s=0;\n' %(self.rtl_pstamp) 
+            self._rtl_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
+            self._rtl_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff)
+            self._rtl_statdef+='initial %s=0;\n' %(self.rtl_ctstamp) 
+            self._rtl_statdef+='initial %s=0;\n' %(self.rtl_pstamp) 
             for connector in self.parent.verilog_connectors:
-                self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
-        return self._verilog_statdef
+                self._rtl_statdef+='integer buffer_%s;\n' %(connector.name)
+        return self._rtl_statdef
 
     # File opening, direction dependent 
     @property
