@@ -47,3 +47,20 @@ class verilog_iofile(rtl_iofile_common):
     def ioformat(self,value):
         self._ioformat=value
 
+    @property
+    def rtlparam(self):
+        '''Extracts the parameter name and value from simparam attribute. 
+        Used to construct the parameter definitions for Verilog testbench. 
+
+        Default {'g_file_<self.name>', ('string',self.file) }
+
+        '''
+        if not hasattr(self,'_rtlparam'):
+            print(self.paramname)
+            print(self.name)
+            print(self.file)
+            key=re.sub(r"-g ",'',self.simparam).split('=')[0]
+            val=re.sub(r"-g ",'',self.simparam).split('=')[1]
+            self._rtlparam={key:('string','\"%s\"'%(val))}
+        return self._rtlparam
+

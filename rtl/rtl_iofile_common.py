@@ -29,6 +29,9 @@ class rtl_iofile_common(iofile):
             self._file=self.parent.simpath +'/' + self.name \
                     + '_' + self.rndpart +'.txt'
         return self._file
+    @file.setter
+    def file(self,value):
+        self._file = value
     
     @property
     def simparam(self):

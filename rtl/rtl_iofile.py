@@ -61,6 +61,7 @@ class rtl_iofile(rtl_iofile_common):
             self.print_log(type='F', msg="Parent of RTL input file not given")
         try:  
             super(rtl_iofile_common,self).__init__(parent=parent,**kwargs)
+            self.rtlparent=parent
             self.paramname=kwargs.get('param','-g g_file_')
 
             self._ioformat=kwargs.get('ioformat','%d') #by default, the io values are decimal integer numbers
@@ -75,6 +76,9 @@ class rtl_iofile(rtl_iofile_common):
         if not hasattr(self,'_langmodule'):
             if self.parent.lang=='sv': 
                 self._langmodule = verilog_iofile(self)
+                self.langmodule.file=self.file
+                self.langmodule.paramname=self.paramname
+                self.langmodule.name=self.name
         return self._langmodule
     @property
     def ioformat(self):
@@ -97,11 +101,7 @@ class rtl_iofile(rtl_iofile_common):
         Default {'g_file_<self.name>', ('string',self.file) }
 
         '''
-        if not hasattr(self,'_rtlparam'):
-            key=re.sub(r"-g ",'',self.simparam).split('=')[0]
-            val=re.sub(r"-g ",'',self.simparam).split('=')[1]
-            self._rtlparam={key:('string','\"%s\"'%(val))}
-        return self._rtlparam
+        return self.langmodule.rtlparam
     
     # Status parameter
     @property
