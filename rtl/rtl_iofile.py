@@ -176,11 +176,11 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
     # File close
     @property
-    def verilog_fclose(self):
+    def rtl_fclose(self):
         '''Verilog file close routine sting.
 
         '''
-        return self.langmodule.verilog_fclose
+        return self.langmodule.rtl_fclose
     @property
     def verilog_connectors(self):
         ''' List for verilog connectors.

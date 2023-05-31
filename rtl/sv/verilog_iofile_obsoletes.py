@@ -79,16 +79,16 @@ able definitions and initializations strings.
         '''
         self.print_log(type='O', msg='Parameter verilog_fopen is obsolete. Use rtl_fopen instead' )
         return self.langmodule.rtl_fopen
-#
-#    # File close
-#    @property
-#    def verilog_fclose(self):
-#        '''Verilog file close routine sting.
-#
-#        '''
-#        self.print_log(type='O', msg='Parameter verilog_fclose is obsolete. Use rtl_fclose instead' )
-#        return self.langmodule.rtl_fclose
-#
+
+    # File close
+    @property
+    def verilog_fclose(self):
+        '''Verilog file close routine sting.
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_fclose is obsolete. Use rtl_fclose instead' )
+        return self.langmodule.rtl_fclose
+
 #    @property
 #    def verilog_connectors(self):
 #        ''' List for verilog connectors.

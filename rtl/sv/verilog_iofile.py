@@ -149,12 +149,12 @@ class verilog_iofile(rtl_iofile_common):
 
     # File close
     @property
-    def verilog_fclose(self):
+    def rtl_fclose(self):
         '''Verilog file close routine sting.
 
         '''
-        self._verilog_fclose='$fclose(%s);\n' %(self.rtl_fptr)
-        return self._verilog_fclose
+        self._rtl_fclose='$fclose(%s);\n' %(self.rtl_fptr)
+        return self._rtl_fclose
 
     # Condition string for monitoring if the signals are unknown
     @property 

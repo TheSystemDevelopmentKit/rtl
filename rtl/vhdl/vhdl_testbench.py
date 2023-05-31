@@ -133,7 +133,7 @@ class vhdl_testbench(testbench_common):
         """
         iofile_close='\n--Close the io_files\n'
         for name, val in self.iofiles.Members.items():
-            iofile_close=iofile_close+val.verilog_fclose
+            iofile_close=iofile_close+val.rtl_fclose
         iofile_close=iofile_close+'\n'
         return iofile_close 
 
