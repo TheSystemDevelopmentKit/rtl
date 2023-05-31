@@ -103,3 +103,24 @@ able definitions and initializations strings.
         #Ordered list.
         self.rtl_connectors=value
 
+    @property
+    def verilog_io_condition(self):
+        ''' List for verilog io_condition.
+        These are the verilog signals/regs associated with this file
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_io_condition is obsolete. Use rtl_io_condition instead' )
+        return self.rtl_io_condition
+
+    @verilog_io_condition.setter
+    def verilog_io_condition(self,value):
+        #Ordered list.
+        self.rtl_io_condition=value
+
+    def verilog_io_condition_append(self,**kwargs):
+        ''' List for verilog io_condition.
+        These are the verilog signals/regs associated with this file
+
+        '''
+        self.print_log(type='O', msg='Method verilog_io_condition_append is obsolete. Use rtl_io_condition_append instead' )
+        self.rtl_io_condition_append(**kwargs)

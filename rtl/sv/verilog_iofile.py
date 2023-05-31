@@ -158,7 +158,7 @@ class verilog_iofile(rtl_iofile_common):
 
     # Condition string for monitoring if the signals are unknown
     @property 
-    def verilog_io_condition(self):
+    def rtl_io_condition(self):
         '''Verilog condition string that must be true in ordedr to file IO read/write to occur.
 
         Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
@@ -166,23 +166,23 @@ class verilog_iofile(rtl_iofile_common):
         file is always read with rising edge of the clock or in the time of an event defined in the file.
 
         '''
-        if not hasattr(self,'_verilog_io_condition'):
+        if not hasattr(self,'_rtl_io_condition'):
             if self.parent.dir=='out':
                 first=True
                 for connector in self.parent.rtl_connectors:
                     if first:
-                        self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
+                        self._rtl_io_condition='~$isunknown(%s)' %(connector.name)
                         first=False
                     else:
-                        self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
-                                %(self._verilog_io_condition,connector.name)
+                        self._rtl_io_condition='%s \n&& ~$isunknown(%s)' \
+                                %(self._rtl_io_condition,connector.name)
             elif self.parent.dir=='in':
-                self.verilog_io_condition= ' 1 '
-        return self._verilog_io_condition
+                self.rtl_io_condition= ' 1 '
+        return self._rtl_io_condition
 
-    @verilog_io_condition.setter
-    def verilog_io_condition(self,value):
-        self._verilog_io_condition=value
+    @rtl_io_condition.setter
+    def rtl_io_condition(self,value):
+        self._rtl_io_condition=value
 
     @property 
     def verilog_io_sync(self):
@@ -200,8 +200,8 @@ class verilog_iofile(rtl_iofile_common):
     def verilog_io_sync(self,value):
         self._verilog_io_sync=value
 
-    def verilog_io_condition_append(self,**kwargs ):
-        '''Append new condition string to `verilog_io_condition`
+    def rtl_io_condition_append(self,**kwargs ):
+        '''Append new condition string to `rtl_io_condition`
 
         Parameters
         ----------
@@ -211,8 +211,8 @@ class verilog_iofile(rtl_iofile_common):
         '''
         cond=kwargs.get('cond', '')
         if not (not cond ):
-            self._verilog_io_condition='%s \n%s' \
-            %(self.verilog_io_condition,cond)
+            self._rtl_io_condition='%s \n%s' \
+            %(self.rtl_io_condition,cond)
 
     @property
     def verilog_io(self):
@@ -229,12 +229,12 @@ class verilog_iofile(rtl_iofile_common):
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
                 self._verilog_io='always '+self.verilog_io_sync +'begin\n'
-                self._verilog_io+=indent(text='if ( %s ) begin\n' %(self.verilog_io_condition), level=1)
+                self._verilog_io+=indent(text='if ( %s ) begin\n' %(self.rtl_io_condition), level=1)
                 self._verilog_io+=indent(text='$fwrite(%s, ' %(self.rtl_fptr), level=2)
             elif self.parent.dir=='in':
                 self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
                 self._verilog_io+=indent(text='%s' %self.verilog_io_sync, level=0)
-                self._verilog_io+=indent(text='if ( %s ) begin\n' %self.verilog_io_condition, level=1)
+                self._verilog_io+=indent(text='if ( %s ) begin\n' %self.rtl_io_condition, level=1)
                 self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
                         %(self.rtl_stat, self.rtl_fptr), level=2)
             for connector in self.parent.rtl_connectors:

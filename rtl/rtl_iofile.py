@@ -319,7 +319,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
     # Condition string for monitoring if the signals are unknown
     @property 
-    def verilog_io_condition(self):
+    def rtl_io_condition(self):
         '''Verilog condition string that must be true in ordedr to file IO read/write to occur.
 
         Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
@@ -327,11 +327,11 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
         file is always read with rising edge of the clock or in the time of an event defined in the file.
 
         '''
-        return self.langmodule.verilog_io_condition
+        return self.langmodule.rtl_io_condition
 
-    @verilog_io_condition.setter
-    def verilog_io_condition(self,value):
-        self.langmodule.verilog_io_condition=value
+    @rtl_io_condition.setter
+    def rtl_io_condition(self,value):
+        self.langmodule.rtl_io_condition=value
 
     @property 
     def verilog_io_sync(self):
@@ -345,8 +345,8 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     def verilog_io_sync(self,value):
         self.langmodule.verilog_io_sync=value
 
-    def verilog_io_condition_append(self,**kwargs ):
-        '''Append new condition string to `verilog_io_condition`
+    def rtl_io_condition_append(self,**kwargs ):
+        '''Append new condition string to `rtl_io_condition`
 
         Parameters
         ----------
@@ -354,7 +354,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
            cond : str
 
         '''
-        self.langmodule.verilog_io_condition_append(**kwargs)
+        self.langmodule.rtl_io_condition_append(**kwargs)
 
 
     @property
