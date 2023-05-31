@@ -358,7 +358,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
 
     @property
-    def verilog_io(self,**kwargs):
+    def rtl_io(self,**kwargs):
         '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
 
         Returns 
@@ -368,4 +368,4 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
 
         '''
-        return self.langmodule.verilog_io
+        return self.langmodule.rtl_io

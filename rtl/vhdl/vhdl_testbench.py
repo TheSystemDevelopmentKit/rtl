@@ -237,7 +237,7 @@ class vhdl_testbench(testbench_common):
                 self.dut_instance.instance
                 self.verilog_instance_members.items().instance (for all members)
                 self.connectors.verilog_inits()
-                self.iofiles.Members.items().verilog_io (for all members)
+                self.iofiles.Members.items().rtl_io (for all members)
                 self.iofile.close (for all members)
 
              Addtional code may be currently injected by appending desired 
@@ -267,7 +267,7 @@ self.dut_instance.vhdl_instance
 """
         for key, member in self.iofiles.Members.items():
             if member.dir=='out':
-                contents+=member.verilog_io
+                contents+=member.rtl_io
         contents+="""
 
 //Execution with parallel fork-join and sequential begin-end sections
@@ -283,7 +283,7 @@ self.connectors.rtl_inits(level=1)+\
 
         for key, member in self.iofiles.Members.items():
             if member.dir=='in':
-                contents+=indent(text=member.verilog_io, level=1)
+                contents+=indent(text=member.rtl_io, level=1)
 
         contents+='\njoin\n'+self.iofile_close+'\n'
         contents+='\nend architecture;\n'

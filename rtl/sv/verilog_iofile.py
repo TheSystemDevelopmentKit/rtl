@@ -215,7 +215,7 @@ class verilog_iofile(rtl_iofile_common):
             %(self.rtl_io_condition,cond)
 
     @property
-    def verilog_io(self):
+    def rtl_io(self):
         '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
 
         Returns 
@@ -228,14 +228,14 @@ class verilog_iofile(rtl_iofile_common):
         first=True
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
-                self._verilog_io='always '+self.rtl_io_sync +'begin\n'
-                self._verilog_io+=indent(text='if ( %s ) begin\n' %(self.rtl_io_condition), level=1)
-                self._verilog_io+=indent(text='$fwrite(%s, ' %(self.rtl_fptr), level=2)
+                self._rtl_io='always '+self.rtl_io_sync +'begin\n'
+                self._rtl_io+=indent(text='if ( %s ) begin\n' %(self.rtl_io_condition), level=1)
+                self._rtl_io+=indent(text='$fwrite(%s, ' %(self.rtl_fptr), level=2)
             elif self.parent.dir=='in':
-                self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
-                self._verilog_io+=indent(text='%s' %self.rtl_io_sync, level=0)
-                self._verilog_io+=indent(text='if ( %s ) begin\n' %self.rtl_io_condition, level=1)
-                self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
+                self._rtl_io='while (!$feof(f_%s)) begin\n' %self.name
+                self._rtl_io+=indent(text='%s' %self.rtl_io_sync, level=0)
+                self._rtl_io+=indent(text='if ( %s ) begin\n' %self.rtl_io_condition, level=1)
+                self._rtl_io+=indent(text='%s = $fscanf(%s, ' \
                         %(self.rtl_stat, self.rtl_fptr), level=2)
             for connector in self.parent.rtl_connectors:
                 if first:
@@ -247,30 +247,30 @@ class verilog_iofile(rtl_iofile_common):
                     format='%s\\t%s' %(format,connector.ioformat)
 
             format=format+'\\n\",\n'
-            self._verilog_io+=indent(text=format+iolines+'\n);',level=2)+indent(text='end', level=1)+indent(text='end', level=0)
+            self._rtl_io+=indent(text=format+iolines+'\n);',level=2)+indent(text='end', level=1)+indent(text='end', level=0)
 
         #Control files are handled differently
         elif self.parent.iotype=='event':
             if self.parent.dir=='out':
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.parent.dir=='in':
-                self._verilog_io='begin\nwhile(!$feof(%s)) begin\n    ' \
+                self._rtl_io='begin\nwhile(!$feof(%s)) begin\n    ' \
                         %(self.rtl_fptr)
-                self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
+                self._rtl_io+='%s = %s-%s;\n    #%s begin\n    ' \
                         %(self.rtl_tdiff,
                         self.rtl_ctstamp, self.rtl_pstamp,
                         self.rtl_tdiff)    
 
                 #t= Every control file requires status, diff, current_timestamp 
                 # and past timestamp
-                self._verilog_io+='    %s = %s;\n    ' \
+                self._rtl_io+='    %s = %s;\n    ' \
                         %(self.rtl_pstamp, self.rtl_ctstamp)
 
                 for connector in self.parent.rtl_connectors:
-                    self._verilog_io+='    %s = buffer_%s;\n    ' \
+                    self._rtl_io+='    %s = buffer_%s;\n    ' \
                             %(connector.name,connector.name)
 
-                self._verilog_io+='    %s = $fscanf(%s, ' \
+                self._rtl_io+='    %s = $fscanf(%s, ' \
                         %(self.rtl_stat,self.rtl_fptr)
 
             #The first column is timestap
@@ -281,20 +281,20 @@ class verilog_iofile(rtl_iofile_common):
                         %(iolines,connector.name)
                 format='%s\\t%s' %(format,connector.ioformat)
             format=format+'\\n\",\n'
-            self._verilog_io+=format+iolines+'\n        );\n    end\nend\n'
+            self._rtl_io+=format+iolines+'\n        );\n    end\nend\n'
 
             #Repeat the last assignment outside the loop
-            self._verilog_io+='%s = %s-%s;\n#%s begin\n' %(self.rtl_tdiff,
+            self._rtl_io+='%s = %s-%s;\n#%s begin\n' %(self.rtl_tdiff,
                     self.rtl_ctstamp, self.rtl_pstamp,self.rtl_tdiff)    
-            self._verilog_io+='    %s = %s;\n' %(self.rtl_pstamp,
+            self._rtl_io+='    %s = %s;\n' %(self.rtl_pstamp,
                     self.rtl_ctstamp)
             for connector in self.parent.rtl_connectors:
-                self._verilog_io+='    %s = buffer_%s;\n' \
+                self._rtl_io+='    %s = buffer_%s;\n' \
                 %(connector.name,connector.name)
-            self._verilog_io+='end\nend\n'
+            self._rtl_io+='end\nend\n'
         else:
             self.print_log(type='F', msg='Iotype not defined')
-        return self._verilog_io
+        return self._rtl_io
 
 
 

@@ -138,3 +138,17 @@ able definitions and initializations strings.
     def verilog_io_sync(self,value):
         #Ordered list.
         self.rtl_io_sync=value
+
+    @property
+    def verilog_io(self):
+        ''' List for verilog io_sync.
+        These are the verilog signals/regs associated with this file
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_io is obsolete. Use rtl_io instead' )
+        return self.rtl_io
+
+    @verilog_io.setter
+    def verilog_io(self,value):
+        #Ordered list.
+        self.rtl_io=value
