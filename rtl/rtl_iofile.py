@@ -109,13 +109,12 @@ class rtl_iofile(rtl_iofile_common):
         '''Status variable name to be used in verilog testbench.
 
         '''
-        if not hasattr(self,'_verilog_stat'):
-            self._verilog_stat='status_%s' %(self.name)
-        return self._verilog_stat
+        return self.langmodule.verilog_stat
 
     @verilog_stat.setter
     def verilog_stat(self,value):
-        self._verilog_stat=value
+        self.langmodule.verilog_stat=value
+
 
     #Timestamp integers for control files
     @property

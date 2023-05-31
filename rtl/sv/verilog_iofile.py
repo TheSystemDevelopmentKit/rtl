@@ -64,3 +64,17 @@ class verilog_iofile(rtl_iofile_common):
             self._rtlparam={key:('string','\"%s\"'%(val))}
         return self._rtlparam
 
+    # Status parameter
+    @property
+    def verilog_stat(self):
+        '''Status variable name to be used in verilog testbench.
+
+        '''
+        if not hasattr(self,'_verilog_stat'):
+            self._verilog_stat='status_%s' %(self.name)
+        return self._verilog_stat
+
+    @verilog_stat.setter
+    def verilog_stat(self,value):
+        self._verilog_stat=value
+
