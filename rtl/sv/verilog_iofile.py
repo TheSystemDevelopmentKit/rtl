@@ -185,20 +185,20 @@ class verilog_iofile(rtl_iofile_common):
         self._rtl_io_condition=value
 
     @property 
-    def verilog_io_sync(self):
+    def rtl_io_sync(self):
         '''File io synchronization condition for sample type input.
         Default: `@(posedge clock)`
 
         '''
 
-        if not hasattr(self,'_verilog_io_sync'):
+        if not hasattr(self,'_rtl_io_sync'):
             if self.iotype=='sample':
-                self._verilog_io_sync= '@(posedge clock)\n'
-        return self._verilog_io_sync
+                self._rtl_io_sync= '@(posedge clock)\n'
+        return self._rtl_io_sync
 
-    @verilog_io_sync.setter
-    def verilog_io_sync(self,value):
-        self._verilog_io_sync=value
+    @rtl_io_sync.setter
+    def rtl_io_sync(self,value):
+        self._rtl_io_sync=value
 
     def rtl_io_condition_append(self,**kwargs ):
         '''Append new condition string to `rtl_io_condition`
@@ -228,12 +228,12 @@ class verilog_iofile(rtl_iofile_common):
         first=True
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
-                self._verilog_io='always '+self.verilog_io_sync +'begin\n'
+                self._verilog_io='always '+self.rtl_io_sync +'begin\n'
                 self._verilog_io+=indent(text='if ( %s ) begin\n' %(self.rtl_io_condition), level=1)
                 self._verilog_io+=indent(text='$fwrite(%s, ' %(self.rtl_fptr), level=2)
             elif self.parent.dir=='in':
                 self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
-                self._verilog_io+=indent(text='%s' %self.verilog_io_sync, level=0)
+                self._verilog_io+=indent(text='%s' %self.rtl_io_sync, level=0)
                 self._verilog_io+=indent(text='if ( %s ) begin\n' %self.rtl_io_condition, level=1)
                 self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
                         %(self.rtl_stat, self.rtl_fptr), level=2)

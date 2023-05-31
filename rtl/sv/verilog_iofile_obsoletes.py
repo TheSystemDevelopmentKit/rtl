@@ -124,3 +124,17 @@ able definitions and initializations strings.
         '''
         self.print_log(type='O', msg='Method verilog_io_condition_append is obsolete. Use rtl_io_condition_append instead' )
         self.rtl_io_condition_append(**kwargs)
+
+    @property
+    def verilog_io_sync(self):
+        ''' List for verilog io_sync.
+        These are the verilog signals/regs associated with this file
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_io_sync is obsolete. Use rtl_io_sync instead' )
+        return self.rtl_io_sync
+
+    @verilog_io_sync.setter
+    def verilog_io_sync(self,value):
+        #Ordered list.
+        self.rtl_io_sync=value
