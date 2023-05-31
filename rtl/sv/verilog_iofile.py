@@ -15,12 +15,13 @@ import sys
 import pdb
 from abc import * 
 from thesdk import *
-from thesdk.iofile import iofile
+#from thesdk.iofile import iofile
+from rtl.rtl_iofile_common import rtl_iofile_common
 import numpy as np
 import pandas as pd
 import sortedcontainers as sc
 
-class verilog_iofile(iofile):
+class verilog_iofile(rtl_iofile_common):
     """
     Class to provide file IO for rtl simulations. When created, 
     adds a rtl_iofile object to the parents iofile_bundle attribute.
