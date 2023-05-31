@@ -97,13 +97,13 @@ class verilog_iofile(rtl_iofile_common):
         return self._rtl_pstamp
 
     @property
-    def verilog_tdiff(self):
+    def rtl_tdiff(self):
         '''Verilog time differencec variable. Used in event based file IO.
         '
         '''
         if not hasattr(self,'_verilog_diff'):
-            self._verilog_tdiff='tdiff_%s' %(self.name)
-        return self._verilog_tdiff
+            self._rtl_tdiff='tdiff_%s' %(self.name)
+        return self._rtl_tdiff
 
     # File pointer
     @property
@@ -128,7 +128,7 @@ class verilog_iofile(rtl_iofile_common):
             self._verilog_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
         elif self.parent.iotype=='event':
             self._verilog_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
-            self._verilog_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.verilog_tdiff)
+            self._verilog_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff)
             self._verilog_statdef+='initial %s=0;\n' %(self.rtl_ctstamp) 
             self._verilog_statdef+='initial %s=0;\n' %(self.rtl_pstamp) 
             for connector in self.parent.verilog_connectors:
@@ -257,9 +257,9 @@ class verilog_iofile(rtl_iofile_common):
                 self._verilog_io='begin\nwhile(!$feof(%s)) begin\n    ' \
                         %(self.verilog_fptr)
                 self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
-                        %(self.verilog_tdiff,
+                        %(self.rtl_tdiff,
                         self.rtl_ctstamp, self.rtl_pstamp,
-                        self.verilog_tdiff)    
+                        self.rtl_tdiff)    
 
                 #t= Every control file requires status, diff, current_timestamp 
                 # and past timestamp
@@ -284,8 +284,8 @@ class verilog_iofile(rtl_iofile_common):
             self._verilog_io+=format+iolines+'\n        );\n    end\nend\n'
 
             #Repeat the last assignment outside the loop
-            self._verilog_io+='%s = %s-%s;\n#%s begin\n' %(self.verilog_tdiff,
-                    self.rtl_ctstamp, self.rtl_pstamp,self.verilog_tdiff)    
+            self._verilog_io+='%s = %s-%s;\n#%s begin\n' %(self.rtl_tdiff,
+                    self.rtl_ctstamp, self.rtl_pstamp,self.rtl_tdiff)    
             self._verilog_io+='    %s = %s;\n' %(self.rtl_pstamp,
                     self.rtl_ctstamp)
             for connector in self.parent.verilog_connectors:

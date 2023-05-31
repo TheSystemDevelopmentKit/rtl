@@ -40,15 +40,15 @@ class verilog_iofile_obsoletes():
         self.print_log(type='O', msg='Parameter verilog_ptstamp is obsolete. Use rtl_ptstamp instead' )
         return self.langmodule.rtl_ptstamp
 
-#    @property
-#    def verilog_tdiff(self):
-#        '''Verilog time differencec variable. Used in event based file IO.
-#        '
-#        '''
-#        self.print_log(type='O', msg='Parameter verilog_tdiff is obsolete. Use rtl_tdiff instead' )
-#        return self.langmodule.rtl_tdiff
-#    
-#    # Status integer verilog definitions
+    @property
+    def verilog_tdiff(self):
+        '''Verilog time differencec variable. Used in event based file IO.
+        '
+        '''
+        self.print_log(type='O', msg='Parameter verilog_tdiff is obsolete. Use rtl_tdiff instead' )
+        return self.langmodule.rtl_tdiff
+    
+    # Status integer verilog definitions
 #    @property
 #    def verilog_statdef(self):
 #        '''Verilog file read status integer vari'

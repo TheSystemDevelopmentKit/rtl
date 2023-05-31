@@ -130,18 +130,18 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
         return self.langmodule.rtl_ctstamp
 
     @property
-    def verilog_ptstamp(self):
+    def rtl_pstamp(self):
         '''Past time stamp variable for verilog testbench. Used in event type file IO.
 
         '''
-        return self.langmodule.verilog_ptstamp
+        return self.langmodule.rtl_pstamp
 
     @property
-    def verilog_tdiff(self):
+    def rtl_tdiff(self):
         '''Verilog time differencec variable. Used in event based file IO.
         '
         '''
-        return self.langmodule.verilog_tdiff
+        return self.langmodule.rtl_tdiff
     
 
     # Status integer verilog definitions
