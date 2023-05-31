@@ -98,3 +98,12 @@ class verilog_iofile(rtl_iofile_common):
             self._verilog_ptstamp='ptstamp_%s' %(self.name)
         return self._verilog_ptstamp
 
+    @property
+    def verilog_tdiff(self):
+        '''Verilog time differencec variable. Used in event based file IO.
+        '
+        '''
+        if not hasattr(self,'_verilog_diff'):
+            self._verilog_tdiff='tdiff_%s' %(self.name)
+        return self._verilog_tdiff
+
