@@ -89,17 +89,17 @@ able definitions and initializations strings.
         self.print_log(type='O', msg='Parameter verilog_fclose is obsolete. Use rtl_fclose instead' )
         return self.langmodule.rtl_fclose
 
-#    @property
-#    def verilog_connectors(self):
-#        ''' List for verilog connectors.
-#        These are the verilog signals/regs associated with this file
-#
-#        '''
-#        self.print_log(type='O', msg='Parameter verilog_connectors is obsolete. Use rtl_connectors instead' )
-#        return self.rtl_connectors
-#
-#    @verilog_connectors.setter
-#    def verilog_connectors(self,value):
-#        #Ordered list.
-#        self.rtl_connectors=value
+    @property
+    def verilog_connectors(self):
+        ''' List for verilog connectors.
+        These are the verilog signals/regs associated with this file
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_connectors is obsolete. Use rtl_connectors instead' )
+        return self.rtl_connectors
+
+    @verilog_connectors.setter
+    def verilog_connectors(self,value):
+        #Ordered list.
+        self.rtl_connectors=value
 

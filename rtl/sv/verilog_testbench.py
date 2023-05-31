@@ -189,7 +189,7 @@ class verilog_testbench(testbench_common):
         # See controller.py
         for ioname,val in self.parent.IOS.Members.items():
             if val.iotype != 'file':
-                self.parent.iofile_bundle.Members[ioname].verilog_connectors=\
+                self.parent.iofile_bundle.Members[ioname].rtl_connectors=\
                         self.connectors.list(names=val.ionames)
                 if val.dir == 'in': 
                     # Data must be properly shaped
@@ -199,7 +199,7 @@ class verilog_testbench(testbench_common):
                     if val.dir == 'in': 
                         # Adoption transfers parenthood of the files to this instance
                         self.IOS.Members[ioname].Data.Members[bname].adopt(parent=self)
-                    for connector in bval.verilog_connectors:
+                    for connector in bval.rtl_connectors:
                         self.tb.connectors.Members[connector.name]=connector
                         # Connect them to DUT
                         try: 

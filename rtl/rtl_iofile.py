@@ -182,19 +182,19 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
         '''
         return self.langmodule.rtl_fclose
     @property
-    def verilog_connectors(self):
+    def rtl_connectors(self):
         ''' List for verilog connectors.
         These are the verilog signals/regs associated with this file
 
         '''
-        if not hasattr(self,'_verilog_connectors'):
-            self._verilog_connectors=[]
-        return self._verilog_connectors
+        if not hasattr(self,'_rtl_connectors'):
+            self._rtl_connectors=[]
+        return self._rtl_connectors
 
-    @verilog_connectors.setter
-    def verilog_connectors(self,value):
+    @rtl_connectors.setter
+    def rtl_connectors(self,value):
         #Ordered list.
-        self._verilog_connectors=value
+        self._rtl_connectors=value
     
     def connector_datamap(self,**kwargs):
         '''Verilog_connectors is an ordered list. Order defines the assumed order of columns in the 
@@ -204,7 +204,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
         '''
         name=kwargs.get('name')
-        if not self.verilog_connectors:
+        if not self.rtl_connectors:
             self.print_log(type='F', msg='Connector undefined, can\'t access.')
         else:
             if self.iotype=='sample':
@@ -212,7 +212,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
             elif self.iotype=='event':
                 self._verilog_connector_datamap={'time':0}
             index=0
-            for val in self.verilog_connectors:
+            for val in self.rtl_connectors:
                 index+=1
                 self._verilog_connector_datamap.update({'%s' %(val.name): index})
         return self._verilog_connector_datamap[name]
@@ -229,7 +229,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
             name: str
             val: type undefined
             init: int, 0
-            vector of values to initialize the data. lenght should correpond to `self.verilog_connectors+1`
+            vector of values to initialize the data. lenght should correpond to `self.rtl_connectors+1`
 
         '''
         time=kwargs.get('time',int(0))
@@ -244,8 +244,8 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
         if self.DictData is None:
             self.DictData = sc.SortedDict()
             if np.isscalar(init):
-                self.DictData[0] = (np.ones(len(self.verilog_connectors))*init).astype(int)
-            elif init.shape[1] == len(self.verilog_connectors)+1:
+                self.DictData[0] = (np.ones(len(self.rtl_connectors))*init).astype(int)
+            elif init.shape[1] == len(self.rtl_connectors)+1:
                 init_array = init.astype(int)
                 for row in init_array:
                     self.DictData[row[0]] = row[1:]
@@ -256,7 +256,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
             # add a new row if the time is not yet in the dictionary
             if time not in self.DictData:
                 # init diff as no change
-                self.DictData[time] = [None for _ in range(len(self.verilog_connectors))]
+                self.DictData[time] = [None for _ in range(len(self.rtl_connectors))]
 
             # change corresponding value
             self.DictData[time][self.connector_datamap(name=name)-1] = val

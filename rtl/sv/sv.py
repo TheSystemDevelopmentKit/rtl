@@ -123,7 +123,7 @@ class sv(thesdk,metaclass=abc.ABCMeta):
                 io.Data.adopt(parent=self)
                 self.tb.parameters.Members.update(io.Data.rtlparam)
 
-                for connector in io.Data.verilog_connectors:
+                for connector in io.Data.rtl_connectors:
                     self.tb.connectors.Members[connector.name]=connector
                     # Connect them to DUT
                     try: 
@@ -139,7 +139,7 @@ class sv(thesdk,metaclass=abc.ABCMeta):
                         self.print_log(type='I', 
                                 msg='Creating non-existent IO connector %s for testbench' %(name))
                         self.tb.connectors.new(name=name, cls='reg')
-                self.iofile_bundle.Members[ioname].verilog_connectors=\
+                self.iofile_bundle.Members[ioname].rtl_connectors=\
                         self.tb.connectors.list(names=val.ionames)
                 self.tb.parameters.Members.update(val.rtlparam)
         # Define the iofiles of the testbench. '

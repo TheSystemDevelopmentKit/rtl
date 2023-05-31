@@ -131,7 +131,7 @@ class verilog_iofile(rtl_iofile_common):
             self._rtl_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff)
             self._rtl_statdef+='initial %s=0;\n' %(self.rtl_ctstamp) 
             self._rtl_statdef+='initial %s=0;\n' %(self.rtl_pstamp) 
-            for connector in self.parent.verilog_connectors:
+            for connector in self.parent.rtl_connectors:
                 self._rtl_statdef+='integer buffer_%s;\n' %(connector.name)
         return self._rtl_statdef
 
@@ -169,7 +169,7 @@ class verilog_iofile(rtl_iofile_common):
         if not hasattr(self,'_verilog_io_condition'):
             if self.parent.dir=='out':
                 first=True
-                for connector in self.parent.verilog_connectors:
+                for connector in self.parent.rtl_connectors:
                     if first:
                         self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
                         first=False
@@ -237,7 +237,7 @@ class verilog_iofile(rtl_iofile_common):
                 self._verilog_io+=indent(text='if ( %s ) begin\n' %self.verilog_io_condition, level=1)
                 self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
                         %(self.rtl_stat, self.rtl_fptr), level=2)
-            for connector in self.parent.verilog_connectors:
+            for connector in self.parent.rtl_connectors:
                 if first:
                     iolines='%s' %(connector.name)
                     format='\"%s' %(connector.ioformat)
@@ -266,7 +266,7 @@ class verilog_iofile(rtl_iofile_common):
                 self._verilog_io+='    %s = %s;\n    ' \
                         %(self.rtl_pstamp, self.rtl_ctstamp)
 
-                for connector in self.parent.verilog_connectors:
+                for connector in self.parent.rtl_connectors:
                     self._verilog_io+='    %s = buffer_%s;\n    ' \
                             %(connector.name,connector.name)
 
@@ -276,7 +276,7 @@ class verilog_iofile(rtl_iofile_common):
             #The first column is timestap
             iolines='            %s' %(self.rtl_ctstamp) 
             format='\"%d'
-            for connector in self.parent.verilog_connectors:
+            for connector in self.parent.rtl_connectors:
                 iolines='%s,\n            buffer_%s' \
                         %(iolines,connector.name)
                 format='%s\\t%s' %(format,connector.ioformat)
@@ -288,7 +288,7 @@ class verilog_iofile(rtl_iofile_common):
                     self.rtl_ctstamp, self.rtl_pstamp,self.rtl_tdiff)    
             self._verilog_io+='    %s = %s;\n' %(self.rtl_pstamp,
                     self.rtl_ctstamp)
-            for connector in self.parent.verilog_connectors:
+            for connector in self.parent.rtl_connectors:
                 self._verilog_io+='    %s = buffer_%s;\n' \
                 %(connector.name,connector.name)
             self._verilog_io+='end\nend\n'
