@@ -356,20 +356,8 @@ class rtl_iofile(rtl_iofile_common):
         self.langmodule.verilog_io_condition_append(**kwargs)
 
 
-    #@property
-    #def verilog_io(self,**kwargs):
-    #    '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
-
-    #    Returns 
-    #    _______
-    #    str
-    #        Verilog code for file IO to read/write the IO file.
-
-
-    #    '''
-    #    return self.langmodule.verilog_io
     @property
-    def verilog_io(self):
+    def verilog_io(self,**kwargs):
         '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
 
         Returns 
@@ -379,76 +367,4 @@ class rtl_iofile(rtl_iofile_common):
 
 
         '''
-        first=True
-        if self.iotype=='sample':
-            if self.dir=='out':
-                self._verilog_io='always '+self.verilog_io_sync +'begin\n'
-                self._verilog_io+=indent(text='if ( %s ) begin\n' %(self.verilog_io_condition), level=1)
-                self._verilog_io+=indent(text='$fwrite(%s, ' %(self.verilog_fptr), level=2)
-            elif self.dir=='in':
-                self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
-                self._verilog_io+=indent(text='%s' %self.verilog_io_sync, level=0)
-                self._verilog_io+=indent(text='if ( %s ) begin\n' %self.verilog_io_condition, level=1)
-                self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
-                        %(self.verilog_stat, self.verilog_fptr), level=2)
-            for connector in self.verilog_connectors:
-                if first:
-                    iolines='%s' %(connector.name)
-                    format='\"%s' %(connector.ioformat)
-                    first=False
-                else:
-                    iolines='%s,\n%s' %(iolines,connector.name)
-                    format='%s\\t%s' %(format,connector.ioformat)
-
-            format=format+'\\n\",\n'
-            self._verilog_io+=indent(text=format+iolines+'\n);',level=2)+indent(text='end', level=1)+indent(text='end', level=0)
-
-        #Control files are handled differently
-        elif self.iotype=='event':
-            if self.dir=='out':
-                self.print_log(type='F', msg='Output writing for control files not supported')
-            elif self.dir=='in':
-                self._verilog_io='begin\nwhile(!$feof(%s)) begin\n    ' \
-                        %(self.verilog_fptr)
-                self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
-                        %(self.verilog_tdiff,
-                        self.verilog_ctstamp, self.verilog_ptstamp,
-                        self.verilog_tdiff)    
-
-                #t= Every control file requires status, diff, current_timestamp 
-                # and past timestamp
-                self._verilog_io+='    %s = %s;\n    ' \
-                        %(self.verilog_ptstamp, self.verilog_ctstamp)
-
-                for connector in self.verilog_connectors:
-                    self._verilog_io+='    %s = buffer_%s;\n    ' \
-                            %(connector.name,connector.name)
-
-                self._verilog_io+='    %s = $fscanf(%s, ' \
-                        %(self.verilog_stat,self.verilog_fptr)
-
-            #The first column is timestap
-            iolines='            %s' %(self.verilog_ctstamp) 
-            format='\"%d'
-            for connector in self.verilog_connectors:
-                iolines='%s,\n            buffer_%s' \
-                        %(iolines,connector.name)
-                format='%s\\t%s' %(format,connector.ioformat)
-            format=format+'\\n\",\n'
-            self._verilog_io+=format+iolines+'\n        );\n    end\nend\n'
-
-            #Repeat the last assignment outside the loop
-            self._verilog_io+='%s = %s-%s;\n#%s begin\n' %(self.verilog_tdiff,
-                    self.verilog_ctstamp, self.verilog_ptstamp,self.verilog_tdiff)    
-            self._verilog_io+='    %s = %s;\n' %(self.verilog_ptstamp,
-                    self.verilog_ctstamp)
-            for connector in self.verilog_connectors:
-                self._verilog_io+='    %s = buffer_%s;\n' \
-                %(connector.name,connector.name)
-            self._verilog_io+='end\nend\n'
-        else:
-            self.print_log(type='F', msg='Iotype not defined')
-        return self._verilog_io
-
-
-
+        return self.langmodule.verilog_io
