@@ -122,12 +122,12 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
     #Timestamp integers for control files
     @property
-    def verilog_ctstamp(self):
+    def rtl_ctstamp(self):
         '''Current time stamp variable name to be used in verilog testbench.
         Used in event type file IO.
 
         '''
-        return self.langmodule.verilog_ctstamp
+        return self.langmodule.rtl_ctstamp
 
     @property
     def verilog_ptstamp(self):

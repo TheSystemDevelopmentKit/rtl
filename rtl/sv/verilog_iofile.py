@@ -78,14 +78,14 @@ class verilog_iofile(rtl_iofile_common):
 
     #Timestamp integers for control files
     @property
-    def verilog_ctstamp(self):
+    def rtl_ctstamp(self):
         '''Current time stamp variable name to be used in verilog testbench.
         Used in event type file IO.
 
         '''
-        if not hasattr(self,'_verilog_ctstamp'):
-            self._verilog_ctstamp='ctstamp_%s' %(self.name)
-        return self._verilog_ctstamp
+        if not hasattr(self,'_rtl_ctstamp'):
+            self._rtl_ctstamp='ctstamp_%s' %(self.name)
+        return self._rtl_ctstamp
 
     @property
     def verilog_ptstamp(self):
@@ -128,8 +128,8 @@ class verilog_iofile(rtl_iofile_common):
             self._verilog_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
         elif self.parent.iotype=='event':
             self._verilog_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
-            self._verilog_statdef+='time %s, %s, %s;\n' %(self.verilog_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
-            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
+            self._verilog_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
+            self._verilog_statdef+='initial %s=0;\n' %(self.rtl_ctstamp) 
             self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ptstamp) 
             for connector in self.parent.verilog_connectors:
                 self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
@@ -258,13 +258,13 @@ class verilog_iofile(rtl_iofile_common):
                         %(self.verilog_fptr)
                 self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
                         %(self.verilog_tdiff,
-                        self.verilog_ctstamp, self.verilog_ptstamp,
+                        self.rtl_ctstamp, self.verilog_ptstamp,
                         self.verilog_tdiff)    
 
                 #t= Every control file requires status, diff, current_timestamp 
                 # and past timestamp
                 self._verilog_io+='    %s = %s;\n    ' \
-                        %(self.verilog_ptstamp, self.verilog_ctstamp)
+                        %(self.verilog_ptstamp, self.rtl_ctstamp)
 
                 for connector in self.parent.verilog_connectors:
                     self._verilog_io+='    %s = buffer_%s;\n    ' \
@@ -274,7 +274,7 @@ class verilog_iofile(rtl_iofile_common):
                         %(self.rtl_stat,self.verilog_fptr)
 
             #The first column is timestap
-            iolines='            %s' %(self.verilog_ctstamp) 
+            iolines='            %s' %(self.rtl_ctstamp) 
             format='\"%d'
             for connector in self.parent.verilog_connectors:
                 iolines='%s,\n            buffer_%s' \
@@ -285,9 +285,9 @@ class verilog_iofile(rtl_iofile_common):
 
             #Repeat the last assignment outside the loop
             self._verilog_io+='%s = %s-%s;\n#%s begin\n' %(self.verilog_tdiff,
-                    self.verilog_ctstamp, self.verilog_ptstamp,self.verilog_tdiff)    
+                    self.rtl_ctstamp, self.verilog_ptstamp,self.verilog_tdiff)    
             self._verilog_io+='    %s = %s;\n' %(self.verilog_ptstamp,
-                    self.verilog_ctstamp)
+                    self.rtl_ctstamp)
             for connector in self.parent.verilog_connectors:
                 self._verilog_io+='    %s = buffer_%s;\n' \
                 %(connector.name,connector.name)

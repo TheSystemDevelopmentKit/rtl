@@ -22,15 +22,15 @@ class verilog_iofile_obsoletes():
         self.langmodule.rtl_stat=value
 
 
-#    #Timestamp integers for control files
-#    @property
-#    def verilog_ctstamp(self):
-#        '''Current time stamp variable name to be used in verilog testbench.
-#        Used in event type file IO.
-#
-#        '''
-#        self.print_log(type='O', msg='Parameter verilog_ctstamp is obsolete. Use rtl_ctstamp instead' )
-#        return self.langmodule.rtl_ctstamp
+    #Timestamp integers for control files
+    @property
+    def verilog_ctstamp(self):
+        '''Current time stamp variable name to be used in verilog testbench.
+        Used in event type file IO.
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_ctstamp is obsolete. Use rtl_ctstamp instead' )
+        return self.langmodule.rtl_ctstamp
 #
 #    @property
 #    def verilog_ptstamp(self):
