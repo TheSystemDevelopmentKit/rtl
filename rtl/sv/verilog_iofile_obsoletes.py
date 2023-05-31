@@ -31,15 +31,15 @@ class verilog_iofile_obsoletes():
         '''
         self.print_log(type='O', msg='Parameter verilog_ctstamp is obsolete. Use rtl_ctstamp instead' )
         return self.langmodule.rtl_ctstamp
-#
-#    @property
-#    def verilog_ptstamp(self):
-#        '''Past time stamp variable for verilog testbench. Used in event type file IO.
-#
-#        '''
-#        self.print_log(type='O', msg='Parameter verilog_ptstamp is obsolete. Use rtl_ptstamp instead' )
-#        return self.langmodule.rtl_ptstamp
-#
+
+    @property
+    def verilog_ptstamp(self):
+        '''Past time stamp variable for verilog testbench. Used in event type file IO.
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_ptstamp is obsolete. Use rtl_ptstamp instead' )
+        return self.langmodule.rtl_ptstamp
+
 #    @property
 #    def verilog_tdiff(self):
 #        '''Verilog time differencec variable. Used in event based file IO.
