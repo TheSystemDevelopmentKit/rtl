@@ -19,9 +19,10 @@ import pandas as pd
 import sortedcontainers as sc
 from rtl.rtl_iofile_common import rtl_iofile_common
 from rtl.sv.verilog_iofile import verilog_iofile
+from rtl.sv.verilog_iofile_obsoletes import verilog_iofile_obsoletes
 from rtl.connector import indent
 
-class rtl_iofile(rtl_iofile_common):
+class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     '''
     Class to provide file IO for rtl simulations. When created, 
     adds a rtl_iofile object to the parents iofile_bundle attribute.
@@ -109,15 +110,15 @@ class rtl_iofile(rtl_iofile_common):
     
     # Status parameter
     @property
-    def verilog_stat(self):
+    def rtl_stat(self):
         '''Status variable name to be used in verilog testbench.
 
         '''
-        return self.langmodule.verilog_stat
+        return self.langmodule.rtl_stat
 
-    @verilog_stat.setter
-    def verilog_stat(self,value):
-        self.langmodule.verilog_stat=value
+    @rtl_stat.setter
+    def rtl_stat(self,value):
+        self.langmodule.rtl_stat=value
 
     #Timestamp integers for control files
     @property

@@ -64,17 +64,17 @@ class verilog_iofile(rtl_iofile_common):
 
     # Status parameter
     @property
-    def verilog_stat(self):
+    def rtl_stat(self):
         '''Status variable name to be used in verilog testbench.
 
         '''
-        if not hasattr(self,'_verilog_stat'):
-            self._verilog_stat='status_%s' %(self.name)
-        return self._verilog_stat
+        if not hasattr(self,'_rtl_stat'):
+            self._rtl_stat='status_%s' %(self.name)
+        return self._rtl_stat
 
-    @verilog_stat.setter
-    def verilog_stat(self,value):
-        self._verilog_stat=value
+    @rtl_stat.setter
+    def rtl_stat(self,value):
+        self._rtl_stat=value
 
     #Timestamp integers for control files
     @property
@@ -125,9 +125,9 @@ class verilog_iofile(rtl_iofile_common):
 
         '''
         if self.parent.iotype=='sample':
-            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
+            self._verilog_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
         elif self.parent.iotype=='event':
-            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
+            self._verilog_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
             self._verilog_statdef+='time %s, %s, %s;\n' %(self.verilog_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
             self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
             self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ptstamp) 
@@ -236,7 +236,7 @@ class verilog_iofile(rtl_iofile_common):
                 self._verilog_io+=indent(text='%s' %self.verilog_io_sync, level=0)
                 self._verilog_io+=indent(text='if ( %s ) begin\n' %self.verilog_io_condition, level=1)
                 self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
-                        %(self.verilog_stat, self.verilog_fptr), level=2)
+                        %(self.rtl_stat, self.verilog_fptr), level=2)
             for connector in self.parent.verilog_connectors:
                 if first:
                     iolines='%s' %(connector.name)
@@ -271,7 +271,7 @@ class verilog_iofile(rtl_iofile_common):
                             %(connector.name,connector.name)
 
                 self._verilog_io+='    %s = $fscanf(%s, ' \
-                        %(self.verilog_stat,self.verilog_fptr)
+                        %(self.rtl_stat,self.verilog_fptr)
 
             #The first column is timestap
             iolines='            %s' %(self.verilog_ctstamp) 
