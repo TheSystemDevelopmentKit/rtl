@@ -107,3 +107,49 @@ class verilog_iofile(rtl_iofile_common):
             self._verilog_tdiff='tdiff_%s' %(self.name)
         return self._verilog_tdiff
 
+    # File pointer
+    @property
+    def verilog_fptr(self):
+        '''Verilog file pointer name.
+
+        '''
+        self._verilog_fptr='f_%s' %(self.name)
+        return self._verilog_fptr
+
+    @verilog_fptr.setter
+    def verilog_fptr(self,value):
+        self._verilog_fptr=value
+
+    @property
+    def verilog_connectors(self):
+        ''' List for verilog connectors.
+        These are the verilog signals/regs associated with this file
+
+        '''
+        if not hasattr(self,'_verilog_connectors'):
+            self._verilog_connectors=[]
+        return self._verilog_connectors
+
+    @verilog_connectors.setter
+    def verilog_connectors(self,value):
+        #Ordered list.
+        self._verilog_connectors=value
+
+
+    # Status integer verilog definitions
+    @property
+    def verilog_statdef(self):
+        '''Verilog file read status integer variable definitions and initializations strings.
+
+        '''
+        if self.iotype=='sample':
+            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
+        elif self.iotype=='event':
+            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
+            self._verilog_statdef+='time %s, %s, %s;\n' %(self.verilog_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
+            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
+            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ptstamp) 
+            for connector in self.verilog_connectors:
+                self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
+        return self._verilog_statdef
+

@@ -139,6 +139,14 @@ class rtl_iofile(rtl_iofile_common):
         return self.langmodule.verilog_tdiff
     
 
+    ## Status integer verilog definitions
+    #@property
+    #def verilog_statdef(self):
+    #    '''Verilog file read status integer variable definitions and initializations strings.
+
+    #    '''
+    #    return self.langmodule.verilog_statdef
+
     # Status integer verilog definitions
     @property
     def verilog_statdef(self):
@@ -162,12 +170,11 @@ class rtl_iofile(rtl_iofile_common):
         '''Verilog file pointer name.
 
         '''
-        self._verilog_fptr='f_%s' %(self.name)
-        return self._verilog_fptr
+        return self.langmodule.verilog_fptr
 
     @verilog_fptr.setter
     def verilog_fptr(self,value):
-        self._verilog_fptr=value
+        self.langmodule.verilog_fptr=value
 
     # File opening, direction dependent 
     @property
@@ -196,14 +203,11 @@ class rtl_iofile(rtl_iofile_common):
         These are the verilog signals/regs associated with this file
 
         '''
-        if not hasattr(self,'_verilog_connectors'):
-            self._verilog_connectors=[]
-        return self._verilog_connectors
+        return self.langmodule.verilog_connectors
 
     @verilog_connectors.setter
     def verilog_connectors(self,value):
-        #Ordered list.
-        self._verilog_connectors=value
+        self.langmodule.verilog_connectors=value
 
     def connector_datamap(self,**kwargs):
         '''Verilog_connectors is an ordered list. Order defines the assumed order of columns in the 
@@ -213,7 +217,7 @@ class rtl_iofile(rtl_iofile_common):
 
         '''
         name=kwargs.get('name')
-        if not self._verilog_connectors:
+        if not self.verilog_connectors:
             self.print_log(type='F', msg='Connector undefined, can\'t access.')
         else:
             if self.iotype=='sample':
@@ -253,8 +257,8 @@ class rtl_iofile(rtl_iofile_common):
         if self.DictData is None:
             self.DictData = sc.SortedDict()
             if np.isscalar(init):
-                self.DictData[0] = (np.ones(len(self._verilog_connectors))*init).astype(int)
-            elif init.shape[1] == len(self._verilog_connectors)+1:
+                self.DictData[0] = (np.ones(len(self.verilog_connectors))*init).astype(int)
+            elif init.shape[1] == len(self.verilog_connectors)+1:
                 init_array = init.astype(int)
                 for row in init_array:
                     self.DictData[row[0]] = row[1:]
@@ -265,7 +269,7 @@ class rtl_iofile(rtl_iofile_common):
             # add a new row if the time is not yet in the dictionary
             if time not in self.DictData:
                 # init diff as no change
-                self.DictData[time] = [None for _ in range(len(self._verilog_connectors))]
+                self.DictData[time] = [None for _ in range(len(self.verilog_connectors))]
 
             # change corresponding value
             self.DictData[time][self.connector_datamap(name=name)-1] = val
