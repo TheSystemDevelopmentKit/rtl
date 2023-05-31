@@ -107,16 +107,16 @@ class verilog_iofile(rtl_iofile_common):
 
     # File pointer
     @property
-    def verilog_fptr(self):
+    def rtl_fptr(self):
         '''Verilog file pointer name.
 
         '''
-        self._verilog_fptr='f_%s' %(self.name)
-        return self._verilog_fptr
+        self._rtl_fptr='f_%s' %(self.name)
+        return self._rtl_fptr
 
-    @verilog_fptr.setter
-    def verilog_fptr(self,value):
-        self._verilog_fptr=value
+    @rtl_fptr.setter
+    def rtl_fptr(self,value):
+        self._rtl_fptr=value
 
 
     @property
@@ -125,9 +125,9 @@ class verilog_iofile(rtl_iofile_common):
 
         '''
         if self.parent.iotype=='sample':
-            self._rtl_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
+            self._rtl_statdef='integer %s, %s;\n' %(self.rtl_stat, self.rtl_fptr)
         elif self.parent.iotype=='event':
-            self._rtl_statdef='integer %s, %s;\n' %(self.rtl_stat, self.verilog_fptr)
+            self._rtl_statdef='integer %s, %s;\n' %(self.rtl_stat, self.rtl_fptr)
             self._rtl_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff)
             self._rtl_statdef+='initial %s=0;\n' %(self.rtl_ctstamp) 
             self._rtl_statdef+='initial %s=0;\n' %(self.rtl_pstamp) 
@@ -137,15 +137,15 @@ class verilog_iofile(rtl_iofile_common):
 
     # File opening, direction dependent 
     @property
-    def verilog_fopen(self):
+    def rtl_fopen(self):
         '''Verilog file open routine string.
 
         '''
         if self.parent.dir=='in':
-            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
+            self._rtl_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.rtl_fptr,next(iter(self.rtlparam)))
         if self.parent.dir=='out':
-            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
-        return self._verilog_fopen
+            self._rtl_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.rtl_fptr,next(iter(self.rtlparam)))
+        return self._rtl_fopen
 
     # File close
     @property
@@ -153,7 +153,7 @@ class verilog_iofile(rtl_iofile_common):
         '''Verilog file close routine sting.
 
         '''
-        self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
+        self._verilog_fclose='$fclose(%s);\n' %(self.rtl_fptr)
         return self._verilog_fclose
 
     # Condition string for monitoring if the signals are unknown
@@ -230,13 +230,13 @@ class verilog_iofile(rtl_iofile_common):
             if self.parent.dir=='out':
                 self._verilog_io='always '+self.verilog_io_sync +'begin\n'
                 self._verilog_io+=indent(text='if ( %s ) begin\n' %(self.verilog_io_condition), level=1)
-                self._verilog_io+=indent(text='$fwrite(%s, ' %(self.verilog_fptr), level=2)
+                self._verilog_io+=indent(text='$fwrite(%s, ' %(self.rtl_fptr), level=2)
             elif self.parent.dir=='in':
                 self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
                 self._verilog_io+=indent(text='%s' %self.verilog_io_sync, level=0)
                 self._verilog_io+=indent(text='if ( %s ) begin\n' %self.verilog_io_condition, level=1)
                 self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
-                        %(self.rtl_stat, self.verilog_fptr), level=2)
+                        %(self.rtl_stat, self.rtl_fptr), level=2)
             for connector in self.parent.verilog_connectors:
                 if first:
                     iolines='%s' %(connector.name)
@@ -255,7 +255,7 @@ class verilog_iofile(rtl_iofile_common):
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.parent.dir=='in':
                 self._verilog_io='begin\nwhile(!$feof(%s)) begin\n    ' \
-                        %(self.verilog_fptr)
+                        %(self.rtl_fptr)
                 self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
                         %(self.rtl_tdiff,
                         self.rtl_ctstamp, self.rtl_pstamp,
@@ -271,7 +271,7 @@ class verilog_iofile(rtl_iofile_common):
                             %(connector.name,connector.name)
 
                 self._verilog_io+='    %s = $fscanf(%s, ' \
-                        %(self.rtl_stat,self.verilog_fptr)
+                        %(self.rtl_stat,self.rtl_fptr)
 
             #The first column is timestap
             iolines='            %s' %(self.rtl_ctstamp) 

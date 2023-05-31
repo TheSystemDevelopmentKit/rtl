@@ -58,28 +58,27 @@ able definitions and initializations strings.
         self.print_log(type='O', msg='Parameter verilog_statdef is obsolete. Use rtl_statdef instead' )
         return self.langmodule.rtl_statdef
 
+    # File pointer
+    @property
+    def verilog_fptr(self):
+        '''Verilog file pointer name.
 
-#    # File pointer
-#    @property
-#    def verilog_fptr(self):
-#        '''Verilog file pointer name.
-#
-#        '''
-#        self.print_log(type='O', msg='Parameter verilog_fptr is obsolete. Use rtl_fptr instead' )
-#        return self.langmodule.rtl_fptr
-#
-#    @verilog_fptr.setter
-#    def verilog_fptr(self,value):
-#        self.langmodule._rtl_fptr=value
-#
-#    # File opening, direction dependent 
-#    @property
-#    def verilog_fopen(self):
-#        '''Verilog file open routine string.
-#
-#        '''
-#        self.print_log(type='O', msg='Parameter verilog_fopen is obsolete. Use rtl_fopen instead' )
-#        return self.langmodule.rtl_fopen
+        '''
+        self.print_log(type='O', msg='Parameter verilog_fptr is obsolete. Use rtl_fptr instead' )
+        return self.langmodule.rtl_fptr
+
+    @verilog_fptr.setter
+    def verilog_fptr(self,value):
+        self.langmodule._rtl_fptr=value
+
+    # File opening, direction dependent 
+    @property
+    def verilog_fopen(self):
+        '''Verilog file open routine string.
+
+        '''
+        self.print_log(type='O', msg='Parameter verilog_fopen is obsolete. Use rtl_fopen instead' )
+        return self.langmodule.rtl_fopen
 #
 #    # File close
 #    @property

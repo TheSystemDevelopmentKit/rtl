@@ -156,23 +156,23 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
     # File pointer
     @property
-    def verilog_fptr(self):
+    def rtl_fptr(self):
         '''Verilog file pointer name.
 
         '''
-        return self.langmodule.verilog_fptr
+        return self.langmodule.rtl_fptr
 
-    @verilog_fptr.setter
-    def verilog_fptr(self,value):
-        self.langmodule.verilog_fptr=value
+    @rtl_fptr.setter
+    def rtl_fptr(self,value):
+        self.langmodule.rtl_fptr=value
 
     # File opening, direction dependent 
     @property
-    def verilog_fopen(self):
+    def rtl_fopen(self):
         '''Verilog file open routine string.
 
         '''
-        return self.langmodule.verilog_fopen
+        return self.langmodule.rtl_fopen
 
     # File close
     @property

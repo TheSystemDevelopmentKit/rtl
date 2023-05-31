@@ -104,7 +104,7 @@ class verilog_testbench(testbench_common):
         iofile_defs='//Variables for the io_files\n'
         for name, val in self.iofiles.Members.items():
             iofile_defs=iofile_defs+val.rtl_statdef
-            iofile_defs=iofile_defs+val.verilog_fopen
+            iofile_defs=iofile_defs+val.rtl_fopen
         iofile_defs=iofile_defs+'\n'
         return iofile_defs 
 
