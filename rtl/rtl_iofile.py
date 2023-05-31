@@ -179,8 +179,7 @@ class rtl_iofile(rtl_iofile_common):
         '''Verilog file close routine sting.
 
         '''
-        self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
-        return self._verilog_fclose
+        return self.langmodule.verilog_fclose
     
     @property
     def verilog_connectors(self):

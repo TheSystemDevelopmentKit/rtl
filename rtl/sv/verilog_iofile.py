@@ -160,3 +160,12 @@ class verilog_iofile(rtl_iofile_common):
             self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
         return self._verilog_fopen
 
+    # File close
+    @property
+    def verilog_fclose(self):
+        '''Verilog file close routine sting.
+
+        '''
+        self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
+        return self._verilog_fclose
+
