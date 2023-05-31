@@ -89,3 +89,12 @@ class verilog_iofile(rtl_iofile_common):
             self._verilog_ctstamp='ctstamp_%s' %(self.name)
         return self._verilog_ctstamp
 
+    @property
+    def verilog_ptstamp(self):
+        '''Past time stamp variable for verilog testbench. Used in event type file IO.
+
+        '''
+        if not hasattr(self,'_verilog_ptstamp'):
+            self._verilog_ptstamp='ptstamp_%s' %(self.name)
+        return self._verilog_ptstamp
+

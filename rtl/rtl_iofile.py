@@ -115,7 +115,6 @@ class rtl_iofile(rtl_iofile_common):
     def verilog_stat(self,value):
         self.langmodule.verilog_stat=value
 
-
     #Timestamp integers for control files
     @property
     def verilog_ctstamp(self):
@@ -124,14 +123,14 @@ class rtl_iofile(rtl_iofile_common):
 
         '''
         return self.langmodule.verilog_ctstamp
+
     @property
     def verilog_ptstamp(self):
         '''Past time stamp variable for verilog testbench. Used in event type file IO.
 
         '''
-        if not hasattr(self,'_verilog_ptstamp'):
-            self._verilog_ptstamp='ptstamp_%s' %(self.name)
-        return self._verilog_ptstamp
+        return self.langmodule.verilog_ptstamp
+
     @property
     def verilog_tdiff(self):
         '''Verilog time differencec variable. Used in event based file IO.
