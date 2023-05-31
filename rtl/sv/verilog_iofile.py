@@ -20,6 +20,7 @@ from rtl.rtl_iofile_common import rtl_iofile_common
 import numpy as np
 import pandas as pd
 import sortedcontainers as sc
+from rtl.connector import indent
 
 class verilog_iofile(rtl_iofile_common):
     """
@@ -175,7 +176,7 @@ class verilog_iofile(rtl_iofile_common):
                     else:
                         self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
                                 %(self._verilog_io_condition,connector.name)
-            elif self.dir=='in':
+            elif self.parent.dir=='in':
                 self.verilog_io_condition= ' 1 '
         return self._verilog_io_condition
 
@@ -199,3 +200,18 @@ class verilog_iofile(rtl_iofile_common):
     def verilog_io_sync(self,value):
         self._verilog_io_sync=value
 
+    def verilog_io_condition_append(self,**kwargs ):
+        '''Append new condition string to `verilog_io_condition`
+
+        Parameters
+        ----------
+        **kwargs :
+           cond : str
+
+        '''
+        cond=kwargs.get('cond', '')
+        if not (not cond ):
+            self._verilog_io_condition='%s \n%s' \
+            %(self.verilog_io_condition,cond)
+
+    

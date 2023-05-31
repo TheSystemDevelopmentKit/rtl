@@ -353,14 +353,23 @@ class rtl_iofile(rtl_iofile_common):
            cond : str
 
         '''
-        cond=kwargs.get('cond', '')
-        if not (not cond ):
-            self._verilog_io_condition='%s \n%s' \
-            %(self.verilog_io_condition,cond)
+        self.langmodule.verilog_io_condition_append(**kwargs)
 
 
+    #@property
+    #def verilog_io(self,**kwargs):
+    #    '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
+
+    #    Returns 
+    #    _______
+    #    str
+    #        Verilog code for file IO to read/write the IO file.
+
+
+    #    '''
+    #    return self.langmodule.verilog_io
     @property
-    def verilog_io(self,**kwargs):
+    def verilog_io(self):
         '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
 
         Returns 
@@ -406,7 +415,7 @@ class rtl_iofile(rtl_iofile_common):
                         self.verilog_ctstamp, self.verilog_ptstamp,
                         self.verilog_tdiff)    
 
-                # Every control file requires status, diff, current_timestamp 
+                #t= Every control file requires status, diff, current_timestamp 
                 # and past timestamp
                 self._verilog_io+='    %s = %s;\n    ' \
                         %(self.verilog_ptstamp, self.verilog_ctstamp)
@@ -440,4 +449,6 @@ class rtl_iofile(rtl_iofile_common):
         else:
             self.print_log(type='F', msg='Iotype not defined')
         return self._verilog_io
+
+
 
