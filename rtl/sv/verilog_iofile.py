@@ -155,3 +155,31 @@ class verilog_iofile(rtl_iofile_common):
         self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
         return self._verilog_fclose
 
+    # Condition string for monitoring if the signals are unknown
+    @property 
+    def verilog_io_condition(self):
+        '''Verilog condition string that must be true in ordedr to file IO read/write to occur.
+
+        Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
+        Default for input file: `'1'` 
+        file is always read with rising edge of the clock or in the time of an event defined in the file.
+
+        '''
+        if not hasattr(self,'_verilog_io_condition'):
+            if self.parent.dir=='out':
+                first=True
+                for connector in self.parent.verilog_connectors:
+                    if first:
+                        self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
+                        first=False
+                    else:
+                        self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
+                                %(self._verilog_io_condition,connector.name)
+            elif self.dir=='in':
+                self.verilog_io_condition= ' 1 '
+        return self._verilog_io_condition
+
+    @verilog_io_condition.setter
+    def verilog_io_condition(self,value):
+        self._verilog_io_condition=value
+

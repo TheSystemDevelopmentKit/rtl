@@ -195,18 +195,6 @@ class rtl_iofile(rtl_iofile_common):
         #Ordered list.
         self._verilog_connectors=value
     
-    #@property
-    #def verilog_connectors(self):
-    #    ''' List for verilog connectors.
-    #    These are the verilog signals/regs associated with this file
-
-    #    '''
-    #    return self.langmodule.verilog_connectors
-
-    #@verilog_connectors.setter
-    #def verilog_connectors(self,value):
-    #    self.langmodule.verilog_connectors=value
-
     def connector_datamap(self,**kwargs):
         '''Verilog_connectors is an ordered list. Order defines the assumed order of columns in the 
         file to be read or written. 
@@ -338,23 +326,11 @@ class rtl_iofile(rtl_iofile_common):
         file is always read with rising edge of the clock or in the time of an event defined in the file.
 
         '''
-        if not hasattr(self,'_verilog_io_condition'):
-            if self.dir=='out':
-                first=True
-                for connector in self.verilog_connectors:
-                    if first:
-                        self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
-                        first=False
-                    else:
-                        self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
-                                %(self._verilog_io_condition,connector.name)
-            elif self.dir=='in':
-                self._verilog_io_condition= ' 1 '
-        return self._verilog_io_condition
+        return self.langmodule.verilog_io_condition
 
     @verilog_io_condition.setter
     def verilog_io_condition(self,value):
-        self._verilog_io_condition=value
+        self.langmodule.verilog_io_condition=value
 
     @property 
     def verilog_io_sync(self):
