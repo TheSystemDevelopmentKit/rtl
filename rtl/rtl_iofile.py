@@ -123,9 +123,7 @@ class rtl_iofile(rtl_iofile_common):
         Used in event type file IO.
 
         '''
-        if not hasattr(self,'_verilog_ctstamp'):
-            self._verilog_ctstamp='ctstamp_%s' %(self.name)
-        return self._verilog_ctstamp
+        return self.langmodule.verilog_ctstamp
     @property
     def verilog_ptstamp(self):
         '''Past time stamp variable for verilog testbench. Used in event type file IO.

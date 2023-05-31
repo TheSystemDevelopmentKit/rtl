@@ -78,3 +78,14 @@ class verilog_iofile(rtl_iofile_common):
     def verilog_stat(self,value):
         self._verilog_stat=value
 
+    #Timestamp integers for control files
+    @property
+    def verilog_ctstamp(self):
+        '''Current time stamp variable name to be used in verilog testbench.
+        Used in event type file IO.
+
+        '''
+        if not hasattr(self,'_verilog_ctstamp'):
+            self._verilog_ctstamp='ctstamp_%s' %(self.name)
+        return self._verilog_ctstamp
+
