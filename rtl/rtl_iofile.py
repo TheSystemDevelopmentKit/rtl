@@ -20,6 +20,7 @@ import sortedcontainers as sc
 from rtl.rtl_iofile_common import rtl_iofile_common
 from rtl.sv.verilog_iofile import verilog_iofile
 from rtl.sv.verilog_iofile_obsoletes import verilog_iofile_obsoletes
+from rtl.vhdl.vhdl_iofile import vhdl_iofile
 from rtl.connector import indent
 
 class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
@@ -75,15 +76,22 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     @property
     def langmodule(self):
         if not hasattr(self,'_langmodule'):
-            if self.parent.lang=='sv': 
-                #Here we give self.as a parent. A bit unclear still why it works
-                # self.rtlparent should work as well
-                # [TODO] figure a mnethod for value inherintace
-                self._langmodule = verilog_iofile(self)
-                self.langmodule.file=self.file
-                self.langmodule.paramname=self.paramname
-                self.langmodule.name=self.name
-        return self._langmodule
+            self._langmodule_verilog = verilog_iofile(self)
+            self._langmodule_verilog.file=self.file
+            self._langmodule_verilog.paramname=self.paramname
+            self._langmodule_verilog.name=self.name
+            self._langmodule_vhdl = vhdl_iofile(self)
+            self._langmodule_vhdl.file=self.file
+            self._langmodule_vhdl.paramname=self.paramname
+            self._langmodule_vhdl.name=self.name
+            #Here we give self.as a parent. A bit unclear still why it works
+            # self.rtlparent should work as well
+            # [TODO] figure a method for value inherintace
+        if self.parent.lang=='sv': 
+            return self._langmodule_verilog
+        elif self.parent.lang=='vhdl': 
+            return self._langmodule_vhdl
+
     @property
     def ioformat(self):
         '''Formatting string for verilog file reading

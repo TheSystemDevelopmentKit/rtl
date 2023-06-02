@@ -103,11 +103,11 @@ class vhdl_testbench(testbench_common):
         """IOfile definition strings
 
         """
-        iofile_defs='//Variables for the io_files\n'
-        for name, val in self.iofiles.Members.items():
-            iofile_defs=iofile_defs+val.rtl_statdef
-            iofile_defs=iofile_defs+val.rtl_fopen
-        iofile_defs=iofile_defs+'\n'
+        iofile_defs='//In VHDL variables for the io_files are defined inside processes\n'
+        #for name, val in self.iofiles.Members.items():
+        #    iofile_defs=iofile_defs+val.rtl_statdef
+        #    iofile_defs=iofile_defs+val.rtl_fopen
+        #iofile_defs=iofile_defs+'\n'
         return iofile_defs 
 
     @property
@@ -250,8 +250,8 @@ architecture behavioural of tb_"""+ self.name + """ is
 """+self.parameter_definitions+\
 self.connector_definitions+\
 self.assignments() +\
-self.iofile_definitions+\
 self.misccmd+\
+self.iofile_definitions+\
 self.dumpfile+\
 """
 -- DUT definition
