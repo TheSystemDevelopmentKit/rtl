@@ -101,7 +101,7 @@ class verilog_iofile(rtl_iofile_common):
         '''Verilog time differencec variable. Used in event based file IO.
         '
         '''
-        if not hasattr(self,'_verilog_diff'):
+        if not hasattr(self,'_rtl_diff'):
             self._rtl_tdiff='tdiff_%s' %(self.name)
         return self._rtl_tdiff
 
