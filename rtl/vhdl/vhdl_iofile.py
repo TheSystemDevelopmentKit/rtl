@@ -132,7 +132,7 @@ class vhdl_iofile(rtl_iofile_common):
             for stamp in [ self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff]:
                 self._rtl_statdef+='variable %s : time :=0;\n' %(stamp)
             for connector in self.parent.rtl_connectors:
-                self._rtl_statdef+='variable v_%s : %s`subtype;\n' %(connector.name,connector.name)
+                self._rtl_statdef+='variable v_%s : %s\'subtype;\n' %(connector.name,connector.name)
         return self._rtl_statdef
 
     # File opening, direction dependent 
@@ -236,18 +236,26 @@ class vhdl_iofile(rtl_iofile_common):
         if self.parent.dir =='out':
             for connector in self.parent.rtl_connectors:
                 if connector.width == 1:
-                    self._rtl_io+=indent(text='variable v_%s : std_logic;' 
-                                         %(connector.name),level=1)
+                    if connector.ioformat == '%d':
+                        self._rtl_io+=indent(text='variable v_%s : integer;' 
+                                             %(connector.name),level=1)
+                    elif connector.ioformat == '%s':
+                            self._rtl_io+=indent(text='variable v_%s : std_logic;' 
+                                                 %(connector.name),level=1)
                 else:
-                    self._rtl_io+=indent(text='variable v_%s : std_logic_vector(%s downto %s);' 
-                                         %(connector.name, connector.ll, 
-                                           connector.rl),level=1)
+                    if connector.ioformat == '%d':
+                        self._rtl_io+=indent(text='variable v_%s : integer;' 
+                                             %(connector.name),level=1)
+                    elif connector.ioformat == '%s':
+                        self._rtl_io+=indent(text='variable v_%s : std_logic_vector(%s downto %s);' 
+                                             %(connector.name, connector.ll, 
+                                               connector.rl),level=1)
         if self.parent.dir =='in':
             for connector in self.parent.rtl_connectors:
                 if connector.ioformat == '%d':
-                    self._rtl_io+=indent(text='variable v_%s : %s`subtype;\n' %(connector.name,connector.name),level=1)
+                    self._rtl_io+=indent(text='variable v_%s : %s\'subtype;\n' %(connector.name,connector.name),level=1)
                 elif connector.ioformat == '%s':
-                    self._rtl_io+=indent(text='variable v_%s : string;\n' 
+                    self._rtl_io+=indent(text='variable v_%s :string;\n' 
                                          %(connector.name),level=1)
 
         if self.parent.iotype=='sample':
@@ -257,14 +265,25 @@ class vhdl_iofile(rtl_iofile_common):
                 self._rtl_io+=indent(text='if ( %s ) then\n' %(self.rtl_io_condition), level=2)
                 for connector in self.parent.rtl_connectors:
                     #verilog-like formatting
-                    if connector.ioformat =='%d':
-                        self._rtl_io+=indent(text='v_%s := to_integer(signed(%s));\n' 
-                                             %(connector.name,connector.name),level=3)
-                    elif connector.ioformat== '%s':
-                        self._rtl_io+='v_%s := to_sting(%s)' %(connector.name,connector.name)
+                    if connector.width == 1:
+                        if connector.ioformat =='%d':
+                            self._rtl_io+=indent(text='v_%s := to_integer(unsigned\'(\"0\" & %s));\n' 
+                                                 %(connector.name,connector.name),level=3)
+                        elif connector.ioformat== '%s':
+                            self._rtl_io+='v_%s := to_string(%s)' %(connector.name,connector.name)
+                        else:
+                            self.print_log(type='F', 
+                                           msg='Connector format %s not supported' %(connector.ioformat))
                     else:
-                        self.print_log(type='F', 
-                                       msg='Connector format %s not supported' %(connector.ioformat))
+                        if connector.ioformat =='%d':
+                            self._rtl_io+=indent(text='v_%s := to_integer(signed(%s));\n' 
+                                                 %(connector.name,connector.name),level=3)
+                        elif connector.ioformat== '%s':
+                            self._rtl_io+='v_%s := to_string(%s)' %(connector.name,connector.name)
+                        else:
+                            self.print_log(type='F', 
+                                           msg='Connector format %s not supported' %(connector.ioformat))
+
                     self._rtl_io+=indent(text='write(line_%s,v_%s,status_%s);' 
                                          %(self.rtl_fptr,connector.name,connector.name), level=3)
                 self._rtl_io+=indent(text='writeline(%s,line_%s);\n' %(self.rtl_fptr,self.rtl_fptr), level=3)
