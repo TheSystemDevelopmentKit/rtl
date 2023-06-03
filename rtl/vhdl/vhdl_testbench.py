@@ -36,6 +36,14 @@ class vhdl_testbench(testbench_common):
 
         
     @property
+    def definition(self):
+        """Overloaded definition to add VHDL libraries
+
+        """
+        self._definition="""library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.numeric_std.all;\nuse std.textio.all;\n"""+self.definition
+        return self._definitions
+
+    @property
     def parameter_definitions(self):
         """Parameter  and variable definition strings of the testbench
 
