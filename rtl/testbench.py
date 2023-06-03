@@ -233,7 +233,7 @@ class testbench(testbench_common):
         Overloads the property inherited from 'module', as wish to control whan we generate the heasders.
         [TO BE RECONSIDERED]
         '''
-        self._definition=self.langmodule.definition
+        self._definition=self.langmodule.header+self.langmodule.definition
         return self._definition
 
     def generate_contents(self):
