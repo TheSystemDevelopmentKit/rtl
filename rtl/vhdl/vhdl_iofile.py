@@ -128,11 +128,11 @@ class vhdl_iofile(rtl_iofile_common):
             self._rtl_statdef='variable %s : boolean := False;\n' %(self.rtl_stat)
         elif self.parent.iotype=='event':
             self._rtl_statdef='variable %s : boolean := False;;\n' %(self.rtl_stat)
-            self._rtl_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff)
-            self._rtl_statdef+='initial %s=0;\n' %(self.rtl_ctstamp) 
-            self._rtl_statdef+='initial %s=0;\n' %(self.rtl_pstamp) 
+            self._rtl_statdef='variable status_%s : boolean := False;;\n' %(self.rtl_ctstamp)
+            for stamp in [ self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff]:
+                self._rtl_statdef+='variable %s : time :=0;\n' %(stamp)
             for connector in self.parent.rtl_connectors:
-                self._rtl_statdef+='integer buffer_%s;\n' %(connector.name)
+                self._rtl_statdef+='variable v_%s : %s`subtype;\n' %(connector.name,connector.name)
         return self._rtl_statdef
 
     # File opening, direction dependent 
@@ -230,7 +230,7 @@ class vhdl_iofile(rtl_iofile_common):
 
         '''
         first=True
-        self._rtl_io='file_'+self.name+' process(all)\n'
+        self._rtl_io='file_'+self.name+' : process(all) is\n'
         self._rtl_io+=indent(text=self.rtl_statdef,level=1)
         self._rtl_io+=indent(text=self.rtl_fopen,level=1)
         if self.parent.dir =='out':
@@ -294,51 +294,43 @@ class vhdl_iofile(rtl_iofile_common):
                 self._rtl_io+=indent(text='end if;',level=3)
                 self._rtl_io+=indent(text='end if;',level=2)
                 self._rtl_io+=indent(text='end loop;',level=1)
-            self._rtl_io+='end process;'
+                self._rtl_io+=indent(text='wait;',level=1)
+            self._rtl_io+='end process;\n\n'
 
         #Control files are handled differently
         elif self.parent.iotype=='event':
             if self.parent.dir=='out':
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.parent.dir=='in':
-                self._rtl_io='begin\nwhile(!$feof(%s)) begin\n    ' \
-                        %(self.rtl_fptr)
-                self._rtl_io+='%s = %s-%s;\n    #%s begin\n    ' \
-                        %(self.rtl_tdiff,
-                        self.rtl_ctstamp, self.rtl_pstamp,
-                        self.rtl_tdiff)    
-
-                #t= Every control file requires status, diff, current_timestamp 
-                # and past timestamp
-                self._rtl_io+='    %s = %s;\n    ' \
-                        %(self.rtl_pstamp, self.rtl_ctstamp)
-
+                self._rtl_io+='begin\n'
+                self._rtl_io+=indent(text=('while not endfile(%s) loop\n' 
+                                      %(self.rtl_fptr)),level=1)
+                self._rtl_io+=indent(text=('%s := %s;\n' 
+                                           %(self.rtl_pstamp, self.rtl_ctstamp))
+                                     ,level=2)
+                self._rtl_io+=indent(text='read(line_%s,%s,status_%s);\n' %(self.rtl_fptr,self.rtl_ctstamp,self.rtl_ctstamp), level=3) 
                 for connector in self.parent.rtl_connectors:
-                    self._rtl_io+='    %s = buffer_%s;\n    ' \
-                            %(connector.name,connector.name)
+                    self._rtl_io+=indent(text='read(line_%s,v_%s,status_%s);\n' 
+                                         %(self.rtl_fptr,connector.name,connector.name), level=2)
+                self._rtl_io+=indent(text=('%s := %s-%s;\n' 
+                                           %(self.rtl_tdiff, self.rtl_ctstamp,
+                                             self.rtl_pstamp)),
+                                     level=2)
+                self._rtl_io+=indent(text=('wait for %s;\n' %(self.rtl_tdiff)), level=2);
 
-                self._rtl_io+='    %s = $fscanf(%s, ' \
-                        %(self.rtl_stat,self.rtl_fptr)
-
-            #The first column is timestap
-            iolines='            %s' %(self.rtl_ctstamp) 
-            format='\"%d'
-            for connector in self.parent.rtl_connectors:
-                iolines='%s,\n            buffer_%s' \
-                        %(iolines,connector.name)
-                format='%s\\t%s' %(format,connector.ioformat)
-            format=format+'\\n\",\n'
-            self._rtl_io+=format+iolines+'\n        );\n    end\nend\n'
-
-            #Repeat the last assignment outside the loop
-            self._rtl_io+='%s = %s-%s;\n#%s begin\n' %(self.rtl_tdiff,
-                    self.rtl_ctstamp, self.rtl_pstamp,self.rtl_tdiff)    
-            self._rtl_io+='    %s = %s;\n' %(self.rtl_pstamp,
-                    self.rtl_ctstamp)
-            for connector in self.parent.rtl_connectors:
-                self._rtl_io+='    %s = buffer_%s;\n' \
-                %(connector.name,connector.name)
-            self._rtl_io+='end\nend\n'
+                #verilog-like formatting
+                for connector in self.parent.rtl_connectors:
+                    if connector.ioformat =='%d':
+                        # All integers are assumed to be signed
+                        self._rtl_io+=indent(text=('%s <= std_logic_vector(to_signed(v_%s,%s`length));\n'
+                                                    %(connector.name,connector.name,connector.name)
+                                                   ),level=2)
+                    elif connector.ioformat== '%s':
+                        # String is assumed to be logic
+                        self._rtl_io+=indent(text='%s <= v_%s;\n',level=2)
+                self._rtl_io+=indent(text='end loop;',level=1)
+                self._rtl_io+=indent(text='wait;',level=1)
+                self._rtl_io+='end process;\n\n'
         else:
             self.print_log(type='F', msg='Iotype not defined')
         return self._rtl_io

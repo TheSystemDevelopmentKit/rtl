@@ -236,7 +236,7 @@ class vhdl_testbench(testbench_common):
                 self.dumpfile
                 self.dut_instance.instance
                 self.verilog_instance_members.items().instance (for all members)
-                self.connectors.verilog_inits()
+                self.connectors.rtl_inits()
                 self.iofiles.Members.items().rtl_io (for all members)
                 self.iofile.close (for all members)
 
@@ -245,39 +245,32 @@ class vhdl_testbench(testbench_common):
 
         """
     # Start the testbench contents
-        contents="""
-architecture behavioural of tb_"""+ self.name + """ is
-"""+self.parameter_definitions+\
-self.connector_definitions+\
-self.assignments() +\
-self.misccmd+\
-self.iofile_definitions+\
-self.dumpfile+\
-"""
--- DUT definition
-"""+\
-self.dut_instance.vhdl_instance
+        contents=("""\narchitecture behavioural of tb_"""+ self.name + 
+                  """ is\n"""
+                  +self.parameter_definitions
+                  +self.connector_definitions
+                  +self.assignments()
+                  +self.misccmd
+                  +self.iofile_definitions
+                  +self.dumpfile+
+                  """ -- DUT definition\n"""
+                  +self.dut_instance.vhdl_instance
+                  )
         for inst, module in self.verilog_instances.Members.items():
             contents+=module.instance
 
         contents+=self.clock_definition
-        contents+="""
-
---Execution of processes and sequential assignments\n"""+\
-self.connectors.rtl_inits(level=0)+\
-"""//Io out\n
-"""
+        contents+=("""\n--Execution of processes and sequential assignments\n"""+
+                   self.connectors.rtl_inits(level=0)+"""//IO out\n""")
         for key, member in self.iofiles.Members.items():
             if member.dir=='out':
                 contents+=indent(text=member.rtl_io,level=0)
-        contents+="""
-//IO in
-"""
+        contents+="""//IO in\n"""
         for key, member in self.iofiles.Members.items():
             if member.dir=='in':
                 contents+=indent(text=member.rtl_io, level=0)
 
-        contents+=self.iofile_close+'\n'
+        #contents+=self.iofile_close+'\n'
         contents+='\nend architecture;\n'
         self.contents=contents
 
