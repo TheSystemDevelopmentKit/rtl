@@ -132,7 +132,7 @@ class vhdl_iofile(rtl_iofile_common):
             for stamp in [ self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff]:
                 self._rtl_statdef+='variable %s : time := 0.0 ps;\n' %(stamp)
             for connector in self.parent.rtl_connectors:
-                self._rtl_statdef+='variable v_%s : %s\'subtype;\n' %(connector.name,connector.name)
+                self._rtl_statdef+='variable status_%s : Boolean := False;\n' %(connector.name)
         return self._rtl_statdef
 
     # File opening, direction dependent 
@@ -340,16 +340,24 @@ class vhdl_iofile(rtl_iofile_common):
                                      level=2)
                 self._rtl_io+=indent(text=('wait for %s;\n' %(self.rtl_tdiff)), level=2);
 
-                #verilog-like formatting
                 for connector in self.parent.rtl_connectors:
+                    #verilog-like formatting
                     if connector.ioformat =='%d':
                         # All integers are assumed to be signed
-                        self._rtl_io+=indent(text=('%s <= std_logic_vector(to_signed(v_%s,%s\'length));\n'
-                                                    %(connector.name,connector.name,connector.name)
-                                                   ),level=2)
+                        if connector.width == 1:
+                            self._rtl_io+=indent(text=('%s <= std_logic(to_unsigned(v_%s,1)(0));\n'
+                                                    %(connector.name,connector.name)
+                                                   ),level=3)
+                        else:
+                            self._rtl_io+=indent(text=('%s <= std_logic_vector(to_signed(v_%s,%s));\n'
+                                                    %(connector.name,connector.name,connector.name,connector.width)
+                                                   ),level=3)
                     elif connector.ioformat== '%s':
                         # String is assumed to be logic
-                        self._rtl_io+=indent(text='%s <= v_%s;\n',level=2)
+                        self._rtl_io+=indent(text='%s <= v_%s;\n',level=4)
+                    else:
+                        self.print_log(type='F', 
+                                       msg='Connector format %s not supported' %(connector.ioformat))
                 self._rtl_io+=indent(text='end loop;',level=1)
                 self._rtl_io+=indent(text='wait;',level=1)
                 self._rtl_io+='end process;\n\n'
