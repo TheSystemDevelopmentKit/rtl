@@ -284,8 +284,8 @@ class vhdl_iofile(rtl_iofile_common):
                             self.print_log(type='F', 
                                            msg='Connector format %s not supported' %(connector.ioformat))
 
-                    self._rtl_io+=indent(text='write(line_%s,v_%s,status_%s);' 
-                                         %(self.rtl_fptr,connector.name,connector.name), level=3)
+                    self._rtl_io+=indent(text='write(line_%s,v_%s);' 
+                                         %(self.rtl_fptr,connector.name), level=3)
                 self._rtl_io+=indent(text='writeline(%s,line_%s);\n' %(self.rtl_fptr,self.rtl_fptr), level=3)
                 self._rtl_io+=indent(text='end if;',level=2)
                 self._rtl_io+=indent(text='end if;',level=1)
