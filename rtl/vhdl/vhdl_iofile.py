@@ -125,7 +125,7 @@ class vhdl_iofile(rtl_iofile_common):
 
         '''
         if self.parent.iotype=='sample':
-            self._rtl_statdef='variable %s : boolean := False;;\n' %(self.rtl_stat)
+            self._rtl_statdef='variable %s : boolean := False;\n' %(self.rtl_stat)
         elif self.parent.iotype=='event':
             self._rtl_statdef='variable %s : boolean := False;;\n' %(self.rtl_stat)
             self._rtl_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff)
@@ -142,11 +142,12 @@ class vhdl_iofile(rtl_iofile_common):
 
         '''
         if self.parent.dir=='in':
-            self._rtl_fopen='file %s : text open read_mode is %s\n;' %(self.rtl_fptr,next(iter(self.rtlparam)))
-            self._rtl_fopen+='variable line_%s : line;\n' %(self.rtl_fptr)
+            mode='read'
         if self.parent.dir=='out':
-            self._rtl_fopen='file %s : text open write_mode is %s;\n' %(self.rtl_fptr,next(iter(self.rtlparam)))
-            self._rtl_fopen+='variable line_%s : line;\n' %(self.rtl_fptr)
+            mode='write'
+        self._rtl_fopen=('file %s : text open %s_mode is %s;\n' 
+                         %(self.rtl_fptr,mode,next(iter(self.rtlparam))))
+        self._rtl_fopen+='variable line_%s : line;\n' %(self.rtl_fptr)
         return self._rtl_fopen
 
     # File close
@@ -155,7 +156,7 @@ class vhdl_iofile(rtl_iofile_common):
         '''Verilog file close routine sting.
 
         '''
-        self._rtl_fclose='$fclose(%s);\n' %(self.rtl_fptr)
+        self._rtl_fclose='fclose(%s);\n' %(self.rtl_fptr)
         return self._rtl_fclose
 
     # Condition string for monitoring if the signals are unknown
@@ -179,7 +180,7 @@ class vhdl_iofile(rtl_iofile_common):
                         self._rtl_io_condition='%s \n and not is_x(%s)' \
                                 %(self._rtl_io_condition,connector.name)
             elif self.parent.dir=='in':
-                self.rtl_io_condition= ' 1 '
+                self.rtl_io_condition= 'True'
         return self._rtl_io_condition
 
     @rtl_io_condition.setter
@@ -218,7 +219,8 @@ class vhdl_iofile(rtl_iofile_common):
 
     @property
     def rtl_io(self):
-        '''VHDL  write/read construct for file IO depending on the direction and file type (event/sample).
+        '''VHDL  write/read construct for file IO depending on the direction 
+        and file type (event/sample).
 
         Returns 
         _______
@@ -231,32 +233,67 @@ class vhdl_iofile(rtl_iofile_common):
         self._rtl_io='file_'+self.name+' process(all)\n'
         self._rtl_io+=indent(text=self.rtl_statdef,level=1)
         self._rtl_io+=indent(text=self.rtl_fopen,level=1)
+        if self.parent.dir =='out':
+            for connector in self.parent.rtl_connectors:
+                if connector.width == 1:
+                    self._rtl_io+=indent(text='variable v_%s : std_logic;' 
+                                         %(connector.name),level=1)
+                else:
+                    self._rtl_io+=indent(text='variable v_%s : std_logic_vector(%s downto %s);' 
+                                         %(connector.name, connector.ll, 
+                                           connector.rl),level=1)
+        if self.parent.dir =='in':
+            for connector in self.parent.rtl_connectors:
+                if connector.ioformat == '%d':
+                    self._rtl_io+=indent(text='variable v_%s : %s`subtype;\n' %(connector.name,connector.name),level=1)
+                elif connector.ioformat == '%s':
+                    self._rtl_io+=indent(text='variable v_%s : string;\n' 
+                                         %(connector.name),level=1)
+
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
                 self._rtl_io+='begin\n'
                 self._rtl_io+=indent(text='if '+self.rtl_io_sync,level=1)
                 self._rtl_io+=indent(text='if ( %s )\n' %(self.rtl_io_condition), level=2)
-                self._rtl_io+=indent(text='write(line_%s' %(self.rtl_fptr), level=3)
+                for connector in self.parent.rtl_connectors:
+                    #verilog-like formatting
+                    if connector.ioformat =='%d':
+                        self._rtl_io+=indent(text='v_%s := to_integer(signed(%s));\n' 
+                                             %(connector.name,connector.name),level=3)
+                    elif connector.ioformat== '%s':
+                        self._rtl_io+='v_%s := to_sting(%s)' %(connector.name,connector.name)
+                    else:
+                        self.print_log(type='F', 
+                                       msg='Connector format %s not supported' %(connector.ioformat))
+                    self._rtl_io+=indent(text='write(line_%s,v_%s,status_%s);' 
+                                         %(self.rtl_fptr,connector.name,connector.name), level=3)
+                self._rtl_io+=indent(text='writeline(%s,line_%s);\n' %(self.rtl_fptr,self.rtl_fptr), level=3)
+                self._rtl_io+=indent(text='end if;',level=2)
+                self._rtl_io+=indent(text='end if;',level=1)
             elif self.parent.dir=='in':
-                self._rtl_io='while (!$feof(f_%s)) begin\n' %self.name
-                self._rtl_io+=indent(text='%s' %self.rtl_io_sync, level=0)
-                self._rtl_io+=indent(text='if ( %s ) begin\n' %self.rtl_io_condition, level=1)
-                self._rtl_io+=indent(text='%s = $fscanf(%s, ' \
-                        %(self.rtl_stat, self.rtl_fptr), level=2)
-            for connector in self.parent.rtl_connectors:
-                #verilog-like formatting
-                if connector.ioformat =='%d':
-                    entry='to_integer(signed(%s))' %(connector.name)
-                elif connector.ioformat== '%s':
-                    entry='to_sting(%s)' %(connector.name)
-                else:
-                    self.print_log(type='F', 
-                                   msg='Connector format %s not supported' %(connector.ioformat))
-                self._rtl_io+=indent(text=',to_integer(signed(%s))' %(connector.name), level=3)
-            self._rtl_io+=indent(text=');\n', level=1)
-            self._rtl_io+=indent(text='writeline(%s,line_%s);\n' %(self.rtl_fptr,self.rtl_fptr), level=1)
-            self._rtl_io+=indent(text='end if;',level=1)
-            self._rtl_io+=indent(text='end if;',level=0)
+                self._rtl_io+='begin\n'
+                self._rtl_io+=indent(text=('while not endfile(%s) loop\n' 
+                                      %(self.rtl_fptr)),level=1)
+                self._rtl_io+=indent(text='if '+self.rtl_io_sync,level=2)
+                self._rtl_io+=indent(text='if ( %s )\n' %(self.rtl_io_condition), level=3)
+                for connector in self.parent.rtl_connectors:
+                    self._rtl_io+=indent(text='read(line_%s,v_%s,status_%s);\n' 
+                                         %(self.rtl_fptr,connector.name,connector.name), level=4)
+                    #verilog-like formatting
+                    if connector.ioformat =='%d':
+                        # All integers are assumed to be signed
+                        self._rtl_io+=indent(text=('%s <= std_logic_vector(to_signed(v_%s,%s`length));\n'
+                                                    %(connector.name,connector.name,connector.name)
+                                                   ),level=3)
+                    elif connector.ioformat== '%s':
+                        # String is assumed to be logic
+                        self._rtl_io+=indent(text='%s <= v_%s;\n',level=4)
+                    else:
+                        self.print_log(type='F', 
+                                       msg='Connector format %s not supported' %(connector.ioformat))
+                self._rtl_io+=indent(text='end if;',level=3)
+                self._rtl_io+=indent(text='end if;',level=2)
+                self._rtl_io+=indent(text='end loop;',level=1)
             self._rtl_io+='end process;'
 
         #Control files are handled differently

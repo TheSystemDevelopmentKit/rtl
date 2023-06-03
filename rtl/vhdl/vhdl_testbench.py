@@ -263,29 +263,21 @@ self.dut_instance.vhdl_instance
         contents+=self.clock_definition
         contents+="""
 
-//io_out
+--Execution of processes and sequential assignments\n"""+\
+self.connectors.rtl_inits(level=0)+\
+"""//Io out\n
 """
         for key, member in self.iofiles.Members.items():
             if member.dir=='out':
-                contents+=member.rtl_io
+                contents+=indent(text=member.rtl_io,level=0)
         contents+="""
-
-//Execution with parallel fork-join and sequential begin-end sections
-initial #0 begin
-fork
-""" + \
-self.connectors.rtl_inits(level=1)+\
+//IO in
 """
-
-    // Sequences enabled by initdone
-    $display("Ready to read"); 
-"""
-
         for key, member in self.iofiles.Members.items():
             if member.dir=='in':
-                contents+=indent(text=member.rtl_io, level=1)
+                contents+=indent(text=member.rtl_io, level=0)
 
-        contents+='\njoin\n'+self.iofile_close+'\n'
+        contents+=self.iofile_close+'\n'
         contents+='\nend architecture;\n'
         self.contents=contents
 
