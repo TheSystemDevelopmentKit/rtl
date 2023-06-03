@@ -186,25 +186,6 @@ class testbench(testbench_common):
     def misccmd(self,value):
         self.langmodule.misccmd=None
 
-    @property
-    def dumpfile(self):
-        """String
-        
-        Code that generates a VCD dumpfile when running the testbench with icarus verilog.
-        This dumpfile can be used with gtkwave. 
-        """
-
-        
-        if self.parent.model == 'icarus' and self.parent.interactive_rtl:
-            dump_str="// Generates dumpfile with iverilog\n"
-            dump_str += "initial begin\n"
-            dump_str += '  $dumpfile("' + self.parent.name + '_dump.vcd");\n'
-            dump_str += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
-        else:
-            dump_str = ''
-        return dump_str
-
-
     # This method 
     def define_testbench(self):
         """Defines the tb connectivity, creates reset and clock, and initializes them to zero

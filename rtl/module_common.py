@@ -193,7 +193,7 @@ class module_common(thesdk):
             parameters=parameters+'\n)'
             self._vhdl_instance='%s  is entity work.%s\n%s\n' %(self.instname, self.name, parameters)
         else:
-            self._vhdl_instance='%s is entity work.%s\n ' %(self.instname, self.name)
+            self._vhdl_instance='%s : entity work.%s\n ' %(self.instname, self.name)
         first=True
         # Then we write the IOs
         if self.ios.Members:

@@ -194,7 +194,10 @@ class vhdl_testbench(testbench_common):
         #Init the signals connected to the dut input to zero
         for name, val in self.dut_instance.ios.Members.items():
             if val.cls=='input':
-                val.connect.init='(others => \'0\')'
+                if val.width == 1:
+                    val.connect.init='\'0\''
+                else:
+                    val.connect.init='(others => \'0\')'
     
     # Automate this based in dir
     def connect_inputs(self):
