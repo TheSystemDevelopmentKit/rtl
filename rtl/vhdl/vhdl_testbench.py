@@ -253,7 +253,7 @@ class vhdl_testbench(testbench_common):
 
         """
     # Start the testbench contents
-        contents=("""\narchitecture behavioural of tb_"""+ self.name + 
+        contents=("""\narchitecture behavioural of """+ self.name + 
                   """ is\n"""
                   +self.parameter_definitions
                   +self.connector_definitions
