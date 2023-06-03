@@ -24,7 +24,7 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
 
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
+        vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
                        
 
         gstring = ' '.join([ 
@@ -78,7 +78,7 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
             str(param) for param in self.vhdlentityfiles])
         vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simtb )
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
+        vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
         gstring = ' '.join([ 
                                 ('-g ' + str(param) +'='+ str(val[1])) 
