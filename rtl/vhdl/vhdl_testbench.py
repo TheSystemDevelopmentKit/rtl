@@ -52,7 +52,7 @@ class vhdl_testbench(testbench_common):
         for name, val in self.content_parameters.items():
             if type(val) is not tuple:
                 self.print_log(type='F',msg='Parameter %s definition must be given as { \'name\' : (type,value) }' %(name))
-            definitions+='constant '+ val[0]+' : '+name+':='+ val[1]+';\n'
+            definitions+='constant '+ name + ' : ' + val[0] + ':='+ val[1]+';\n'
         return definitions
 
     @property
@@ -66,7 +66,7 @@ class vhdl_testbench(testbench_common):
 
                 ::
 
-                {'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
+                {'c_Ts': ('integer','1.0/(g_Rs*1.0e-12)')} 
 
         """
         if not hasattr(self,'_content_parameters'):
@@ -111,7 +111,7 @@ class vhdl_testbench(testbench_common):
         """IOfile definition strings
 
         """
-        iofile_defs='//In VHDL variables for the io_files are defined inside processes\n'
+        iofile_defs='--In VHDL variables for the io_files are defined inside processes\n'
         #for name, val in self.iofiles.Members.items():
         #    iofile_defs=iofile_defs+val.rtl_statdef
         #    iofile_defs=iofile_defs+val.rtl_fopen
@@ -257,6 +257,7 @@ class vhdl_testbench(testbench_common):
                   """ is\n"""
                   +self.parameter_definitions
                   +self.connector_definitions
+                  + """\nbegin\n"""
                   +self.assignments()
                   +self.misccmd
                   +self.iofile_definitions
@@ -269,11 +270,11 @@ class vhdl_testbench(testbench_common):
 
         contents+=self.clock_definition
         contents+=("""\n--Execution of processes and sequential assignments\n"""+
-                   self.connectors.rtl_inits(level=0)+"""//IO out\n""")
+                   self.connectors.rtl_inits(level=0)+"""--IO out\n""")
         for key, member in self.iofiles.Members.items():
             if member.dir=='out':
                 contents+=indent(text=member.rtl_io,level=0)
-        contents+="""//IO in\n"""
+        contents+="""--IO in\n"""
         for key, member in self.iofiles.Members.items():
             if member.dir=='in':
                 contents+=indent(text=member.rtl_io, level=0)
