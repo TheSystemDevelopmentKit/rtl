@@ -190,13 +190,13 @@ class vhdl_iofile(rtl_iofile_common):
     @property 
     def rtl_io_sync(self):
         '''File io synchronization condition for sample type input.
-        Default: ``rising_edge(clock)`
+        Default: `rising_edge(clock)`
 
         '''
 
         if not hasattr(self,'_rtl_io_sync'):
             if self.iotype=='sample':
-                self._rtl_io_sync= '`rising_edge(clock)\n'
+                self._rtl_io_sync= 'rising_edge(clock)'
         return self._rtl_io_sync
 
     @rtl_io_sync.setter
@@ -253,8 +253,8 @@ class vhdl_iofile(rtl_iofile_common):
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
                 self._rtl_io+='begin\n'
-                self._rtl_io+=indent(text='if '+self.rtl_io_sync,level=1)
-                self._rtl_io+=indent(text='if ( %s )\n' %(self.rtl_io_condition), level=2)
+                self._rtl_io+=indent(text='if ( %s ) then\n'%(self.rtl_io_sync),level=1)
+                self._rtl_io+=indent(text='if ( %s ) then\n' %(self.rtl_io_condition), level=2)
                 for connector in self.parent.rtl_connectors:
                     #verilog-like formatting
                     if connector.ioformat =='%d':
@@ -274,8 +274,8 @@ class vhdl_iofile(rtl_iofile_common):
                 self._rtl_io+='begin\n'
                 self._rtl_io+=indent(text=('while not endfile(%s) loop\n' 
                                       %(self.rtl_fptr)),level=1)
-                self._rtl_io+=indent(text='if '+self.rtl_io_sync,level=2)
-                self._rtl_io+=indent(text='if ( %s )\n' %(self.rtl_io_condition), level=3)
+                self._rtl_io+=indent(text='if ( %s ) then\n' %(self.rtl_io_sync),level=2)
+                self._rtl_io+=indent(text='if ( %s ) then \n' %(self.rtl_io_condition), level=3)
                 for connector in self.parent.rtl_connectors:
                     self._rtl_io+=indent(text='read(line_%s,v_%s,status_%s);\n' 
                                          %(self.rtl_fptr,connector.name,connector.name), level=4)
