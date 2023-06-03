@@ -317,6 +317,7 @@ class vhdl_iofile(rtl_iofile_common):
                                        msg='Connector format %s not supported' %(connector.ioformat))
                 self._rtl_io+=indent(text='end if;',level=3)
                 self._rtl_io+=indent(text='end loop;',level=1)
+                self._rtl_io+=indent(text='done_%s <= True;' %(self.rtl_fptr),level=1)
                 self._rtl_io+=indent(text='wait;',level=1)
             self._rtl_io+='end process;\n\n'
 
@@ -362,6 +363,7 @@ class vhdl_iofile(rtl_iofile_common):
                         self.print_log(type='F', 
                                        msg='Connector format %s not supported' %(connector.ioformat))
                 self._rtl_io+=indent(text='end loop;',level=1)
+                self._rtl_io+=indent(text='done_%s <= True;' %(self.rtl_fptr),level=1)
                 self._rtl_io+=indent(text='wait;',level=1)
                 self._rtl_io+='end process;\n\n'
         else:

@@ -90,7 +90,9 @@ class vhdl_testbench(testbench_common):
             if val.cls=='reg':
                 definitions=definitions+val.definition
 
-        definitions=definitions+'\n--Driven signal definitions\n'
+        definitions=(definitions+
+                '\n--Driven signal definitions\n--This controls the simulation duration\n'+
+                'signal simdone : Boolean := False;\n')
         for name, val in self.connectors.Members.items():
             if val.cls=='wire':
                 definitions=definitions+val.definition
@@ -110,12 +112,14 @@ class vhdl_testbench(testbench_common):
     def iofile_definitions(self):
         """IOfile definition strings
 
+        For VHDL, this this used to create signals to determine the completion of input file reading.
+        These signals are used to stop the global clock at the end of the simulation.
+
         """
-        iofile_defs='--In VHDL variables for the io_files are defined inside processes\n'
-        #for name, val in self.iofiles.Members.items():
-        #    iofile_defs=iofile_defs+val.rtl_statdef
-        #    iofile_defs=iofile_defs+val.rtl_fopen
-        #iofile_defs=iofile_defs+'\n'
+        iofile_defs='--Signals for VHDL io_files to determine end of input file reading\n'
+        for name, val in self.iofiles.Members.items():
+            if val.dir == 'in':
+                iofile_defs+='signal done_%s : Boolean := False;\n' %(val.rtl_fptr)
         return iofile_defs 
 
     @property
@@ -129,8 +133,12 @@ class vhdl_testbench(testbench_common):
         clockdef='--Master clock is omnipresent\n'
         clockdef+='clock_proc : process\n' 
         clockdef+='begin\n'
+        clockdef+='while not simdone loop\n'
         clockdef+='    clock <= not clock;\n' 
         clockdef+='    wait for c_Ts;\n' 
+        clockdef+='end loop;\n' 
+        clockdef+='wait;\n' 
+
         clockdef+='end process;' 
         return clockdef
 
@@ -260,10 +268,10 @@ class vhdl_testbench(testbench_common):
                   """ is\n"""
                   +self.parameter_definitions
                   +self.connector_definitions
+                  +self.iofile_definitions
                   + """\nbegin\n"""
                   +self.assignments()
                   +self.misccmd
-                  +self.iofile_definitions
                   +self.dumpfile+
                   """ -- DUT definition\n"""
                   +self.dut_instance.vhdl_instance
@@ -282,6 +290,17 @@ class vhdl_testbench(testbench_common):
             if member.dir=='in':
                 contents+=indent(text=member.rtl_io, level=0)
 
+        first = True
+        for key, member in self.iofiles.Members.items():
+            if member.dir == 'in':
+                if first: 
+                    contents+='simdone <= '
+                    contents+=' done_%s' %(member.rtl_fptr)
+                    first = False
+                else:
+                    contents+=' and done_%s' %(member.rtl_fptr)
+        if not first: 
+                contents+=';\n'
         #contents+=self.iofile_close+'\n'
         contents+='\nend architecture;\n'
         self.contents=contents
