@@ -105,7 +105,7 @@ class vhdl_testbench(testbench_common):
         for match in matchlist:
             assigns=assigns+self.connectors.assign(match=match)
         return indent(text=assigns,level=kwargs.get('level',0))
-     
+
     @property
     def iofile_definitions(self):
         """IOfile definition strings

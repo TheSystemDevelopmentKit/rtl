@@ -193,12 +193,16 @@ class testbench(testbench_common):
         Code that generates a VCD dumpfile when running the testbench with icarus verilog.
         This dumpfile can be used with gtkwave. 
         """
-        dumpStr="// Generates dumpfile with iverilog\n"
+
+        
         if self.parent.model == 'icarus' and self.parent.interactive_rtl:
-            dumpStr += "initial begin\n"
-            dumpStr += '  $dumpfile("' + self.parent.name + '_dump.vcd");\n'
-            dumpStr += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
-        return dumpStr
+            dump_str="// Generates dumpfile with iverilog\n"
+            dump_str += "initial begin\n"
+            dump_str += '  $dumpfile("' + self.parent.name + '_dump.vcd");\n'
+            dump_str += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
+        else:
+            dump_str = ''
+        return dump_str
 
 
     # This method 
