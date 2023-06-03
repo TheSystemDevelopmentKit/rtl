@@ -231,10 +231,10 @@ class vhdl_iofile(rtl_iofile_common):
         '''
         first=True
         if self.parent.dir == 'out':
-            self._rtl_io='file_'+self.name+' : process(all)\n'
+            self._rtl_io='file_'+self.name+' : process\n'
         elif self.parent.dir == 'in':
             if self.parent.iotype == 'sample':
-                self._rtl_io='file_'+self.name+' : process(all)\n'
+                self._rtl_io='file_'+self.name+' : process\n'
             if self.parent.iotype == 'event':
                 self._rtl_io='file_'+self.name+' : process\n'
 
@@ -260,7 +260,7 @@ class vhdl_iofile(rtl_iofile_common):
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
                 self._rtl_io+='begin\n'
-                self._rtl_io+=indent(text='if ( %s ) then\n'%(self.rtl_io_sync),level=1)
+                self._rtl_io+=indent(text='wait until %s;\n'%(self.rtl_io_sync),level=1)
                 self._rtl_io+=indent(text='if ( %s ) then\n' %(self.rtl_io_condition), level=2)
                 for connector in self.parent.rtl_connectors:
                     #verilog-like formatting
@@ -287,14 +287,15 @@ class vhdl_iofile(rtl_iofile_common):
                                          %(self.rtl_fptr,connector.name), level=3)
                 self._rtl_io+=indent(text='writeline(%s,line_%s);\n' %(self.rtl_fptr,self.rtl_fptr), level=3)
                 self._rtl_io+=indent(text='end if;',level=2)
-                self._rtl_io+=indent(text='end if;',level=1)
             elif self.parent.dir=='in':
                 self._rtl_io+='begin\n'
                 self._rtl_io+=indent(text=('while not endfile(%s) loop\n' 
                                       %(self.rtl_fptr)),level=1)
-                self._rtl_io+=indent(text='if ( %s ) then\n' %(self.rtl_io_sync),level=2)
+                self._rtl_io+=indent(text='wait until %s;\n' %(self.rtl_io_sync),level=2)
                 self._rtl_io+=indent(text='if ( %s ) then \n' %(self.rtl_io_condition), level=3)
                 for connector in self.parent.rtl_connectors:
+                    self._rtl_io+=indent(text='readline(%s,line_%s);\n'
+                                         %(self.rtl_fptr,self.rtl_fptr,), level=4)
                     self._rtl_io+=indent(text='read(line_%s,v_%s,status_%s);\n' 
                                          %(self.rtl_fptr,connector.name,connector.name), level=4)
                     #verilog-like formatting
@@ -315,8 +316,8 @@ class vhdl_iofile(rtl_iofile_common):
                         self.print_log(type='F', 
                                        msg='Connector format %s not supported' %(connector.ioformat))
                 self._rtl_io+=indent(text='end if;',level=3)
-                self._rtl_io+=indent(text='end if;',level=2)
                 self._rtl_io+=indent(text='end loop;',level=1)
+                self._rtl_io+=indent(text='wait;',level=1)
             self._rtl_io+='end process;\n\n'
 
         #Control files are handled differently
@@ -330,6 +331,8 @@ class vhdl_iofile(rtl_iofile_common):
                 self._rtl_io+=indent(text=('%s := %s;\n' 
                                            %(self.rtl_pstamp, self.rtl_ctstamp))
                                      ,level=2)
+                self._rtl_io+=indent(text='readline(%s,line_%s);\n'
+                                     %(self.rtl_fptr,self.rtl_fptr,), level=4)
                 self._rtl_io+=indent(text='read(line_%s,%s,status_%s);\n' %(self.rtl_fptr,self.rtl_ctstamp,self.rtl_ctstamp), level=3) 
                 for connector in self.parent.rtl_connectors:
                     self._rtl_io+=indent(text='read(line_%s,v_%s,status_%s);\n' 
