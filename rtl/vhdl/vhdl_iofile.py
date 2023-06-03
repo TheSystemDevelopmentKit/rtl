@@ -156,7 +156,7 @@ class vhdl_iofile(rtl_iofile_common):
         '''Verilog file close routine sting.
 
         '''
-        self._rtl_fclose='fclose(%s);\n' %(self.rtl_fptr)
+        self._rtl_fclose='file_close(%s);\n' %(self.rtl_fptr)
         return self._rtl_fclose
 
     # Condition string for monitoring if the signals are unknown
@@ -260,6 +260,7 @@ class vhdl_iofile(rtl_iofile_common):
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
                 self._rtl_io+='begin\n'
+                self._rtl_io+=indent(text='while not simdone loop\n',level=1)
                 self._rtl_io+=indent(text='wait until %s;\n'%(self.rtl_io_sync),level=1)
                 self._rtl_io+=indent(text='if ( %s ) then\n' %(self.rtl_io_condition), level=2)
                 for connector in self.parent.rtl_connectors:
@@ -287,6 +288,8 @@ class vhdl_iofile(rtl_iofile_common):
                                          %(self.rtl_fptr,connector.name), level=3)
                 self._rtl_io+=indent(text='writeline(%s,line_%s);\n' %(self.rtl_fptr,self.rtl_fptr), level=3)
                 self._rtl_io+=indent(text='end if;',level=2)
+                self._rtl_io+=indent(text='end loop;',level=1)
+                self._rtl_io+=indent(text='%s'%(self.rtl_fclose),level=1)
             elif self.parent.dir=='in':
                 self._rtl_io+='begin\n'
                 self._rtl_io+=indent(text=('while not endfile(%s) loop\n' 
@@ -318,6 +321,7 @@ class vhdl_iofile(rtl_iofile_common):
                 self._rtl_io+=indent(text='end if;',level=3)
                 self._rtl_io+=indent(text='end loop;',level=1)
                 self._rtl_io+=indent(text='done_%s <= True;' %(self.rtl_fptr),level=1)
+                self._rtl_io+=indent(text='%s' %(self.rtl_fclose),level=1)
                 self._rtl_io+=indent(text='wait;',level=1)
             self._rtl_io+='end process;\n\n'
 
@@ -364,6 +368,7 @@ class vhdl_iofile(rtl_iofile_common):
                                        msg='Connector format %s not supported' %(connector.ioformat))
                 self._rtl_io+=indent(text='end loop;',level=1)
                 self._rtl_io+=indent(text='done_%s <= True;' %(self.rtl_fptr),level=1)
+                self._rtl_io+=indent(text='%s' %(self.rtl_fclose),level=1)
                 self._rtl_io+=indent(text='wait;',level=1)
                 self._rtl_io+='end process;\n\n'
         else:

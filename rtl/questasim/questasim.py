@@ -21,6 +21,7 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         # If there are additional VHDL source files, handle as co-simulation
         cosim = vhdlmodulesstring != ''
         
+        pdb.set_trace()
         vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
 
@@ -69,6 +70,8 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def questasim_vhdlcmd(self):
+        # This command is run if model='vhdl' 
+        # Testbench is determined with 'lang'
         submission = self.lsf_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
@@ -76,10 +79,27 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
             str(param) for param in self.vlogmodulefiles])
         vhdlmodulesstring =' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
-        vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                + ' ' + self.simtb )
-        vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
+
+        # If there are additional verilog source files, handle as co-simulation
+        cosim = vlogmodulesstring != ''
+
+        # Verilog testbench, but vhdl source, default in this command
+        if self.lang=='sv':
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
+        #VHDL testbench in addition to vhdl sources
+        if self.lang == 'vhdl':
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
+                       vhdlmodulesstring + ' ' + self.vhdlsrc
+                    + ' ' + self.simtb )
+
+        # Verilog testbench, default operation
+        if self.lang=='sv':
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                    + ' ' + self.simtb )
+        elif self.lang=='vhdl' and cosim: # we should not end up here
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring)
+
         gstring = ' '.join([ 
                                 ('-g ' + str(param) +'='+ str(val[1])) 
                                 for param,val in self.rtlparameters.items() 
@@ -111,13 +131,15 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
-        self._rtlcmd =  rtllibcmd  +\
-                ' && ' + rtllibmapcmd +\
-                ' && ' + vhdlcompcmd +\
-                ' && ' + vlogcompcmd +\
-                ' && sync ' + self.rtlworkpath +\
-                ' && ' + submission +\
-                rtlsimcmd
+        self._rtlcmd = rtllibcmd + ' && ' + rtllibmapcmd
+        # Compile vhdl is tb is vhdl or we are cosimulating
+        #if self.lang=='vhdl' or cosim:
+        self._rtlcmd += ' && ' + vhdlcompcmd
+        # Compile verilog is tb is verilog
+        if self.lang=='sv' or cosim:
+            self._rtlcmd += ' && ' + vlogcompcmd
+        self._rtlcmd += ( ' && sync ' + self.rtlworkpath 
+                + ' && ' + submission +rtlsimcmd)
         return self._rtlcmd
 
     @property
