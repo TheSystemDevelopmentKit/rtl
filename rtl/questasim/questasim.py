@@ -21,7 +21,6 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         # If there are additional VHDL source files, handle as co-simulation
         cosim = vhdlmodulesstring != ''
         
-        pdb.set_trace()
         vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
 
@@ -110,7 +109,6 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         for name, file in self.iofile_bundle.Members.items():
             fileparams += ' '+file.simparam
 
-        dofile=self.interactive_controlfile
         if os.path.isfile(dofile):
             dostring=' -do "'+dofile+'"'
             self.print_log(type='I',msg='Using interactive control file %s' % dofile)
