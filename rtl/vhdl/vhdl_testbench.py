@@ -66,11 +66,11 @@ class vhdl_testbench(testbench_common):
 
                 ::
 
-                {'c_Ts': ('integer','1.0/(g_Rs*1.0e-12)')} 
+                {'c_Ts': ('real','1.0/(g_Rs*1.0e-12)')} 
 
         """
         if not hasattr(self,'_content_parameters'):
-            self._content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
+            self._content_parameters={'c_Ts': ('real','1.0/(g_Rs*1.0e-12)')} 
         return self._content_parameters
     @content_parameters.setter    
     def content_parameters(self,val):
