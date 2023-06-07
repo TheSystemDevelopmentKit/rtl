@@ -359,7 +359,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             elif self.model=='sv':
                 return self.questasim_svcmd
             elif self.model=='vhdl':
-                return self.questasim_vhdlcmd
+                return self.questasim_svcmd
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.model))
         return self._rtlcmd

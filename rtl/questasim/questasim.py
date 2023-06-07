@@ -11,21 +11,54 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         submission=self.lsf_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
-
-        # Additional sources
+         
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
-        # If there are additional VHDL source files, handle as co-simulation
-        cosim = vhdlmodulesstring != ''
-        
-        vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+        # The following cases are possible
+        # Testbench is sv OR testbench is vhdl, identified with 'lang'
+        # source is verilog OR source is vhdl, identified by 'model
+        # Has additional source files in the 'other' language, identified by 'cosim'
+        # In total, 8 cases
+        if self.lang=='sv' and self.model=='sv':
+            #We need to compile verilog testbench and simdut anyway.
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
+            # Define hdll compcmd, if we have cosim
+            if len(vhdlmodulesstring) == 0:
+                vhdlcompcmd = ' echo '' > /dev/null '
+            else:
+                vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
 
-        vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
-                       
+        elif self.lang=='sv' and self.model=='vhdl':
+            #We need to compile vhdl sources anyway, but no testbench
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
+                       vhdlmodulesstring + ' ' + self.vhdlsrc )
+            #We need to compile verilog testbench anyway, but simdut is in vhdl
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                    + ' ' + self.simtb )
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
+
+        elif self.lang=='vhdl' and self.model=='sv':
+            # We need to compile VHDL testbench anyway, but not the source
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
+                       vhdlmodulesstring + ' ' + self.simtb )
+            #We need to compile verilog simdut anyway.
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                + ' ' + self.simdut + ' '.join(self.vlogcompargs))
+
+        elif self.lang=='vhdl' and self.model=='vhdl':
+            # We need to compile VHDL source and testbench anyway
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring 
+                    + ' ' + self.vhdlsrc + ' ' + self.simtb )
+            # Define vlog compcmd, if we have cosim
+            if len(vlogmodulesstring) == 0:
+                vlogcompcmd = ' echo '' > /dev/null '
+            else:
+                vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring )
 
         gstring = ' '.join([ 
                                 ('-g ' + str(param) +'='+ str(val[1])) 
@@ -60,7 +93,7 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
 
         self._rtlcmd =  rtllibcmd  +\
                 ' && ' + rtllibmapcmd +\
-                ((' && ' + vhdlcompcmd) if cosim else '') +\
+                ' && ' + vhdlcompcmd +\
                 ' && ' + vlogcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
                 ' && ' + submission +\
