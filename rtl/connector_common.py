@@ -16,7 +16,7 @@ class connector_common(thesdk):
         name : str
         cls : str, input | output | inout | reg | wire
             Default ''
-        type: str, signed (if not unsigned)
+        type: str, For verilog: signed, unsigned for VHDL: std_logic, std_logic-vector
             Default ''
         ll: int, Left limit of a signal bus
             Default: 0

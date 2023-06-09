@@ -23,6 +23,15 @@ class verilog_connector(connector_common,thesdk):
         '''
         super().__init__(**kwargs)
 
+    #@property
+    #def type(self):
+    #    if not hasattr(self, '_type'):
+    #            self._type = 'signed'
+    #    return self._type
+    #@type.setter
+    #def type(self,value):
+    #   self._type = value
+
     @property
     def ioformat(self):
         if not hasattr(self, '_ioformat') or self._ioformat == None:

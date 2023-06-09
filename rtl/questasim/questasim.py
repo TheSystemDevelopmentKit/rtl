@@ -91,13 +91,18 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
-        self._rtlcmd =  rtllibcmd  +\
-                ' && ' + rtllibmapcmd +\
-                ' && ' + vhdlcompcmd +\
-                ' && ' + vlogcompcmd +\
-                ' && sync ' + self.rtlworkpath +\
-                ' && ' + submission +\
-                rtlsimcmd
+        self._rtlcmd =  rtllibcmd
+        self._rtlcmd += ' && ' + rtllibmapcmd
+        # Commpile dependencies first.
+        if self.lang == 'sv':
+            self._rtlcmd += ' && ' + vhdlcompcmd
+            self._rtlcmd += ' && ' + vlogcompcmd
+        elif self.lang == 'vhdl':
+            self._rtlcmd += ' && ' + vlogcompcmd
+            self._rtlcmd += ' && ' + vhdlcompcmd
+        self._rtlcmd += ' && sync ' + self.rtlworkpath 
+        self._rtlcmd += ' && ' + submission 
+        self._rtlcmd +=  rtlsimcmd
         return self._rtlcmd
 
     @property
