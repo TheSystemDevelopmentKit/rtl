@@ -32,10 +32,8 @@ class connector_common(thesdk):
         """
         self.name=kwargs.get('name','')
         self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
-        #This internal attribute is neede to avoid recursive definition of 'type'
-        self._typearg=kwargs.get('type', None) # Depends on language
-        self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
-        self.rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
+        self._ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
+        self._rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
         self.init=kwargs.get('init','') # Initial value
         self.connect=kwargs.get('connect',None) # Can be another connector, would be recursive
         self.lang=kwargs.get('lang','sv')
@@ -65,4 +63,48 @@ class connector_common(thesdk):
             self._width=int(self.ll)-int(self.rl)+1
         return self._width
 
+    @property
+    def ll(self):
+        ''' Left (usually upper) limit of the connector bus: int | str (for parametrized bounds)
+
+        Strings that evaluate to integers are automatically evaluated.
+        
+        '''
+            
+        if not hasattr(self,'_ll'):
+            self._ll = 0
+        return self._ll
+    @ll.setter
+    def ll(self,value):
+        if type(value) == str:
+            #Try to evaluate string
+            try:
+                self._ll = eval(value)
+            except:
+                self._ll = value
+        else:
+            self._ll = value
+        return self._ll
+    @property
+    def rl(self):
+        ''' Right /usuarly lower) limit of the connector bus: int | str (for parametrized bounds)
+
+        Strings that evaluate to integers are automaticarly evaluated.
+        
+        '''
+            
+        if not hasattr(self,'_rl'):
+            self._rl=0
+        return self._rl
+    @rl.setter
+    def rl(self,value):
+        if type(value) == str:
+            #Try to evaluate string
+            try:
+                self._rl = eval(value)
+            except:
+                self._rl = value
+        else:
+            self._rl = value
+        return self._rl
 

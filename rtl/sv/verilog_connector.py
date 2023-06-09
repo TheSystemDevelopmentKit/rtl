@@ -22,20 +22,27 @@ class verilog_connector(connector_common,thesdk):
         
         '''
         super().__init__(**kwargs)
-        self.type=self._typearg
+        #This internal attribute is needed to avoid recursive definition of 'type'
+        self._type=kwargs.get('type', 'signed' ) # Depends on language
 
     @property
     def type(self):
+        # We must handle parametrized widths
         if not hasattr(self, '_type'):
-            if self.width == 1:
+            if type(self.width) == str:
+                self._type = 'signed'
+            elif self.width == 1:
                 self._type = None
             elif self.width > 1:
                 self._type = 'signed'
         else:
-            if self.width == 1 and self._type != None:
+            if type(self.width) == str and self._type != 'signed':
+                self.print_log(type='I', msg='Setting type \'%s\' to type \'signed\' due to parametrized width ' %(self._type))
+                self._type = 'signed'
+            elif self.width == 1 and self._type != 'signed':
                 pass
-            elif self.width > 1 and self.type != 'signed':
-                self.print_log(type='I', msg='Converting type \'%s\' to type \'signed\' for Verilg simulations ' %(self.type))
+            elif self.width > 1 and self._type != 'signed':
+                self.print_log(type='I', msg='Setting type \'%s\' of signal \'%s\' to type \'signed\'' %(self._type,self.name))
                 self._type = 'signed'
         return self._type
     @type.setter

@@ -28,6 +28,7 @@ class rtl_connector(connector_common,thesdk):
         '''
 
         super().__init__(**kwargs)
+        self._typearg=kwargs.get('type','') # signed
 
 
     @property

@@ -75,11 +75,12 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
     @property
     def langmodule(self):
-        if not hasattr(self,'_langmodule'):
+        if not hasattr(self,'_langmodule_verilog'):
             self._langmodule_verilog = verilog_iofile(self)
             self._langmodule_verilog.file=self.file
             self._langmodule_verilog.paramname=self.paramname
             self._langmodule_verilog.name=self.name
+        if not hasattr(self,'_langmodule_vhdl'):
             self._langmodule_vhdl = vhdl_iofile(self)
             self._langmodule_vhdl.file=self.file
             self._langmodule_vhdl.paramname=self.paramname
@@ -328,11 +329,8 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     # Condition string for monitoring if the signals are unknown
     @property 
     def rtl_io_condition(self):
-        '''Verilog condition string that must be true in ordedr to file IO read/write to occur.
-
-        Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
-        Default for input file: `'1'` 
-        file is always read with rising edge of the clock or in the time of an event defined in the file.
+        '''Condition string that must be true in order to file IO read/write to occur.
+        See langmodules for details.
 
         '''
         return self.langmodule.rtl_io_condition
@@ -340,6 +338,18 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     @rtl_io_condition.setter
     def rtl_io_condition(self,value):
         self.langmodule.rtl_io_condition=value
+
+    def rtl_io_condition_append(self,**kwargs ):
+        '''Append new condition string to `rtl_io_condition`
+
+        Parameters
+        ----------
+        **kwargs :
+           cond : str
+
+        '''
+        pdb.set_trace()
+        self.langmodule.rtl_io_condition_append(**kwargs)
 
     @property 
     def rtl_io_sync(self):

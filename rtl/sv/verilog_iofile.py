@@ -159,7 +159,7 @@ class verilog_iofile(rtl_iofile_common):
     # Condition string for monitoring if the signals are unknown
     @property 
     def rtl_io_condition(self):
-        '''Verilog condition string that must be true in ordedr to file IO read/write to occur.
+        '''Verilog condition string that must be true in order to file IO read/write to occur.
 
         Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
         Default for input file: `'1'` 

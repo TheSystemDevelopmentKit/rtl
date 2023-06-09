@@ -22,20 +22,23 @@ class vhdl_connector(connector_common,thesdk):
         
         '''
         super().__init__(**kwargs)
-        self.type=self._typearg
+        self._type=kwargs.get('type', 'std_logic_vector' ) # Depends on language
     @property
     def type(self):
         if not hasattr(self, '_type'):
-            if self.width == 1:
+            if type(self.width) == str:
+                self._type = 'std_logic_vector'
+            elif self.width == 1:
                 self._type = 'std_logic'
             elif self.width > 1:
+                self._type = 'signed'
                 self._type = 'std_logic_vector'
         else:
             if self.width == 1 and self._type != 'std_logic':
                 self.print_log(type='I', msg='Converting type \'%s\' to type \'std_logic\' for VHDL simulations ' %(self._type))
                 self._type = 'std_logic'
-            elif self.width > 1 and self.type != 'std_logic_vector':
-                self.print_log(type='I', msg='Converting type \'%s\' to type \'std_logic_vector\' for VHDL simulations ' %(self.type))
+            elif self.width > 1 and self._type != 'std_logic_vector':
+                self.print_log(type='I', msg='Converting type \'%s\' to type \'std_logic_vector\' for VHDL simulations ' %(self._type))
                 self._type = 'std_logic_vector'
         return self._type
     @type.setter
@@ -68,7 +71,7 @@ class vhdl_connector(connector_common,thesdk):
             if not self.init:
                 self._definition='signal %s : %s(%s downto %s);\n' %(self.name, self.type, self.ll, self.rl)
             else:
-                self._definition='signal %s : %s(%s downto %s) := ;\n' %(self.name, self.type, self.ll, self.rl, self.init)
+                self._definition='signal %s : %s(%s downto %s) := %s ;\n' %(self.name, self.type, self.ll, self.rl, self.init)
         return self._definition
 
     @property
