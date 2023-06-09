@@ -26,8 +26,8 @@ class rtl_connector(connector_common,thesdk):
                See module module_common
         
         '''
+
         super().__init__(**kwargs)
-        #self.type=kwargs.get('type','') # signed
 
 
     @property
@@ -43,7 +43,7 @@ class rtl_connector(connector_common,thesdk):
             self._verilog_langobject=verilog_connector(
                         name=self.name,
                         cls=self.cls,
-                        type = self.type,
+                        type = self._typearg,
                         ll = self.ll,
                         rl = self.rl,
                         init = self.init,
@@ -53,7 +53,7 @@ class rtl_connector(connector_common,thesdk):
             self._vhdl_langobject=vhdl_connector(
                         name=self.name,
                         cls=self.cls,
-                        type = self.type,
+                        type = self._typearg,
                         ll = self.ll,
                         rl = self.rl,
                         init = self.init,

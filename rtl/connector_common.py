@@ -32,7 +32,8 @@ class connector_common(thesdk):
         """
         self.name=kwargs.get('name','')
         self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
-        self.type=kwargs.get('type','') # signed
+        #This internal attribute is neede to avoid recursive definition of 'type'
+        self._typearg=kwargs.get('type', None) # Depends on language
         self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
         self.rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
         self.init=kwargs.get('init','') # Initial value

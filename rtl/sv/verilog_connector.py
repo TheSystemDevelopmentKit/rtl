@@ -22,15 +22,25 @@ class verilog_connector(connector_common,thesdk):
         
         '''
         super().__init__(**kwargs)
+        self.type=self._typearg
 
-    #@property
-    #def type(self):
-    #    if not hasattr(self, '_type'):
-    #            self._type = 'signed'
-    #    return self._type
-    #@type.setter
-    #def type(self,value):
-    #   self._type = value
+    @property
+    def type(self):
+        if not hasattr(self, '_type'):
+            if self.width == 1:
+                self._type = None
+            elif self.width > 1:
+                self._type = 'signed'
+        else:
+            if self.width == 1 and self._type != None:
+                pass
+            elif self.width > 1 and self.type != 'signed':
+                self.print_log(type='I', msg='Converting type \'%s\' to type \'signed\' for Verilg simulations ' %(self.type))
+                self._type = 'signed'
+        return self._type
+    @type.setter
+    def type(self,value):
+       self._type = value
 
     @property
     def ioformat(self):
