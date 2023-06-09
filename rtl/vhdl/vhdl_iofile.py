@@ -20,6 +20,7 @@ from rtl.rtl_iofile_common import rtl_iofile_common
 import numpy as np
 import pandas as pd
 import sortedcontainers as sc
+import re
 from rtl.connector import indent
 
 class vhdl_iofile(rtl_iofile_common):
@@ -32,6 +33,20 @@ class vhdl_iofile(rtl_iofile_common):
     in VHDL testbenches, like file io routines, file open and close routines,
     file io routines, file io format strings and read/write conditions.
     """
+    @property
+    def rtl_timescale(self):
+        ''' The time base used for event valued inputs
+        Inherited from parent. Map the parent value with space between the unit and number.
+        Convert number to real if an integer.
+        '''
+        if not hasattr(self,'_rtl_timescale') and hasattr(self.parent,'rtl_timescale'):
+            number = int(re.search("^\d+",self.parent.rtl_timescale).group(0))*1.0
+            unit = re.search("[a-z]+$",self.parent.rtl_timescale).group(0)
+            self._rtl_timescale = '%s %s' %(number,unit)
+        else:
+            self._rtl_timescale = '1.0 ps'
+        return self._rtl_timescale
+
 
     @property
     def ioformat(self):
@@ -135,7 +150,7 @@ class vhdl_iofile(rtl_iofile_common):
             self._rtl_statdef+='--Time is presented as integers of time units\n'
             for stamp in [ self.rtl_ctstamp, self.rtl_pstamp]:
                 self._rtl_statdef+='variable %s : integer := 0;\n' %(stamp)
-            self._rtl_statdef+='variable %s : time := 0.0 ps;\n' %(self.rtl_tdiff)
+            self._rtl_statdef+='variable %s : time := 0.0 * %s;\n' %(self.rtl_tdiff, self.rtl_timescale)
             for connector in self.parent.rtl_connectors:
                 self._rtl_statdef+='variable status_%s : Boolean := False;\n' %(connector.name)
         return self._rtl_statdef
@@ -354,9 +369,9 @@ class vhdl_iofile(rtl_iofile_common):
                 for connector in self.parent.rtl_connectors:
                     self._rtl_io+=indent(text='read(line_%s,v_%s,status_%s);\n' 
                                          %(self.rtl_fptr,connector.name,connector.name), level=2)
-                self._rtl_io+=indent(text=('%s := ( %s - %s ) * 1.0 ps;\n' 
+                self._rtl_io+=indent(text=('%s := ( %s - %s ) * %s;\n' 
                                            %(self.rtl_tdiff, self.rtl_ctstamp,
-                                             self.rtl_pstamp)),
+                                             self.rtl_pstamp, self.rtl_timescale)),
                                      level=2)
                 self._rtl_io+=indent(text=('wait for %s ;\n' %(self.rtl_tdiff)), level=2);
 

@@ -85,13 +85,18 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
             self._langmodule_vhdl.file=self.file
             self._langmodule_vhdl.paramname=self.paramname
             self._langmodule_vhdl.name=self.name
-            #Here we give self.as a parent. A bit unclear still why it works
-            # self.rtlparent should work as well
-            # [TODO] figure a method for value inherintace
         if self.parent.lang=='sv': 
             return self._langmodule_verilog
         elif self.parent.lang=='vhdl': 
             return self._langmodule_vhdl
+    @property
+    def rtl_timescale(self):
+        ''' Timescale for RTL simulations inherited from parent
+
+        '''
+        if not hasattr(self,'_rtl_timescale'):
+            self._rtl_timescale = self.parent.rtl_timescale
+        return self._rtl_timescale
 
     @property
     def ioformat(self):

@@ -45,6 +45,15 @@ class testbench_common(module):
         self._parameters=Bundle()
 
     @property
+    def rtl_timescale(self):
+        if not hasattr(self,'_lang'):
+            self._lang=self.parent.lang
+        return self._lang
+    @rtl_timescale.setter
+    def lang(self,val):
+        self._lang = val
+
+    @property
     def lang(self):
         if not hasattr(self,'_lang'):
             self._lang=self.parent.lang
