@@ -234,7 +234,6 @@ class vhdl_iofile(rtl_iofile_common):
 
 
         '''
-        first=True
         if self.parent.dir == 'out':
             self._rtl_io='file_'+self.name+' : process\n'
         elif self.parent.dir == 'in':
