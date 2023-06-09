@@ -5,9 +5,9 @@ properties and methods for RTL class
 Initially written by Marko kosunen 20221030
 """
 from thesdk import *
-class questasim(thesdk,metaclass=abc.ABCMeta):
+class questasim(thesdk):
     @property
-    def questasim_svcmd(self):
+    def questasim_rtlcmd(self):
         submission=self.lsf_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
@@ -103,79 +103,6 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         self._rtlcmd += ' && sync ' + self.rtlworkpath 
         self._rtlcmd += ' && ' + submission 
         self._rtlcmd +=  rtlsimcmd
-        return self._rtlcmd
-
-    @property
-    def questasim_vhdlcmd(self):
-        # This command is run if model='vhdl' 
-        # Testbench is determined with 'lang'
-        submission = self.lsf_submission
-        rtllibcmd =  'vlib ' +  self.rtlworkpath
-        rtllibmapcmd = 'vmap work ' + self.rtlworkpath
-        vlogmodulesstring =' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles])
-        vhdlmodulesstring =' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
-
-        # If there are additional verilog source files, handle as co-simulation
-        cosim = vlogmodulesstring != ''
-
-        # Verilog testbench, but vhdl source, default in this command
-        if self.lang=='sv':
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
-        #VHDL testbench in addition to vhdl sources
-        if self.lang == 'vhdl':
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc
-                    + ' ' + self.simtb )
-
-        # Verilog testbench, default operation
-        if self.lang=='sv':
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simtb )
-        elif self.lang=='vhdl' and cosim: # we should not end up here
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring)
-
-        gstring = ' '.join([ 
-                                ('-g ' + str(param) +'='+ str(val[1])) 
-                                for param,val in self.rtlparameters.items() 
-                            ])
-        vlogsimargs = ' '.join(self.vlogsimargs)
-
-        fileparams = ''
-        for name, file in self.iofile_bundle.Members.items():
-            fileparams += ' '+file.simparam
-
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-        else:
-            dostring=''
-            self.print_log(type='I',msg='No interactive control file set.')
-
-        if dostring == '':
-            dostring=' -do "run -all; quit;"'
-
-        if not self.interactive_rtl:
-            rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
-                    + fileparams + ' ' + gstring
-                    + ' ' + vlogsimargs + ' work.tb_' + self.name  
-                    + dostring)
-        else:
-            submission = ''
-            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
-
-        self._rtlcmd = rtllibcmd + ' && ' + rtllibmapcmd
-        # Compile vhdl is tb is vhdl or we are cosimulating
-        #if self.lang=='vhdl' or cosim:
-        self._rtlcmd += ' && ' + vhdlcompcmd
-        # Compile verilog is tb is verilog
-        if self.lang=='sv' or cosim:
-            self._rtlcmd += ' && ' + vlogcompcmd
-        self._rtlcmd += ( ' && sync ' + self.rtlworkpath 
-                + ' && ' + submission +rtlsimcmd)
         return self._rtlcmd
 
     @property
