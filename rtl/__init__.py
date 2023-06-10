@@ -318,7 +318,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     dofile.write(self.interactive_control_contents)
                 self._interactive_controlfile = newdofilepath
             # No contents or path given -> use default path (or obsolete path)
-            if os.path.exists(obsoletepath):
+            elif os.path.exists(obsoletepath):
                 self.print_log(type='O',msg='Found obsoleted do-file in %s' % obsoletepath)
                 self.print_log(type='O',msg='To fix the obsolete warning:')
                 self.print_log(type='O',msg='Move the obsoleted file %s to the default path %s' % (obsoletepath,dofilepath))

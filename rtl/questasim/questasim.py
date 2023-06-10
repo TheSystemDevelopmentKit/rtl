@@ -35,26 +35,25 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         for name, file in self.iofile_bundle.Members.items():
             fileparams+=' '+file.simparam
 
-        dofile=self.interactive_controlfile
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-        else:
-            dostring=''
-            self.print_log(type='I',msg='No interactive control file set.')
 
-        if not self.interactive_rtl:
-            if dostring == '':
+        if self.interactive_rtl:
+            submission = ''
+            dofile=self.interactive_controlfile
+            if os.path.isfile(dofile):
+                dostring=' -do "'+dofile+'"'
+                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+            else:
                 dostring=' -do "run -all; quit;"'
+                self.print_log(type='I',msg='No interactive control file set.')
 
+            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
+                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
+        else:
+            dostring=' -do "run -all; quit;"'
             rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
                     + fileparams + ' ' + gstring
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + dostring)
-        else:
-            submission = ''
-            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
         self._rtlcmd =  rtllibcmd  +\
                 ' && ' + rtllibmapcmd +\
@@ -86,26 +85,24 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         for name, file in self.iofile_bundle.Members.items():
             fileparams += ' '+file.simparam
 
-        dofile=self.interactive_controlfile
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+        if self.interactive_rtl:
+            submission = ''
+            dofile=self.interactive_controlfile
+            if os.path.isfile(dofile):
+                dostring=' -do "'+dofile+'"'
+                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+            else:
+                dostring=' -do "run -all; quit;"'
+                self.print_log(type='I',msg='No interactive control file set.')
+
+            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
+                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
         else:
-            dostring=''
-            self.print_log(type='I',msg='No interactive control file set.')
-
-        if dostring == '':
             dostring=' -do "run -all; quit;"'
-
-        if not self.interactive_rtl:
             rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
                     + fileparams + ' ' + gstring
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + dostring)
-        else:
-            submission = ''
-            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
         self._rtlcmd =  rtllibcmd  +\
                 ' && ' + rtllibmapcmd +\

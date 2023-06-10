@@ -29,20 +29,20 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
         for name, file in self.iofile_bundle.Members.items():
             fileparams+=' '+file.simparam
 
-        dofile=self.interactive_controlfile
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-        else:
-            dostring=''
-            self.print_log(type='I',msg='No interactive control file set.')
 
-        if not self.interactive_rtl:
-            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
-        else:
+        if self.interactive_rtl:
             submission="" #Local execution
+            dofile=self.interactive_controlfile
+            if os.path.isfile(dofile):
+                dostring=' -S "'+dofile+'"'
+                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+            else:
+                dostring=''
+                self.print_log(type='I',msg='No interactive control file set.')
             rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
-                         + ' && gtkwave -S ' + dofile + ' ' + self.name + '_dump.vcd')
+                         + ' && gtkwave ' + dostring + ' ' + self.name + '_dump.vcd')
+        else:
+            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
 
         self._rtlcmd =  vlogcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
