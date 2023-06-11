@@ -125,6 +125,7 @@ class vhdl_testbench(testbench_common):
         clockdef='--Master clock is omnipresent\n'
         clockdef+='clock_proc : process\n' 
         clockdef+='begin\n'
+        clockdef+='wait for c_Ts / 2.0;\n'
         clockdef+='while not simdone loop\n'
         clockdef+='    clock <= not clock;\n' 
         clockdef+='    wait for c_Ts / 2.0;\n' 
