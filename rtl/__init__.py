@@ -29,8 +29,9 @@ from rtl.sv.sv import sv as sv
 from rtl.vhdl.vhdl import vhdl as vhdl
 from rtl.icarus.icarus import icarus as icarus
 from rtl.questasim.questasim import questasim as questasim
+from rtl.ghdl.ghdl import ghdl as ghdl
 
-class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
+class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions 
     for rtl simulations in the subclasses.
     
@@ -46,6 +47,12 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         """
         if not hasattr(self,'_lang'):
             self._lang = 'sv'
+        if self.model == 'icarus' and self._lang != 'sv':
+            self.print_log(t='I', msg='Only verilog supported by Icarus')
+            self._lang = 'sv'
+        elif self.model == 'ghdl' and self._lang != 'vhdl':
+            self.print_log(t='I', msg='Only VHDL supported by GHDL')
+            self._lang = 'vhdl'
         return self._lang
     @lang.setter
     def lang(self,value):
@@ -201,6 +208,8 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self._simdut = self.questasim_simdut
             elif self.model == 'vhdl':
                 self._simdut = self.questasim_simdut
+            elif self.model == 'ghdl':
+                self._simdut = self.ghdl_simdut
             else:
                 self.print_log(type='F', msg='Unsupported model %s' % self.model)
         return self._simdut
@@ -218,6 +227,8 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self._simtb = self.icarus_simtb
             elif self.model == 'sv' or self.model=='vhdl':
                 self._simtb = self.questasim_simtb
+            elif self.model == 'ghdl':
+                self._simtb = self.ghdl_simtb
         return self._simtb
 
     @property
@@ -309,6 +320,8 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.questasim_dofilepaths
         elif self.model == 'vhdl':
             (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.questasim_dofilepaths
+        elif self.model == 'ghdl':
+            (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.ghdl_dofilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
 
@@ -360,6 +373,8 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 return self.questasim_rtlcmd
             elif self.model=='vhdl':
                 return self.questasim_rtlcmd
+            elif self.model=='ghdl':
+                return self.ghdl_rtlcmd
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.model))
         return self._rtlcmd

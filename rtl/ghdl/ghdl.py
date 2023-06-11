@@ -20,11 +20,12 @@ class ghdl(thesdk):
         if vlogmodulesstring != '':
             self.print_log(type='W', msg="GHDL does not support Verilog+VHDL cosimulation, ignoring additional Verilog files.")
         pdb.set_trace()
-        vhdlcompcmd = ( 'ghdl -a -Wall --std=08 ' + self.rtlworkpath + '/' + self.name
-    	            + ' ' + vhdlmodulesstring + ' ' + self.simdut + ' ' self.simtb )
-        vhdlanalysiscmd = ( 'ghdl -e --std=08 ' + self.rtlworkpath + '/' + self.name )
+        # We need to compile VHDL source and testbench anyway
+        vhdlcompcmd = ( 'ghdl -a -Wall --std=08 ' + ' ' + vhdlmodulesstring 
+                + ' ' + self.vhdlsrc + ' ' + self.simtb )
+        pdb.set_trace
+        vhdlanalysiscmd = ( 'ghdl -e --std=08 ' 'tb_' + self.name )
 
-	    ghdl -r -v --std=08 tb_fileio --vcd=tb_fileio.vcd
 
         gstring = ' '.join([ 
                                 ('-g ' + str(param) +'='+ str(val[1])) 
@@ -45,10 +46,11 @@ class ghdl(thesdk):
             self.print_log(type='I',msg='No interactive control file set.')
 
         if not self.interactive_rtl:
-            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
+            #rtlsimcmd = ('ghdl -r --std=08 tb_' + self.name + fileparams + ' ' + gstring)
+            rtlsimcmd = ('ghdl -r --std=08 tb_' + self.name)
         else:
             submission="" #Local execution
-            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
+            rtlsimcmd = ('ghdl -r --std=08 tb_' + self.name + ' --vcd='+self.name +'_dump.vcd'
                          + ' && gtkwave -S ' + dofile + ' ' + self.name + '_dump.vcd')
 
         self._rtlcmd =  vlogcompcmd +\
