@@ -127,7 +127,7 @@ class vhdl_testbench(testbench_common):
         clockdef+='begin\n'
         clockdef+='while not simdone loop\n'
         clockdef+='    clock <= not clock;\n' 
-        clockdef+='    wait for c_Ts;\n' 
+        clockdef+='    wait for c_Ts / 2.0;\n' 
         clockdef+='end loop;\n' 
         clockdef+='wait;\n' 
 
