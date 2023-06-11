@@ -91,6 +91,10 @@ class testbench_common(module):
                     self._dut_instance=verilog_module(**{'file':self._dutfile})
             elif self.parent.model == 'vhdl':
                     self._dut_instance=vhdl_entity(**{'file':self._dutfile})
+            elif self.parent.model == 'ghdl':
+                    self._dut_instance=vhdl_entity(**{'file':self._dutfile})
+            else:
+                self.print_log(t='F', msg='Mpdel %s not supported' %(self.parent.model))
         return self._dut_instance
 
     

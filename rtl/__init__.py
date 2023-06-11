@@ -495,7 +495,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.copy_or_relink(src=srcfile,dst=dstfile)
 
         # nothing generates vhdl so simply copy all files to rtlsimpath
-        elif self.model == 'vhdl':
+        elif self.model == 'vhdl' or self.model == 'ghdl':
             vhdlsrc_exists = os.path.isfile(self.vhdlsrc)   # verilog source present in self.entitypath/sv
             simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
 

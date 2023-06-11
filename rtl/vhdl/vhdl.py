@@ -92,4 +92,15 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
     def vhdlentityfiles(self): 
             self._vhdlentityfiles = None 
 
+    @property
+    def vhdlsimargs(self):
+        '''Custom parameters for VHDL simulation
+        Provide as a list of strings
+        '''
+        if not hasattr(self, '_vhdl_sim_args'):
+            self._vhdlsimargs = []
+        return self._vhdlsimargs
+    @vhdlsimargs.setter
+    def vhdlsimargs(self, simparam):
+        self._vhdlsimargs = simparam
 

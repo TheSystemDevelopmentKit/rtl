@@ -19,11 +19,9 @@ class ghdl(thesdk):
 
         if vlogmodulesstring != '':
             self.print_log(type='W', msg="GHDL does not support Verilog+VHDL cosimulation, ignoring additional Verilog files.")
-        pdb.set_trace()
         # We need to compile VHDL source and testbench anyway
         vhdlcompcmd = ( 'ghdl -a -Wall --std=08 ' + ' ' + vhdlmodulesstring 
                 + ' ' + self.vhdlsrc + ' ' + self.simtb )
-        pdb.set_trace
         vhdlanalysiscmd = ( 'ghdl -e --std=08 ' 'tb_' + self.name )
 
 
@@ -53,7 +51,7 @@ class ghdl(thesdk):
             rtlsimcmd = ('ghdl -r --std=08 tb_' + self.name + ' --vcd='+self.name +'_dump.vcd'
                          + ' && gtkwave -S ' + dofile + ' ' + self.name + '_dump.vcd')
 
-        self._rtlcmd =  vlogcompcmd +\
+        self._rtlcmd =  vhdlcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
                 ' && ' + submission +\
                 rtlsimcmd
@@ -69,11 +67,9 @@ class ghdl(thesdk):
                 self.rtlsimpath + self.name + self.vlogext for 'sv' model
                 self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
         '''
-        extension = None
         # Icarus supports only verilog
-        extension = self.vlogext
+        extension = self.vhdlext
         self._simdut = os.path.join(self.rtlsimpath, self.name+extension)
-        print(self.simdut)
         return self._simdut
 
     @property
@@ -84,7 +80,7 @@ class ghdl(thesdk):
         supported by the simulator. Currently we have support only for verilog testbenches.
 
         '''
-        self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vlogext
+        self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vhdlext
         return self._simtb
     
     @property
