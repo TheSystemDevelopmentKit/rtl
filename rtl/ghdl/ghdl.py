@@ -35,21 +35,28 @@ class ghdl(thesdk):
         for name, file in self.iofile_bundle.Members.items():
             fileparams+=' '+file.simparam
 
-        dofile=self.interactive_controlfile
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+        controlfile=self.simulator_controlfile
+        if os.path.isfile(controlfile):
+            controlstring=' --read-wave-opt="'+controlfile+'"'
+            self.print_log(type='I',msg='Using interactive control file %s' % controlfile)
         else:
-            dostring=''
+            controlstring=''
+            self.print_log(type='I',msg='No simulator control file set.')
+
+        interactive_controlfile=self.interactive_controlfile
+        if os.path.isfile(interactive_controlfile):
+            interactive_string=' -S "'+interactive_controlfile+'"'
+            self.print_log(type='I',msg='Using interactive control file %s' % interactive_controlfile)
+        else:
+            interactive_string=''
             self.print_log(type='I',msg='No interactive control file set.')
 
         if not self.interactive_rtl:
-            #rtlsimcmd = ('ghdl -r --std=08 tb_' + self.name + fileparams + ' ' + gstring)
-            rtlsimcmd = ('ghdl -r --std=08 tb_' + self.name)
+            rtlsimcmd = ('ghdl -r --std=08 ' + controlstring + ' tb_' + self.name)
         else:
             submission="" #Local execution
-            rtlsimcmd = ('ghdl -r --std=08 tb_' + self.name + ' --vcd='+self.name +'_dump.vcd'
-                         + ' && gtkwave -S ' + dofile + ' ' + self.name + '_dump.vcd')
+            rtlsimcmd = ('ghdl -r --std=08 ' + controlstring +  ' tb_' + self.name + ' --vcd='+self.name +'_dump.vcd'
+                         + ' && gtkwave ' + interactive_string + ' ' + self.name + '_dump.vcd')
 
         self._rtlcmd =  vhdlcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
@@ -90,4 +97,10 @@ class ghdl(thesdk):
         obsoletepath = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
         newdofilepath = '%s/general.tcl' % self.simpath
         return (dofiledir, dofilepath,obsoletepath,newdofilepath)
+
+    @property
+    def ghdl_controlfilepaths(self):
+        controlfiledir = '%s/interactive_control_files/ghdl' % self.entitypath
+        controlfile = '%s/wave.opt' % self.simpath
+        return (controlfiledir, controlfile)
 
