@@ -325,9 +325,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._simulator_control_contents = ''
         return self._simulator_control_contents
 
-    @interactive_control_contents.setter
-    def interactive_control_contents(self,value):
-        self._interactive_control_contents = value
+    @simulator_control_contents.setter
+    def simulator_control_contents(self,value):
+        self._simulator_control_contents = value
 
     @property
     def simulator_controlfile(self):
@@ -344,13 +344,13 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         read from this file path. Default is set in simulator specific property for each simulator.
         '''
         if self.model == 'icarus':
-            (controlfiledir, controlfile) = self.icarus_controlfilepaths
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.icarus_controlfilepaths
         elif self.model == 'sv':
-            (controlfiledir, controlfile) = self.questasim_controlfilepaths
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.questasim_controlfilepaths
         elif self.model == 'vhdl':
-            (controlfiledir, controlfile) = self.questasim_controlfilepaths
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.questasim_controlfilepaths
         elif self.model == 'ghdl':
-            (controlfiledir, controlfile) = self.ghdl_controlfilepaths
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.ghdl_controlfilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
 
@@ -358,21 +358,17 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             if not os.path.exists(controlfiledir):
                 self.print_log(type='I',msg='Creating %s' % controlfiledir)
                 os.makedirs(controlfiledir)
-            # Property simulator_control_contents already given and new temporary
-            # file not yet created -> create new file and use that
-            if self.simulator_control_contents != '' and not os.path.isfile(controlfile):
-                # Check if a custom file path was given
-                if hasattr(self, '_simulator_controlfile'):
-                    controlfile = self._simulator_controlfile
+            # Simulator control contents always overrdes the file 
+            if self.simulator_control_contents != '':
                 # Give a warning if default/custom path contains a do-file already
                 if os.path.isfile(controlfile):
                     self.print_log(type='W',msg='Simulator control file %s ignored and simulator_control_contents used instead.' % controlfile)
                 # Write simulator_control_contents to a temporary file
-                self.print_log(type='I',msg='Writing simulator_control_contents to file %s' % controlfile)
-                with open(controlfile,'w') as fileptr:
+                self.print_log(type='I',msg='Writing simulator_control_contents to file %s' % generatedcontrolfile)
+                with open(generatedcontrolfile,'w') as fileptr:
                     fileptr.write(self.simulator_control_contents)
-                self._simulator_controlfile = controlfile
-            # Use default do-file location
+                    self._simulator_controlfile = generatedcontrolfile
+            # Use default control file location
             self._simulator_controlfile = controlfile
         return self._simulator_controlfile
     @simulator_controlfile.setter
@@ -389,46 +385,45 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         `./interactive_control_files/modelsim/dofile.do`.
         '''
         if self.model == 'icarus':
-            (dofiledir, dofile, obsoletefile, newdofile) = self.icarus_dofilepaths
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.icarus_dofilepaths
         elif self.model == 'sv':
-            (dofiledir, dofile, obsoletefile, newdofile) = self.questasim_dofilepaths
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.questasim_dofilepaths
         elif self.model == 'vhdl':
-            (dofiledir, dofile, obsoletefile, newdofile) = self.questasim_dofilepaths
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.questasim_dofilepaths
         elif self.model == 'ghdl':
-            (dofiledir, dofile, obsoletefile, newdofile) = self.ghdl_dofilepaths
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.ghdl_dofilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
-
+        
         if not hasattr(self, '_interactive_controlfile'):
+            # No contents or path given -> use default path (or obsolete path)
+            if os.path.exists(obsoletedofile):
+                self.print_log(type='O',msg='Found obsoleted do-file in %s' % obsoletedofile)
+                self.print_log(type='O',msg='To fix the obsolete warning:')
+                self.print_log(type='O',msg='Move the obsoleted file %s to the default path %s' % (obsoletedofile,dofile))
+                self.print_log(type='O',msg='Or, set a custom do-file path to self.interactive_controlfile.')
+                self.print_log(type='O',msg='Or, define the do-file contents in self.interactive_control_contents in your testbench.')
+                self.print_log(type='O',msg='Using the obsoleted file for now.')
+                self._interactive_controlfile = obsoletedofile
+            else:
+                # Use default do-file location if it exists
+                if os.path.isfile(dofile):
+                    self._interactive_controlfile = dofile
+
             if not os.path.exists(dofiledir):
                 self.print_log(type='I',msg='Creating %s' % dofiledir)
                 os.makedirs(dofiledir)
             # Property interactive_control_contents already given and new temporary
             # file not yet created -> create new file and use that
-            if self.interactive_control_contents != '' and not os.path.isfile(newdofile):
-                # Check if a custom file path was given
-                if hasattr(self, '_interactive_controlfile'):
-                    dofile = self._interactive_controlfile
+            if self.interactive_control_contents != '':
                 # Give a warning if default/custom path contains a do-file already
                 if os.path.isfile(dofile):
                     self.print_log(type='W',msg='Interactive control file %s ignored and interactive_control_contents used instead.' % dofile)
                 # Write interactive_control_contents to a temporary file
-                self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % newdofile)
-                with open(newdofile,'w') as dofile:
-                    dofile.write(self.interactive_control_contents)
-                self._interactive_controlfile = newdofile
-            # No contents or path given -> use default path (or obsolete path)
-            if os.path.exists(obsoletefile):
-                self.print_log(type='O',msg='Found obsoleted do-file in %s' % obsoletefile)
-                self.print_log(type='O',msg='To fix the obsolete warning:')
-                self.print_log(type='O',msg='Move the obsoleted file %s to the default path %s' % (obsoletefile,dofile))
-                self.print_log(type='O',msg='Or, set a custom do-file path to self.interactive_controlfile.')
-                self.print_log(type='O',msg='Or, define the do-file contents in self.interactive_control_contents in your testbench.')
-                self.print_log(type='O',msg='Using the obsoleted file for now.')
-                self._interactive_controlfile = obsoletefile
-            else:
-                # Use default do-file location
-                self._interactive_controlfile = dofile
+                self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % generateddofile)
+                with open(generateddofile,'w') as dofileptr:
+                    dofileptr.write(self.interactive_control_contents)
+                    self._interactive_controlfile = generateddofile
         return self._interactive_controlfile
     @interactive_controlfile.setter
     def interactive_controlfile(self,value):

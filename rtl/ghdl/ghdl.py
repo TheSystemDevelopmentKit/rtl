@@ -21,7 +21,7 @@ class ghdl(thesdk):
             self.print_log(type='W', msg="GHDL does not support Verilog+VHDL cosimulation, ignoring additional Verilog files.")
         # We need to compile VHDL source and testbench anyway
         vhdlcompcmd = ( 'ghdl -a -Wall --std=08 ' + ' ' + vhdlmodulesstring 
-                + ' ' + self.vhdlsrc + ' ' + self.simtb )
+                + ' ' + self.simdut + ' ' + self.simtb )
         vhdlanalysiscmd = ( 'ghdl -e --std=08 ' 'tb_' + self.name )
 
 
@@ -55,7 +55,7 @@ class ghdl(thesdk):
             rtlsimcmd = ('ghdl -r --std=08 ' + controlstring + ' tb_' + self.name)
         else:
             submission="" #Local execution
-            rtlsimcmd = ('ghdl -r --std=08 ' + controlstring +  ' tb_' + self.name + ' --vcd='+self.name +'_dump.vcd'
+            rtlsimcmd = ('ghdl -r --std=08 ' + 'tb_' + self.name + controlstring + ' --vcd='+self.name +'_dump.vcd'
                          + ' && gtkwave ' + interactive_string + ' ' + self.name + '_dump.vcd')
 
         self._rtlcmd =  vhdlcompcmd +\
@@ -93,14 +93,15 @@ class ghdl(thesdk):
     @property
     def ghdl_dofilepaths(self):
         dofiledir = '%s/interactive_control_files/gtkwave' % self.entitypath
-        dofilepath = '%s/general.tcl' % dofiledir
-        obsoletepath = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
-        newdofilepath = '%s/general.tcl' % self.simpath
-        return (dofiledir, dofilepath,obsoletepath,newdofilepath)
+        dofile = '%s/general.tcl' % dofiledir
+        obsoletedofile = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
+        generateddofile = '%s/general.tcl' % self.simpath
+        return (dofiledir, dofile,obsoletedofile,generateddofile)
 
     @property
     def ghdl_controlfilepaths(self):
         controlfiledir = '%s/interactive_control_files/ghdl' % self.entitypath
-        controlfile = '%s/wave.opt' % self.simpath
-        return (controlfiledir, controlfile)
+        controlfile = '%s/general.tcl' % controlfiledir
+        generatedcontrolfile = '%s/wave.opt' % self.simpath
+        return (controlfiledir, controlfile, generatedcontrolfile)
 

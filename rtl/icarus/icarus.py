@@ -84,8 +84,15 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
     @property
     def icarus_dofilepaths(self):
         dofiledir = '%s/interactive_control_files/gtkwave' % self.entitypath
-        dofilepath = '%s/general.tcl' % dofiledir
-        obsoletepath = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
-        newdofilepath = '%s/general.tcl' % self.simpath
-        return (dofiledir, dofilepath,obsoletepath,newdofilepath)
+        dofile = '%s/general.tcl' % dofiledir
+        obsoletedofile = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
+        generateddofile = '%s/general.tcl' % self.simpath
+        return (dofiledir, dofile, obsoletedofile,generateddofile)
+
+    @property
+    def icarus_controlfilepaths(self):
+        controlfiledir = '%s/interactive_control_files/icarus' % self.entitypath
+        controlfile = '%s/control.tcl' % controlfiledir
+        generatedcontrolfile = '%s/control.tcl' % self.simpath
+        return (controlfiledir, controlfile, generatedcontrolfile)
 
