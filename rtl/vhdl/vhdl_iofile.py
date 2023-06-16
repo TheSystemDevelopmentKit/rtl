@@ -385,7 +385,7 @@ class vhdl_iofile(rtl_iofile_common):
                                                    ),level=3)
                         else:
                             self._rtl_io+=indent(text=('%s <= std_logic_vector(to_signed(v_%s,%s));\n'
-                                                    %(connector.name,connector.name,connector.name,connector.width)
+                                                    %(connector.name,connector.name,connector.width)
                                                    ),level=3)
                     elif connector.ioformat== '%s':
                         # String is assumed to be logic
