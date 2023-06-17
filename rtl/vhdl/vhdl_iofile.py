@@ -279,7 +279,7 @@ class vhdl_iofile(rtl_iofile_common):
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
                 self._rtl_io+='begin\n'
-                self._rtl_io+=indent(text='while not simdone loop\n',level=1)
+                self._rtl_io+=indent(text='while not thesdk_file_io_completed loop\n',level=1)
                 self._rtl_io+=indent(text='wait until %s;\n'%(self.rtl_io_sync),level=1)
                 self._rtl_io+=indent(text='if ( %s ) then\n' %(self.rtl_io_condition), level=2)
                 first = True

@@ -84,7 +84,7 @@ class vhdl_testbench(testbench_common):
 
         definitions=(definitions+
                 '\n--Driven signal definitions\n--This controls the simulation duration\n'+
-                'signal simdone : Boolean := False;\n')
+                'signal thesdk_file_io_completed : Boolean := False;\n')
         for name, val in self.connectors.Members.items():
             if val.cls=='wire':
                 definitions=definitions+val.definition
@@ -126,7 +126,7 @@ class vhdl_testbench(testbench_common):
         clockdef+='clock_proc : process\n' 
         clockdef+='begin\n'
         clockdef+='wait for c_Ts / 2.0;\n'
-        clockdef+='while not simdone loop\n'
+        clockdef+='while not thesdk_file_io_completed loop\n'
         clockdef+='    clock <= not clock;\n' 
         clockdef+='    wait for c_Ts / 2.0;\n' 
         clockdef+='end loop;\n' 
@@ -287,7 +287,7 @@ class vhdl_testbench(testbench_common):
         for key, member in self.iofiles.Members.items():
             if member.dir == 'in':
                 if first: 
-                    contents+='simdone <= '
+                    contents+='thesdk_file_io_completed <= '
                     contents+=' done_%s' %(member.rtl_fptr)
                     first = False
                 else:
