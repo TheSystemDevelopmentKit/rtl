@@ -279,7 +279,7 @@ class vhdl_iofile(rtl_iofile_common):
         if self.parent.iotype=='sample':
             if self.parent.dir=='out':
                 self._rtl_io+='begin\n'
-                self._rtl_io+=indent(text='while not simdone loop\n',level=1)
+                self._rtl_io+=indent(text='while not thesdk_file_io_completed loop\n',level=1)
                 self._rtl_io+=indent(text='wait until %s;\n'%(self.rtl_io_sync),level=1)
                 self._rtl_io+=indent(text='if ( %s ) then\n' %(self.rtl_io_condition), level=2)
                 first = True
@@ -385,7 +385,7 @@ class vhdl_iofile(rtl_iofile_common):
                                                    ),level=3)
                         else:
                             self._rtl_io+=indent(text=('%s <= std_logic_vector(to_signed(v_%s,%s));\n'
-                                                    %(connector.name,connector.name,connector.name,connector.width)
+                                                    %(connector.name,connector.name,connector.width)
                                                    ),level=3)
                     elif connector.ioformat== '%s':
                         # String is assumed to be logic
