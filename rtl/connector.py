@@ -165,7 +165,7 @@ class rtl_connector_bundle(Bundle):
         match=kwargs.get('match',r".*") #By default, assign all
         assignments=''
         for name, value in self.Members.items():
-            if re.match(match,name):
+            if re.fullmatch(match,name):
                 assignments=assignments+value.assignment
         return indent(text=assignments, level=kwargs.get('level',0))
 
