@@ -84,7 +84,8 @@ class vhdl_testbench(testbench_common):
 
         definitions=(definitions+
                 '\n--Driven signal definitions\n--This controls the simulation duration\n'+
-                'signal thesdk_file_io_completed : Boolean := False;\n')
+                'signal thesdk_file_io_completed : Boolean := False;\n' +
+                'signal thesdk_simulation_completed : Boolean := False;\n')
         for name, val in self.connectors.Members.items():
             if val.cls=='wire':
                 definitions=definitions+val.definition
@@ -105,7 +106,7 @@ class vhdl_testbench(testbench_common):
         """IOfile definition strings
 
         For VHDL, this this used to create signals to determine the completion of input file reading.
-        These signals are used to stop the global clock at the end of the simulation.
+        These signals are used to set the 'thesdk_file_io_completed' signal to True.
 
         """
         iofile_defs='--Signals for VHDL io_files to determine end of input file reading\n'
@@ -116,7 +117,8 @@ class vhdl_testbench(testbench_common):
 
     @property
     def clock_definition(self):
-        """Clock definition string
+        """Clock definition string. By defult the clock is the last process to 
+        stop. It runs until thesdk_simulation_completed == True.
 
         Todo
         Create append mechanism to add more clocks.
@@ -126,7 +128,7 @@ class vhdl_testbench(testbench_common):
         clockdef+='clock_proc : process\n' 
         clockdef+='begin\n'
         clockdef+='wait for c_Ts / 2.0;\n'
-        clockdef+='while not thesdk_file_io_completed loop\n'
+        clockdef+='while not thesdk_simulation_completed loop\n'
         clockdef+='    clock <= not clock;\n' 
         clockdef+='    wait for c_Ts / 2.0;\n' 
         clockdef+='end loop;\n' 
@@ -145,6 +147,22 @@ class vhdl_testbench(testbench_common):
             iofile_close=iofile_close+val.rtl_fclose
         iofile_close=iofile_close+'\n'
         return iofile_close 
+
+    @property
+    def end_condition(self):
+        """ VHDL structure that sets the thesdk_simulation_completed to true.
+        Default: 'thesdk_simulation_completed <= thesdk_file_io_completed;'
+        """
+        if not hasattr(self,'_end_condition'):
+            if hasattr(self.parent, 'end_condition'):
+                self._end_condition = self.parent.end_condition
+            else:
+                self._end_condition ='thesdk_simulation_completed <= thesdk_file_io_completed;'
+        return self._end_condition
+
+    @end_condition.setter
+    def end_condition(self,value):
+        self._end_condition = value
 
     @property
     def misccmd(self):
@@ -295,6 +313,7 @@ class vhdl_testbench(testbench_common):
         if not first: 
                 contents+=';\n'
         #contents+=self.iofile_close+'\n'
+        contents += self.end_condition 
         contents+='\nend architecture;\n'
         self.contents=contents
 

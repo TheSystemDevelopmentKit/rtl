@@ -131,6 +131,22 @@ class verilog_testbench(testbench_common):
         return iofile_close 
 
     @property
+    def end_condition(self):
+        """ Verilog structure for custom finish of the simulation.
+        Default: ''
+        """
+        if not hasattr(self,'_end_condition'):
+            if hasattr(self.parent, 'end_condition'):
+                self._end_condition = self.parent.end_condition
+            else:
+                self._end_condition ='\n'
+        return self._end_condition
+
+    @end_condition.setter
+    def end_condition(self,value):
+        self._end_condition = value
+
+    @property
     def misccmd(self):
         """String
         
@@ -242,6 +258,7 @@ self.connector_definitions+\
 self.assignments()+\
 self.iofile_definitions+\
 self.misccmd+\
+self.end_condition+\
 self.dumpfile+\
 """
 //DUT definition
@@ -276,7 +293,9 @@ self.connectors.rtl_inits(level=1)+\
             if member.dir=='in':
                 contents+=indent(text=member.rtl_io, level=1)
 
-        contents+='\njoin\n'+self.iofile_close+'\n$finish;\nend\n'
+        contents+='\njoin\n'+self.iofile_close+'\n'
+        contents+='$finish;\n'
+        contents+='end\n'
         self.contents=contents
 
 if __name__=="__main__":

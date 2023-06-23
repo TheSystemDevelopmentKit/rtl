@@ -171,6 +171,16 @@ class testbench(testbench_common):
         return self.langmodule.iofile_close
 
     @property
+    def end_condition(self):
+        """ RTL structure that sets the thesdk_simulation_completed to true.
+        Default for VHDL: 'thesdk_simulation_completed <= thesdk_file_io_completed;'
+        """
+        return self.langmodle._end_condition
+    @end_condition.setter
+    def end_condition(self,value):
+        self.langmodule._end_condition = value
+
+    @property
     def misccmd(self):
         """String
         
@@ -230,7 +240,7 @@ class testbench(testbench_common):
         '''Entity definition part extracted for the file. Contains generics and 
         IO definitions.
 
-        Overloads the property inherited from 'module', as wish to control whan we generate the heasders.
+        Overloads the property inherited from 'module', as wish to control whan we generate the headers.
         [TO BE RECONSIDERED]
         '''
         self._definition=self.langmodule.header+self.langmodule.definition
