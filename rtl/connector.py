@@ -4,12 +4,16 @@ Connector
 =========
 Class for describing signals in wide sense, including IO's
 
+This class stores signal parameters as name, type widt and indexes, and 
+returns definition strings according to given 'lang' paramenter
+
 Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
 """
 import os
 from thesdk import *
 from rtl.connector_common import connector_common
 from rtl.sv.verilog_connector import verilog_connector
+from rtl.vhdl.vhdl_connector import vhdl_connector
 
 class rtl_connector(connector_common,thesdk):
     def __init__(self, **kwargs):
@@ -22,40 +26,50 @@ class rtl_connector(connector_common,thesdk):
                See module module_common
         
         '''
+
         super().__init__(**kwargs)
+        self._typearg=kwargs.get('type','') # signed
 
-    @property
-    def lang(self):
-        '''Description language used.
-
-        Default: `sv`
-
-        '''
-        if not hasattr(self,'_lang'):
-            self._lang='sv'
-        return self._lang
-
-    @lang.setter
-    def lang(self,value):
-            self._lang=value
 
     @property
     def langobject(self):
         """The language specific operation is defined with an instance of 
         language specific class. Properties and methods return values from that class.
+
+        Two instances are created to have the lanquage dependent content available
+        in both languages for mixed lanquage simulations. This can be further clarified later,
+        as the strings returned should not be fixed at creation. 
         """
-        if not hasattr(self,'_langobject'):
-            if self.lang == 'sv':
-                self._langobject=verilog_connector(
+        if not hasattr(self,'_verilog_langobject'):
+            self._verilog_langobject=verilog_connector(
                         name=self.name,
                         cls=self.cls,
-                        type = self.type,
+                        type = self._typearg,
                         ll = self.ll,
                         rl = self.rl,
                         init = self.init,
                         connect = self.connect
                         )
-        return self._langobject
+        if not hasattr(self,'_vhdl_langobject'):
+            self._vhdl_langobject=vhdl_connector(
+                        name=self.name,
+                        cls=self.cls,
+                        type = self._typearg,
+                        ll = self.ll,
+                        rl = self.rl,
+                        init = self.init,
+                        connect = self.connect
+                        )
+        if self.lang == 'sv':
+            return self._verilog_langobject
+        if self.lang == 'vhdl':
+            return self._vhdl_langobject
+    #@property
+    #def type(self):
+    #    return self.langobject.type
+    #@type.setter
+    #def type(self,value):
+    #    self.langobject.type = value
 
     @property
     def definition(self):
@@ -89,6 +103,22 @@ class rtl_connector(connector_common,thesdk):
 class rtl_connector_bundle(Bundle):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
+        self.lang=kwargs.get('lang','sv')
+
+    @property
+    def lang(self):
+        '''Description language used.
+
+        Default: `sv`
+
+        '''
+        if not hasattr(self,'_lang'):
+            self._lang='sv'
+        return self._lang
+    @lang.setter
+    def lang(self,val):
+        self._lang = val
+
 
     def new(self,**kwargs):
         name=kwargs.get('name','')
@@ -98,7 +128,7 @@ class rtl_connector_bundle(Bundle):
         rl=kwargs.get('rl',0)              # Bus bus range right limit 0 by default
         init=kwargs.get('init','')         # Initial value
         connect=kwargs.get('connect',None) # Can't be verilog connector by default. Would be recursive
-        self.Members[name]=verilog_connector(name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
+        self.Members[name]=rtl_connector(lang=self.lang,name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
 
     def update(self,**kwargs):
         #[TODO]: Write sanity checks
@@ -135,7 +165,7 @@ class rtl_connector_bundle(Bundle):
         match=kwargs.get('match',r".*") #By default, assign all
         assignments=''
         for name, value in self.Members.items():
-            if re.match(match,name):
+            if re.fullmatch(match,name):
                 assignments=assignments+value.assignment
         return indent(text=assignments, level=kwargs.get('level',0))
 

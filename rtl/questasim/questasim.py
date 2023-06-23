@@ -5,30 +5,65 @@ properties and methods for RTL class
 Initially written by Marko kosunen 20221030
 """
 from thesdk import *
-class questasim(thesdk,metaclass=abc.ABCMeta):
+class questasim(thesdk):
     @property
-    def questasim_svcmd(self):
+    def questasim_rtlcmd(self):
         submission=self.lsf_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
-
-        # Additional sources
+         
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
-        # If there are additional VHDL source files, handle as co-simulation
-        cosim = vhdlmodulesstring != ''
-        
-        vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+        # The following cases are possible
+        # Testbench is sv OR testbench is vhdl, identified with 'lang'
+        # source is verilog OR source is vhdl, identified by 'model
+        # Has additional source files in the 'other' language, identified by 'cosim'
+        # In total, 8 cases
+        if self.lang=='sv' and self.model=='sv':
+            #We need to compile verilog testbench and simdut anyway.
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
+            # Define hdll compcmd, if we have cosim
+            if len(vhdlmodulesstring) == 0:
+                vhdlcompcmd = ' echo '' > /dev/null '
+            else:
+                vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
 
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
-                       
+        elif self.lang=='sv' and self.model=='vhdl':
+            #We need to compile vhdl sources anyway, but no testbench
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
+                       vhdlmodulesstring + ' ' + self.vhdlsrc )
+            #We need to compile verilog testbench anyway, but simdut is in vhdl
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                    + ' ' + self.simtb )
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
 
-        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
+        elif self.lang=='vhdl' and self.model=='sv':
+            # We need to compile VHDL testbench anyway, but not the source
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
+                       vhdlmodulesstring + ' ' + self.simtb )
+            #We need to compile verilog simdut anyway.
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                + ' ' + self.simdut + ' '.join(self.vlogcompargs))
+
+        elif self.lang=='vhdl' and self.model=='vhdl':
+            # We need to compile VHDL source and testbench anyway
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring 
+                    + ' ' + self.vhdlsrc + ' ' + self.simtb )
+            # Define vlog compcmd, if we have cosim
+            if len(vlogmodulesstring) == 0:
+                vlogcompcmd = ' echo '' > /dev/null '
+            else:
+                vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring )
+
+        gstring = ' '.join([ 
+                                ('-g ' + str(param) +'='+ str(val[1])) 
+                                for param,val in self.rtlparameters.items() 
+                            ])
         vlogsimargs = ' '.join(self.vlogsimargs)
 
         fileparams=''
@@ -56,64 +91,18 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
             rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 
-        self._rtlcmd =  rtllibcmd  +\
-                ' && ' + rtllibmapcmd +\
-                ((' && ' + vhdlcompcmd) if cosim else '') +\
-                ' && ' + vlogcompcmd +\
-                ' && sync ' + self.rtlworkpath +\
-                ' && ' + submission +\
-                rtlsimcmd
-        return self._rtlcmd
-
-    @property
-    def questasim_vhdlcmd(self):
-        submission = self.lsf_submission
-        rtllibcmd =  'vlib ' +  self.rtlworkpath
-        rtllibmapcmd = 'vmap work ' + self.rtlworkpath
-        vlogmodulesstring =' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles])
-        vhdlmodulesstring =' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
-        vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                + ' ' + self.simtb )
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
-        gstring = ' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
-        vlogsimargs = ' '.join(self.vlogsimargs)
-
-        fileparams = ''
-        for name, file in self.iofile_bundle.Members.items():
-            fileparams += ' '+file.simparam
-
-        dofile=self.interactive_controlfile
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-        else:
-            dostring=''
-            self.print_log(type='I',msg='No interactive control file set.')
-
-        if dostring == '':
-            dostring=' -do "run -all; quit;"'
-
-        if not self.interactive_rtl:
-            rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
-                    + fileparams + ' ' + gstring
-                    + ' ' + vlogsimargs + ' work.tb_' + self.name  
-                    + dostring)
-        else:
-            submission = ''
-            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
-
-        self._rtlcmd =  rtllibcmd  +\
-                ' && ' + rtllibmapcmd +\
-                ' && ' + vhdlcompcmd +\
-                ' && ' + vlogcompcmd +\
-                ' && sync ' + self.rtlworkpath +\
-                ' && ' + submission +\
-                rtlsimcmd
+        self._rtlcmd =  rtllibcmd
+        self._rtlcmd += ' && ' + rtllibmapcmd
+        # Commpile dependencies first.
+        if self.lang == 'sv':
+            self._rtlcmd += ' && ' + vhdlcompcmd
+            self._rtlcmd += ' && ' + vlogcompcmd
+        elif self.lang == 'vhdl':
+            self._rtlcmd += ' && ' + vlogcompcmd
+            self._rtlcmd += ' && ' + vhdlcompcmd
+        self._rtlcmd += ' && sync ' + self.rtlworkpath 
+        self._rtlcmd += ' && ' + submission 
+        self._rtlcmd +=  rtlsimcmd
         return self._rtlcmd
 
     @property
@@ -141,10 +130,10 @@ class questasim(thesdk,metaclass=abc.ABCMeta):
         supported by the simulator. Currently we have support only for verilog testbenches.
 
         '''
-        if self.model == 'sv':
-            self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vlogext
-        if self.model == 'vhdl':
-            self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vlogext
+        if self.lang == 'sv':
+            self._simtb=self.vlogsimtb
+        if self.lang == 'vhdl':
+            self._simtb=self.vhdlsimtb
         return self._simtb
 
     @property

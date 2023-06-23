@@ -1,14 +1,14 @@
 """
-=================
-verilog_testbench
-=================
+==============
+vhdl_testbench
+==============
 
-Verilog testbench generator utility module for TheSyDeKick. Documentation provided in 'testbench' class
+VHDL testbench generator utility module for TheSyDeKick. Documentation provided in 'testbench' class
 
 Extends `testbench_common`.
 
 Initially written by Marko Kosunen 20190108, marko.kosunen@aalto.fi
-Refactored from 'testbench' by Marko Kosunen 20221119, marko.kosunen@aalto.fi
+Derived from 'verilog_testbench' by Marko Kosunen 20230523, marko.kosunen@aalto.fi
 """
 import os
 import sys
@@ -17,8 +17,8 @@ from rtl import indent
 from rtl.connector import rtl_connector
 from rtl.testbench_common import testbench_common
 
-class verilog_testbench(testbench_common):
-    """ Verilog testbench class.
+class vhdl_testbench(testbench_common):
+    """ vhdl testbench class.
 
     """
     def __init__(self, parent=None, **kwargs):
@@ -32,16 +32,19 @@ class verilog_testbench(testbench_common):
         
         """
         super().__init__(parent,**kwargs)
-        self.header=''
+        self.header="""library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.numeric_std.all;\nuse std.textio.all;\n\n"""
+
         
     @property
     def parameter_definitions(self):
         """Parameter  and variable definition strings of the testbench
 
         """
-        definitions='//Parameter definitions\n'
+        definitions='--Parameter definitions\n'
         for name, val in self.content_parameters.items():
-                definitions+='parameter '+ val[0]+' '+name+'='+ val[1]+';\n'
+            if type(val) is not tuple:
+                self.print_log(type='F',msg='Parameter %s definition must be given as { \'name\' : (type,value) }' %(name))
+            definitions+='constant '+ name + ' : ' + val[0] + ':='+ val[1]+';\n'
         return definitions
 
     @property
@@ -55,11 +58,11 @@ class verilog_testbench(testbench_common):
 
                 ::
 
-                {'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
+                {'c_Ts': ('time','1.0/(g_Rs*1.0e-12)*1.0 ps')} 
 
         """
         if not hasattr(self,'_content_parameters'):
-            self._content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
+            self._content_parameters={'c_Ts': ('time','1.0/(g_Rs*1.0e-12)*1.0 ps')} 
         return self._content_parameters
     @content_parameters.setter    
     def content_parameters(self,val):
@@ -67,56 +70,71 @@ class verilog_testbench(testbench_common):
     
     @property
     def connector_definitions(self):
-        """Verilog register and wire definition strings
+        """VHDL signal definition strings
 
         """
         #Update the language formatting. We are operating in verilog
         for name, val in self.connectors.Members.items():
-            val.lang='sv'
-
+            val.lang='vhdl'
         # Registers first
-        definitions='//Register definitions\n'
+        definitions='-- Driving signal definitions\n'
         for name, val in self.connectors.Members.items():
             if val.cls=='reg':
                 definitions=definitions+val.definition
 
-        definitions=definitions+'\n//Wire definitions\n'
+        definitions=(definitions+
+                '\n--Driven signal definitions\n--This controls the simulation duration\n'+
+                'signal thesdk_file_io_completed : Boolean := False;\n' +
+                'signal thesdk_simulation_completed : Boolean := False;\n')
         for name, val in self.connectors.Members.items():
             if val.cls=='wire':
                 definitions=definitions+val.definition
         return definitions
 
     def assignments(self,**kwargs):
-        """Wire assingment strings
+        """Signal assingment strings
 
         """
         matchlist=kwargs.get('matchlist',self.assignment_matchlist)
-        assigns='\n//Assignments\n'
+        assigns='\n--Assignments\n'
         for match in matchlist:
             assigns=assigns+self.connectors.assign(match=match)
         return indent(text=assigns,level=kwargs.get('level',0))
-     
+
     @property
     def iofile_definitions(self):
         """IOfile definition strings
 
+        For VHDL, this this used to create signals to determine the completion of input file reading.
+        These signals are used to set the 'thesdk_file_io_completed' signal to True.
+
         """
-        iofile_defs='//Variables for the io_files\n'
+        iofile_defs='--Signals for VHDL io_files to determine end of input file reading\n'
         for name, val in self.iofiles.Members.items():
-            iofile_defs=iofile_defs+val.rtl_statdef
-            iofile_defs=iofile_defs+val.rtl_fopen
-        iofile_defs=iofile_defs+'\n'
+            if val.dir == 'in':
+                iofile_defs+='signal done_%s : Boolean := False;\n' %(val.rtl_fptr)
         return iofile_defs 
 
     @property
     def clock_definition(self):
-        """Clock definition string
+        """Clock definition string. By defult the clock is the last process to 
+        stop. It runs until thesdk_simulation_completed == True.
 
         Todo
         Create append mechanism to add more clocks.
 
         """
-        clockdef='//Master clock is omnipresent\nalways #(c_Ts/2.0) clock = !clock;'
+        clockdef='--Master clock is omnipresent\n'
+        clockdef+='clock_proc : process\n' 
+        clockdef+='begin\n'
+        clockdef+='wait for c_Ts / 2.0;\n'
+        clockdef+='while not thesdk_simulation_completed loop\n'
+        clockdef+='    clock <= not clock;\n' 
+        clockdef+='    wait for c_Ts / 2.0;\n' 
+        clockdef+='end loop;\n' 
+        clockdef+='wait;\n' 
+
+        clockdef+='end process;' 
         return clockdef
 
     @property
@@ -124,7 +142,7 @@ class verilog_testbench(testbench_common):
         """File close procedure for all IO files.
 
         """
-        iofile_close='\n//Close the io_files\n'
+        iofile_close='\n--Close the io_files\n'
         for name, val in self.iofiles.Members.items():
             iofile_close=iofile_close+val.rtl_fclose
         iofile_close=iofile_close+'\n'
@@ -132,14 +150,14 @@ class verilog_testbench(testbench_common):
 
     @property
     def end_condition(self):
-        """ Verilog structure for custom finish of the simulation.
-        Default: ''
+        """ VHDL structure that sets the thesdk_simulation_completed to true.
+        Default: 'thesdk_simulation_completed <= thesdk_file_io_completed;'
         """
         if not hasattr(self,'_end_condition'):
             if hasattr(self.parent, 'end_condition'):
                 self._end_condition = self.parent.end_condition
             else:
-                self._end_condition ='\n'
+                self._end_condition ='thesdk_simulation_completed <= thesdk_file_io_completed;'
         return self._end_condition
 
     @end_condition.setter
@@ -154,7 +172,7 @@ class verilog_testbench(testbench_common):
         the parent entity.
         """
         if not hasattr(self,'_misccmd'):
-            self._misccmd="// Manual commands\n"
+            self._misccmd="-- Manual commands\n"
             mcmd = self.parent.rtlmisc
             for cmd in mcmd:
                 self._misccmd += cmd + "\n"
@@ -171,30 +189,34 @@ class verilog_testbench(testbench_common):
         """Defines the tb connectivity, creates reset and clock, and initializes them to zero
 
         """
-        # Dut is creted automaticaly, if verilog file for it exists
+        # Dut is creted automaticaly, if vhdl file for it exists
         self.connectors.update(bundle=self.dut_instance.io_signals.Members)
         #Assign verilog simulation parameters to testbench
         self.parameters=self.parent.rtlparameters
 
+
         # Create clock if nonexistent and reset it
         if 'clock' not in self.dut_instance.ios.Members:
-            self.connectors.Members['clock']=rtl_connector(lang='sv',
-                    name='clock',cls='reg', init='\'b0')
+            self.connectors.Members['clock']=rtl_connector(lang=self.parent.lang,
+                    name='clock',cls='reg', type='std_logic',init='\'0\'')
         elif self.connectors.Members['clock'].init=='':
-            self.connectors.Members['clock'].init='\'b0'
+            self.connectors.Members['clock'].init='\'0\''
 
         # Create reset if nonexistent and reset it
         if 'reset' not in self.dut_instance.ios.Members:
-            self.connectors.Members['reset']=rtl_connector(lang='sv',
-                    name='reset',cls='reg', init='\'b0')
+            self.connectors.Members['reset']=rtl_connector(lang=self.parent.lang,
+                    name='reset',cls='reg', init='\'0\'')
         elif self.connectors.Members['reset'].init=='':
-            self.connectors.Members['reset'].init='\'b0'
+            self.connectors.Members['reset'].init='\'0\''
 
         ## Start initializations
         #Init the signals connected to the dut input to zero
         for name, val in self.dut_instance.ios.Members.items():
             if val.cls=='input':
-                val.connect.init='\'b0'
+                if val.width == 1:
+                    val.connect.init='\'0\''
+                else:
+                    val.connect.init='(others => \'0\')'
     
     # Automate this based in dir
     def connect_inputs(self):
@@ -229,6 +251,8 @@ class verilog_testbench(testbench_common):
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle
 
+
+
     def generate_contents(self):
         """ This is the method to generate testbench contents. Override if needed
             Contents of the testbench is constructed from attributes in the 
@@ -240,9 +264,9 @@ class verilog_testbench(testbench_common):
                 self.iofile_definitions
                 self.misccmd
                 self.dumpfile
-                self.dut_instance.verilog_instance
+                self.dut_instance.instance
                 self.verilog_instance_members.items().instance (for all members)
-                self.connectors.verilog_inits()
+                self.connectors.rtl_inits()
                 self.iofiles.Members.items().rtl_io (for all members)
                 self.iofile.close (for all members)
 
@@ -250,53 +274,49 @@ class verilog_testbench(testbench_common):
              strings (Verilog sytax) to the relevant string attributes.
 
         """
-        # Start the testbench contents
-        contents="""
-//timescale 1ps this should probably be a global model parameter
-"""+self.parameter_definitions+\
-self.connector_definitions+\
-self.assignments()+\
-self.iofile_definitions+\
-self.misccmd+\
-self.end_condition+\
-self.dumpfile+\
-"""
-//DUT definition
-"""+\
-self.dut_instance.verilog_instance
-
+    # Start the testbench contents
+        contents=("""\narchitecture behavioural of """+ self.name + 
+                  """ is\n"""
+                  +self.parameter_definitions
+                  +self.connector_definitions
+                  +self.iofile_definitions
+                  + """\nbegin\n"""
+                  +self.assignments()
+                  +self.misccmd
+                  +self.dumpfile+
+                  """ -- DUT definition\n"""
+                  +self.dut_instance.vhdl_instance
+                  )
         for inst, module in self.verilog_instances.Members.items():
             contents+=module.instance
 
         contents+=self.clock_definition
-        contents+="""
-
-//io_out
-"""
+        contents+=("""\n--Execution of processes and sequential assignments\n"""+
+                   self.connectors.rtl_inits(level=0)+"""--IO out\n""")
         for key, member in self.iofiles.Members.items():
             if member.dir=='out':
-                contents+=member.rtl_io
-        contents+="""
-
-//Execution with parallel fork-join and sequential begin-end sections
-initial #0 begin
-fork
-""" + \
-self.connectors.rtl_inits(level=1)+\
-"""
-
-    // Sequences enabled by initdone
-    $display("Ready to read"); 
-"""
-
+                contents+=indent(text=member.rtl_io,level=0)
+        contents+="""--IO in\n"""
         for key, member in self.iofiles.Members.items():
             if member.dir=='in':
-                contents+=indent(text=member.rtl_io, level=1)
+                contents+=indent(text=member.rtl_io, level=0)
 
-        contents+='\njoin\n'+self.iofile_close+'\n'
-        contents+='$finish;\n'
-        contents+='end\n'
+        first = True
+        for key, member in self.iofiles.Members.items():
+            if member.dir == 'in':
+                if first: 
+                    contents+='thesdk_file_io_completed <= '
+                    contents+=' done_%s' %(member.rtl_fptr)
+                    first = False
+                else:
+                    contents+=' and done_%s' %(member.rtl_fptr)
+        if not first: 
+                contents+=';\n'
+        #contents+=self.iofile_close+'\n'
+        contents += self.end_condition 
+        contents+='\nend architecture;\n'
         self.contents=contents
+
 
 if __name__=="__main__":
     pass

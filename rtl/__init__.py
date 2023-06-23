@@ -40,6 +40,18 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         pass
 
     @property
+    def lang(self):
+        """ str : Language of the testbench to support multilanguage simulators.
+        Default vhdl | sv (default)
+        """
+        if not hasattr(self,'_lang'):
+            self._lang = 'sv'
+        return self._lang
+    @lang.setter
+    def lang(self,value):
+        self._lang = value
+
+    @property
     def preserve_rtlfiles(self):  
         """True | False (default)
 
@@ -203,11 +215,9 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_simtb'):
             if self.model == 'icarus':
-                return self.icarus_simtb
-            elif self.model == 'sv':
-                return self.questasim_simtb
-            elif self.model == 'vhdl':
-                return self.questasim_simtb
+                self._simtb = self.icarus_simtb
+            elif self.model == 'sv' or self.model=='vhdl':
+                self._simtb = self.questasim_simtb
         return self._simtb
 
     @property
@@ -240,7 +250,10 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def rtlparameters(self): 
         '''Dictionary of parameters passed to the simulator 
-        during the simulation invocation
+        during the simulation invocation.
+
+        Example:
+        {'name' : (type,value) }
 
         '''
         if not hasattr(self, '_rtlparameters'):
@@ -344,9 +357,9 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             if self.model == 'icarus':
                 return self.icarus_rtlcmd
             elif self.model=='sv':
-                return self.questasim_svcmd
+                return self.questasim_rtlcmd
             elif self.model=='vhdl':
-                return self.questasim_vhdlcmd
+                return self.questasim_rtlcmd
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.model))
         return self._rtlcmd
@@ -470,6 +483,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         elif self.model == 'vhdl':
             vhdlsrc_exists = os.path.isfile(self.vhdlsrc)   # verilog source present in self.entitypath/sv
             simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
+
             if not vhdlsrc_exists and not simdut_exists:
                 self.print_log(type='F', msg="Missing vhdl source for 'vhdl' model at: %s" % self.vlogsrc)
             # vhdlsrc exists, simdut doesn't exist => copy vhdlsrc to simdut
@@ -619,12 +633,11 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._read_state()
         else:
             self.copy_rtl_sources()
-            self.tb=vtb(self)             
+            self.tb=vtb(parent=self,lang=self.lang)             
             self.tb.define_testbench()    
             self.add_connectors()
             self.create_connectors()
             self.connect_inputs()         
-
             if hasattr(self,'define_io_conditions'):
                 self.define_io_conditions()   # Local, this is dependent on how you
                                               # control the simulation

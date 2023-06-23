@@ -10,7 +10,8 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
     @property
     def icarus_rtlcmd(self):
         submission=self.lsf_submission
-        os.mkdir(self.rtlworkpath)
+        if not os.path.exists(self.rtlworkpath):
+            os.mkdir(self.rtlworkpath)
         vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
@@ -21,8 +22,10 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
 
         vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name
     	            + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
-        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
+        gstring = ' '.join([ 
+                                ('-g ' + str(param) +'='+ str(val[1])) 
+                                for param,val in self.rtlparameters.items() 
+                            ])
         vlogsimargs = ' '.join(self.vlogsimargs)
 
         fileparams=''
