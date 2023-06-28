@@ -3,26 +3,29 @@
 RTL IOfile module 
 ======================
 
-Provides verilog- file-io related attributes and methods 
+Provides Verilog- and VHDL file-io related attributes and methods 
 for TheSyDeKick RTL intereface.
 
-Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
-Yue Dai, 2018
-
+Restructured from verilog_iofile by Marko Kosunen, marko.kosunen@aalto.fi 2023
 """
 import os
 import sys
+import pdb
 from abc import * 
 from thesdk import *
 from thesdk.iofile import iofile
 import numpy as np
 import pandas as pd
 import sortedcontainers as sc
+from rtl.rtl_iofile_common import rtl_iofile_common
+from rtl.sv.verilog_iofile import verilog_iofile
+from rtl.sv.verilog_iofile_obsoletes import verilog_iofile_obsoletes
+from rtl.vhdl.vhdl_iofile import vhdl_iofile
 from rtl.connector import indent
 
-class rtl_iofile(iofile):
+class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     '''
-    Class to provide file IO for verilog simulations. When created, 
+    Class to provide file IO for rtl simulations. When created, 
     adds a rtl_iofile object to the parents iofile_bundle attribute.
     Accessible as self.iofile_bundle.Members['name'].
 
@@ -55,32 +58,45 @@ class rtl_iofile(iofile):
                 ioformat : str, %d
                    sets the ioformat attribute.
         '''
-        #This is a redundant check, but doens not hurt.to have it here too.
+        #This is a redundant check, but does not hurt.to have it here too.
         if parent==None:
-            self.print_log(type='F', msg="Parent of Verilog input file not given")
+            self.print_log(type='F', msg="Parent of RTL input file not given")
         try:  
-            super(rtl_iofile,self).__init__(parent=parent,**kwargs)
+            super(rtl_iofile_common,self).__init__(parent=parent,**kwargs)
+            self.rtlparent=parent
             self.paramname=kwargs.get('param','-g g_file_')
 
             self._ioformat=kwargs.get('ioformat','%d') #by default, the io values are decimal integer numbers
 
         except:
-            self.print_log(type='F', msg="Verilog IO file definition failed")
+            self.print_log(type='F', msg="RTL IO file definition failed")
 
         self._DictData = None  # data structure for event-based IO data
 
-
-    #Overload from iofile package
     @property
-    def file(self):
-        ''' Name of the IO file to be read or written.
+    def langmodule(self):
+        if not hasattr(self,'_langmodule_verilog'):
+            self._langmodule_verilog = verilog_iofile(self)
+            self._langmodule_verilog.file=self.file
+            self._langmodule_verilog.paramname=self.paramname
+            self._langmodule_verilog.name=self.name
+        if not hasattr(self,'_langmodule_vhdl'):
+            self._langmodule_vhdl = vhdl_iofile(self)
+            self._langmodule_vhdl.file=self.file
+            self._langmodule_vhdl.paramname=self.paramname
+            self._langmodule_vhdl.name=self.name
+        if self.parent.lang=='sv': 
+            return self._langmodule_verilog
+        elif self.parent.lang=='vhdl': 
+            return self._langmodule_vhdl
+    @property
+    def rtl_timescale(self):
+        ''' Timescale for RTL simulations inherited from parent
 
         '''
-        if not hasattr(self,'_file'):
-            self._file=self.parent.simpath +'/' + self.name \
-                    + '_' + self.rndpart +'.txt'
-        return self._file
-
+        if not hasattr(self,'_rtl_timescale'):
+            self._rtl_timescale = self.parent.rtl_timescale
+        return self._rtl_timescale
 
     @property
     def ioformat(self):
@@ -89,148 +105,111 @@ class rtl_iofile(iofile):
            integers.
            
         '''
-        if hasattr(self,'_ioformat'):
-            return self._ioformat
-        else:
-            self._ioformat='%d'
-        return self._ioformat
+        return self.langmodule.ioformat
     
     @ioformat.setter
     def ioformat(self,value):
-        self._ioformat=value
-
-    @property
-    def simparam(self):
-        ''' String definition for parameter to be passed to the simulator
-        as a command line argument
-
-        '''
-        self._simparam=self.paramname \
-            + self.name + '=' + self.file
-        return self._simparam
+        self.langmodule.ioformat=value
 
     @property
     def rtlparam(self):
         '''Extracts the parameter name and value from simparam attribute. 
         Used to construct the parameter definitions for Verilog testbench. 
 
-        Default {'g_file_<self.name>', self.file }
+        Default {'g_file_<self.name>', ('string',self.file) }
 
         '''
-        if not hasattr(self,'_rtlparam'):
-            key=re.sub(r"-g ",'',self.simparam).split('=')[0]
-            val=re.sub(r"-g ",'',self.simparam).split('=')[1]
-            self._rtlparam={key:'\"%s\"'%(val)}
-        return self._rtlparam
+        #This should be simulators, not lang dependent.
+        return self.langmodule.rtlparam
     
     # Status parameter
     @property
-    def verilog_stat(self):
+    def rtl_stat(self):
         '''Status variable name to be used in verilog testbench.
 
         '''
-        if not hasattr(self,'_verilog_stat'):
-            self._verilog_stat='status_%s' %(self.name)
-        return self._verilog_stat
+        return self.langmodule.rtl_stat
 
-    @verilog_stat.setter
-    def verilog_stat(self,value):
-        self._verilog_stat=value
+    @rtl_stat.setter
+    def rtl_stat(self,value):
+        self.langmodule.rtl_stat=value
 
     #Timestamp integers for control files
     @property
-    def verilog_ctstamp(self):
+    def rtl_ctstamp(self):
         '''Current time stamp variable name to be used in verilog testbench.
         Used in event type file IO.
 
         '''
-        if not hasattr(self,'_verilog_ctstamp'):
-            self._verilog_ctstamp='ctstamp_%s' %(self.name)
-        return self._verilog_ctstamp
+        return self.langmodule.rtl_ctstamp
+
     @property
-    def verilog_ptstamp(self):
+    def rtl_pstamp(self):
         '''Past time stamp variable for verilog testbench. Used in event type file IO.
 
         '''
-        if not hasattr(self,'_verilog_ptstamp'):
-            self._verilog_ptstamp='ptstamp_%s' %(self.name)
-        return self._verilog_ptstamp
+        return self.langmodule.rtl_pstamp
+
     @property
-    def verilog_tdiff(self):
+    def rtl_tdiff(self):
         '''Verilog time differencec variable. Used in event based file IO.
         '
         '''
-        if not hasattr(self,'_verilog_diff'):
-            self._verilog_tdiff='tdiff_%s' %(self.name)
-        return self._verilog_tdiff
+        return self.langmodule.rtl_tdiff
     
 
     # Status integer verilog definitions
     @property
-    def verilog_statdef(self):
+    def rtl_statdef(self):
         '''Verilog file read status integer variable definitions and initializations strings.
 
         '''
-        if self.iotype=='sample':
-            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
-        elif self.iotype=='event':
-            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
-            self._verilog_statdef+='time %s, %s, %s;\n' %(self.verilog_ctstamp, self.verilog_ptstamp, self.verilog_tdiff)
-            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
-            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ptstamp) 
-            for connector in self.verilog_connectors:
-                self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
-        return self._verilog_statdef
+        return self.langmodule.rtl_statdef
+
+    #Status integer verilog definitions
 
     # File pointer
     @property
-    def verilog_fptr(self):
+    def rtl_fptr(self):
         '''Verilog file pointer name.
 
         '''
-        self._verilog_fptr='f_%s' %(self.name)
-        return self._verilog_fptr
+        return self.langmodule.rtl_fptr
 
-    @verilog_fptr.setter
-    def verilog_fptr(self,value):
-        self._verilog_fptr=value
+    @rtl_fptr.setter
+    def rtl_fptr(self,value):
+        self.langmodule.rtl_fptr=value
 
     # File opening, direction dependent 
     @property
-    def verilog_fopen(self):
+    def rtl_fopen(self):
         '''Verilog file open routine string.
 
         '''
-        if self.dir=='in':
-            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
-        if self.dir=='out':
-            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.rtlparam)))
-        return self._verilog_fopen
+        return self.langmodule.rtl_fopen
 
     # File close
     @property
-    def verilog_fclose(self):
+    def rtl_fclose(self):
         '''Verilog file close routine sting.
 
         '''
-        self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
-        return self._verilog_fclose
-    
+        return self.langmodule.rtl_fclose
     @property
-    def verilog_connectors(self):
+    def rtl_connectors(self):
         ''' List for verilog connectors.
         These are the verilog signals/regs associated with this file
 
         '''
-        if not hasattr(self,'_verilog_connectors'):
-            self._verilog_connectors=[]
-        return self._verilog_connectors
+        if not hasattr(self,'_rtl_connectors'):
+            self._rtl_connectors=[]
+        return self._rtl_connectors
 
-    @verilog_connectors.setter
-    def verilog_connectors(self,value):
+    @rtl_connectors.setter
+    def rtl_connectors(self,value):
         #Ordered list.
-        self._verilog_connectors=value
-
+        self._rtl_connectors=value
+    
     def connector_datamap(self,**kwargs):
         '''Verilog_connectors is an ordered list. Order defines the assumed order of columns in the 
         file to be read or written. 
@@ -239,7 +218,7 @@ class rtl_iofile(iofile):
 
         '''
         name=kwargs.get('name')
-        if not self._verilog_connectors:
+        if not self.rtl_connectors:
             self.print_log(type='F', msg='Connector undefined, can\'t access.')
         else:
             if self.iotype=='sample':
@@ -247,7 +226,7 @@ class rtl_iofile(iofile):
             elif self.iotype=='event':
                 self._verilog_connector_datamap={'time':0}
             index=0
-            for val in self.verilog_connectors:
+            for val in self.rtl_connectors:
                 index+=1
                 self._verilog_connector_datamap.update({'%s' %(val.name): index})
         return self._verilog_connector_datamap[name]
@@ -264,7 +243,7 @@ class rtl_iofile(iofile):
             name: str
             val: type undefined
             init: int, 0
-            vector of values to initialize the data. lenght should correpond to `self.verilog_connectors+1`
+            vector of values to initialize the data. lenght should correpond to `self.rtl_connectors+1`
 
         '''
         time=kwargs.get('time',int(0))
@@ -279,8 +258,8 @@ class rtl_iofile(iofile):
         if self.DictData is None:
             self.DictData = sc.SortedDict()
             if np.isscalar(init):
-                self.DictData[0] = (np.ones(len(self._verilog_connectors))*init).astype(int)
-            elif init.shape[1] == len(self._verilog_connectors)+1:
+                self.DictData[0] = (np.ones(len(self.rtl_connectors))*init).astype(int)
+            elif init.shape[1] == len(self.rtl_connectors)+1:
                 init_array = init.astype(int)
                 for row in init_array:
                     self.DictData[row[0]] = row[1:]
@@ -291,7 +270,7 @@ class rtl_iofile(iofile):
             # add a new row if the time is not yet in the dictionary
             if time not in self.DictData:
                 # init diff as no change
-                self.DictData[time] = [None for _ in range(len(self._verilog_connectors))]
+                self.DictData[time] = [None for _ in range(len(self.rtl_connectors))]
 
             # change corresponding value
             self.DictData[time][self.connector_datamap(name=name)-1] = val
@@ -354,50 +333,19 @@ class rtl_iofile(iofile):
 
     # Condition string for monitoring if the signals are unknown
     @property 
-    def verilog_io_condition(self):
-        '''Verilog condition string that must be true in ordedr to file IO read/write to occur.
-
-        Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
-        Default for input file: `'1'` 
-        file is always read with rising edge of the clock or in the time of an event defined in the file.
+    def rtl_io_condition(self):
+        '''Condition string that must be true in order to file IO read/write to occur.
+        See langmodules for details.
 
         '''
-        if not hasattr(self,'_verilog_io_condition'):
-            if self.dir=='out':
-                first=True
-                for connector in self.verilog_connectors:
-                    if first:
-                        self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
-                        first=False
-                    else:
-                        self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
-                                %(self._verilog_io_condition,connector.name)
-            elif self.dir=='in':
-                self._verilog_io_condition= ' 1 '
-        return self._verilog_io_condition
+        return self.langmodule.rtl_io_condition
 
-    @verilog_io_condition.setter
-    def verilog_io_condition(self,value):
-        self._verilog_io_condition=value
+    @rtl_io_condition.setter
+    def rtl_io_condition(self,value):
+        self.langmodule.rtl_io_condition=value
 
-    @property 
-    def verilog_io_sync(self):
-        '''File io synchronization condition for sample type input.
-        Default: `@(posedge clock)`
-
-        '''
-
-        if not hasattr(self,'_verilog_io_sync'):
-            if self.iotype=='sample':
-                self._verilog_io_sync= '@(posedge clock)\n'
-        return self._verilog_io_sync
-
-    @verilog_io_sync.setter
-    def verilog_io_sync(self,value):
-        self._verilog_io_sync=value
-
-    def verilog_io_condition_append(self,**kwargs ):
-        '''Append new condition string to `verilog_io_condition`
+    def rtl_io_condition_append(self,**kwargs ):
+        '''Append new condition string to `rtl_io_condition`
 
         Parameters
         ----------
@@ -405,14 +353,35 @@ class rtl_iofile(iofile):
            cond : str
 
         '''
-        cond=kwargs.get('cond', '')
-        if not (not cond ):
-            self._verilog_io_condition='%s \n%s' \
-            %(self.verilog_io_condition,cond)
+        pdb.set_trace()
+        self.langmodule.rtl_io_condition_append(**kwargs)
+
+    @property 
+    def rtl_io_sync(self):
+        '''File io synchronization condition for sample type input.
+        Default: `@(posedge clock)`
+
+        '''
+        return self.langmodule.rtl_io_sync
+
+    @rtl_io_sync.setter
+    def rtl_io_sync(self,value):
+        self.langmodule.rtl_io_sync=value
+
+    def rtl_io_condition_append(self,**kwargs ):
+        '''Append new condition string to `rtl_io_condition`
+
+        Parameters
+        ----------
+        **kwargs :
+           cond : str
+
+        '''
+        self.langmodule.rtl_io_condition_append(**kwargs)
 
 
     @property
-    def verilog_io(self,**kwargs):
+    def rtl_io(self,**kwargs):
         '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
 
         Returns 
@@ -422,74 +391,4 @@ class rtl_iofile(iofile):
 
 
         '''
-        first=True
-        if self.iotype=='sample':
-            if self.dir=='out':
-                self._verilog_io='always '+self.verilog_io_sync +'begin\n'
-                self._verilog_io+=indent(text='if ( %s ) begin\n' %(self.verilog_io_condition), level=1)
-                self._verilog_io+=indent(text='$fwrite(%s, ' %(self.verilog_fptr), level=2)
-            elif self.dir=='in':
-                self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
-                self._verilog_io+=indent(text='%s' %self.verilog_io_sync, level=0)
-                self._verilog_io+=indent(text='if ( %s ) begin\n' %self.verilog_io_condition, level=1)
-                self._verilog_io+=indent(text='%s = $fscanf(%s, ' \
-                        %(self.verilog_stat, self.verilog_fptr), level=2)
-            for connector in self.verilog_connectors:
-                if first:
-                    iolines='%s' %(connector.name)
-                    format='\"%s' %(connector.ioformat)
-                    first=False
-                else:
-                    iolines='%s,\n%s' %(iolines,connector.name)
-                    format='%s\\t%s' %(format,connector.ioformat)
-
-            format=format+'\\n\",\n'
-            self._verilog_io+=indent(text=format+iolines+'\n);',level=2)+indent(text='end', level=1)+indent(text='end', level=0)
-
-        #Control files are handled differently
-        elif self.iotype=='event':
-            if self.dir=='out':
-                self.print_log(type='F', msg='Output writing for control files not supported')
-            elif self.dir=='in':
-                self._verilog_io='begin\nwhile(!$feof(%s)) begin\n    ' \
-                        %(self.verilog_fptr)
-                self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
-                        %(self.verilog_tdiff,
-                        self.verilog_ctstamp, self.verilog_ptstamp,
-                        self.verilog_tdiff)    
-
-                # Every control file requires status, diff, current_timestamp 
-                # and past timestamp
-                self._verilog_io+='    %s = %s;\n    ' \
-                        %(self.verilog_ptstamp, self.verilog_ctstamp)
-
-                for connector in self.verilog_connectors:
-                    self._verilog_io+='    %s = buffer_%s;\n    ' \
-                            %(connector.name,connector.name)
-
-                self._verilog_io+='    %s = $fscanf(%s, ' \
-                        %(self.verilog_stat,self.verilog_fptr)
-
-            #The first column is timestap
-            iolines='            %s' %(self.verilog_ctstamp) 
-            format='\"%d'
-            for connector in self.verilog_connectors:
-                iolines='%s,\n            buffer_%s' \
-                        %(iolines,connector.name)
-                format='%s\\t%s' %(format,connector.ioformat)
-            format=format+'\\n\",\n'
-            self._verilog_io+=format+iolines+'\n        );\n    end\nend\n'
-
-            #Repeat the last assignment outside the loop
-            self._verilog_io+='%s = %s-%s;\n#%s begin\n' %(self.verilog_tdiff,
-                    self.verilog_ctstamp, self.verilog_ptstamp,self.verilog_tdiff)    
-            self._verilog_io+='    %s = %s;\n' %(self.verilog_ptstamp,
-                    self.verilog_ctstamp)
-            for connector in self.verilog_connectors:
-                self._verilog_io+='    %s = buffer_%s;\n' \
-                %(connector.name,connector.name)
-            self._verilog_io+='end\nend\n'
-        else:
-            self.print_log(type='F', msg='Iotype not defined')
-        return self._verilog_io
-
+        return self.langmodule.rtl_io

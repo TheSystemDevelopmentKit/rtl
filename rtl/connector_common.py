@@ -16,7 +16,7 @@ class connector_common(thesdk):
         name : str
         cls : str, input | output | inout | reg | wire
             Default ''
-        type: str, signed (if not unsigned)
+        type: str, For verilog: signed, unsigned for VHDL: std_logic, std_logic-vector
             Default ''
         ll: int, Left limit of a signal bus
             Default: 0
@@ -32,11 +32,26 @@ class connector_common(thesdk):
         """
         self.name=kwargs.get('name','')
         self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
-        self.type=kwargs.get('type','') # signed
-        self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
-        self.rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
+        self._ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
+        self._rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
         self.init=kwargs.get('init','') # Initial value
         self.connect=kwargs.get('connect',None) # Can be another connector, would be recursive
+        self.lang=kwargs.get('lang','sv')
+
+    @property
+    def lang(self):
+        '''Description language used.
+
+        Default: `sv`
+
+        '''
+        if not hasattr(self,'_lang'):
+            self._lang='sv'
+        return self._lang
+
+    @lang.setter
+    def lang(self,value):
+            self._lang=value
 
     @property
     def width(self):
@@ -49,36 +64,47 @@ class connector_common(thesdk):
         return self._width
 
     @property
-    def definition(self):
-        if self.width==1:
-            self._definition='%s %s;\n' %(self.cls, self.name)
-        elif self.type:
-            self._definition='%s %s [%s:%s] %s;\n' %(self.cls, self.type, self.ll, self.rl, self.name)
+    def ll(self):
+        ''' Left (usually upper) limit of the connector bus: int | str (for parametrized bounds)
+
+        Strings that evaluate to integers are automatically evaluated.
+        
+        '''
+            
+        if not hasattr(self,'_ll'):
+            self._ll = 0
+        return self._ll
+    @ll.setter
+    def ll(self,value):
+        if type(value) == str:
+            #Try to evaluate string
+            try:
+                self._ll = eval(value)
+            except:
+                self._ll = value
         else:
-            self._definition='%s [%s:%s] %s;\n' %(self.cls, self.ll, self.rl, self.name)
-        return self._definition
-    
-    def assignment(self,**kwargs):
-        self._assignment='assign %s = %s;\n' %(self.name,self.connect.name)
-        return self._assignment
+            self._ll = value
+        return self._ll
+    @property
+    def rl(self):
+        ''' Right /usuarly lower) limit of the connector bus: int | str (for parametrized bounds)
 
-    def nbassign(self,**kwargs):
-        time=kwargs.get('time','')
-        value=kwargs.get('value',self.connect.name)
-        if time:
-            return '%s = #%s %s;\n' %(self.name,time, value)
+        Strings that evaluate to integers are automaticarly evaluated.
+        
+        '''
+            
+        if not hasattr(self,'_rl'):
+            self._rl=0
+        return self._rl
+    @rl.setter
+    def rl(self,value):
+        if type(value) == str:
+            #Try to evaluate string
+            try:
+                self._rl = eval(value)
+            except:
+                self._rl = value
         else:
-            return '%s = %s;\n' %(self.name, value)
-
-    def bassign(self):
-        time=kwargs.get('time','')
-        value=kwargs.get('value',self.connect.name)
-        if time:
-            return '%s <= #%s %s;\n' %(self.name,time, value)
-        else:
-            return '%s <= %s;\n' %(self.name, value)
-
-
-if __name__=="__main__":
-    pass
+            self._rl = value
+        return self._rl
 

@@ -10,7 +10,7 @@ import os
 from thesdk import *
 from rtl.connector_common import connector_common
 
-class verilog_connector(connector_common,thesdk):
+class vhdl_connector(connector_common,thesdk):
     def __init__(self, **kwargs):
         ''' Executes init of connector_common, thus having the same attributes and 
         parameters.
@@ -22,39 +22,35 @@ class verilog_connector(connector_common,thesdk):
         
         '''
         super().__init__(**kwargs)
-        #This internal attribute is needed to avoid recursive definition of 'type'
-        self._type=kwargs.get('type', 'signed' ) # Depends on language
-
+        self._type=kwargs.get('type', 'std_logic_vector' ) # Depends on language
     @property
     def type(self):
-        # We must handle parametrized widths
         if not hasattr(self, '_type'):
             if type(self.width) == str:
-                self._type = 'signed'
+                self._type = 'std_logic_vector'
             elif self.width == 1:
-                self._type = None
+                self._type = 'std_logic'
             elif self.width > 1:
                 self._type = 'signed'
+                self._type = 'std_logic_vector'
         else:
-            if type(self.width) == str and self._type != 'signed':
-                self.print_log(type='I', msg='Setting type \'%s\' to type \'signed\' due to parametrized width ' %(self._type))
-                self._type = 'signed'
-            elif self.width == 1 and self._type != 'signed':
-                pass
-            elif self.width > 1 and self._type != 'signed':
-                self.print_log(type='I', msg='Setting type \'%s\' of signal \'%s\' to type \'signed\'' %(self._type,self.name))
-                self._type = 'signed'
+            if self.width == 1 and self._type != 'std_logic':
+                self.print_log(type='I', msg='Converting type \'%s\' to type \'std_logic\' for VHDL simulations ' %(self._type))
+                self._type = 'std_logic'
+            elif self.width > 1 and self._type != 'std_logic_vector':
+                self.print_log(type='I', msg='Converting type \'%s\' to type \'std_logic_vector\' for VHDL simulations ' %(self._type))
+                self._type = 'std_logic_vector'
         return self._type
     @type.setter
     def type(self,value):
        self._type = value
+
 
     @property
     def ioformat(self):
         if not hasattr(self, '_ioformat') or self._ioformat == None:
             self._ioformat='%d' #Language specific formatting
         return self._ioformat
-
     @ioformat.setter
     def ioformat(self,value):
         self._ioformat = value
@@ -62,20 +58,30 @@ class verilog_connector(connector_common,thesdk):
     @property
     def definition(self):
         if self.width==1:
-            self._definition='%s %s;\n' %(self.cls, self.name)
-        elif self.type:
-            self._definition='%s %s [%s:%s] %s;\n' %(self.cls, self.type, self.ll, self.rl, self.name)
+            if not self.type:
+                self.type='std_logic'
+            if not self.init:
+                self._definition='signal %s :  %s;\n' %(self.name, self.type,)
+            else:
+                self._definition='signal %s :  %s := %s;\n' %(self.name, self.type,self.init)
+
         else:
-            self._definition='%s [%s:%s] %s;\n' %(self.cls, self.ll, self.rl, self.name)
+            if not self.type:
+                self.type='std_logic_vector'
+            if not self.init:
+                self._definition='signal %s : %s(%s downto %s);\n' %(self.name, self.type, self.ll, self.rl)
+            else:
+                self._definition='signal %s : %s(%s downto %s) := %s ;\n' %(self.name, self.type, self.ll, self.rl, self.init)
         return self._definition
 
     @property
     def initialization(self):
-        return '%s = %s;\n' %(self.name,self.init)
+        self.print_log(type='W', msg='Initialization is not effective for VHDL')
+        return ''
     
     @property
     def assignment(self,**kwargs):
-        self._assignment='assign %s = %s;\n' %(self.name,self.connect.name)
+        self._assignment='%s <= %s;\n' %(self.name,self.connect.name)
         return self._assignment
 
     def nbassign(self,**kwargs):

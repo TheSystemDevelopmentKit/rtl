@@ -15,8 +15,7 @@ import os
 from thesdk import *
 from rtl import *
 from copy import deepcopy
-from rtl.sv.verilog_connector import verilog_connector
-from rtl.connector import rtl_connector_bundle
+from rtl.connector import *
 from rtl.module_common import module_common
 
 class verilog_module(module_common,thesdk):
@@ -106,7 +105,7 @@ class verilog_module(module_common,thesdk):
                     port_list = module_match.group(2).split(',')
                     for port in port_list:
                         port_match = re.search(port_regex, port)
-                        signal=verilog_connector()
+                        signal=rtl_connector(lang='sv')
                         signal.cls=port_match.group(1)
                         if port_match.group(3) is not None:
                             signal.ll=port_match.group(4)
@@ -261,6 +260,18 @@ class verilog_module(module_common,thesdk):
         return self._io_signals
 
     @property
+    def header(self):
+        """Header configuring the e.g. libraries if needed"""
+        if not hasattr(self,'_header'):
+            self._header=''
+        return self._header
+    @header.setter
+    def header(self,value):
+        if not hasattr(self,'_header'):
+            self._header=value
+
+
+    @property
     def definition(self):
         '''Module definition part extracted for the file. Contains parameters and 
         IO definitions.
@@ -272,11 +283,14 @@ class verilog_module(module_common,thesdk):
                 parameters=''
                 first=True
                 for name, val in self.parameters.Members.items():
+                    if type(val) is not tuple:
+                        self.print_log(type='F', msg='Parameter %s must be defined as {\'<name>\': (\'<type>\',value)}' %(name))
+
                     if first:
-                        parameters='#(\n    parameter %s = %s' %(name,val)
+                        parameters='#(\n    parameter %s = %s' %(name,val[1])
                         first=False
                     else:
-                        parameters=parameters+',\n    parameter %s = %s' %(name,val)
+                        parameters=parameters+',\n    parameter %s = %s' %(name,val[1])
                 parameters=parameters+'\n)'
                 self._definition='module %s %s' %(self.name, parameters)
             else:
@@ -307,7 +321,7 @@ class verilog_module(module_common,thesdk):
     # Instance is defined through the io_signals
     # Therefore it is always regenerated
     @property
-    def instance(self):
+    def verilog_instance(self):
         '''Instantioation string of the module. Can be used inside of the other modules.
 
         '''
@@ -345,7 +359,7 @@ class verilog_module(module_common,thesdk):
 
     #Methods
     def export(self,**kwargs):
-        '''Method to export the module to a given file.
+        '''Method to export the module. Exports self.headers+self.definition to a given file.
 
         Parameters
         ----------
@@ -365,7 +379,7 @@ class verilog_module(module_common,thesdk):
         elif kwargs.get('force'):
             self.print_log(msg='Forcing overwrite of verilog_module to %s.' %(self.file))
             with open(self.file, "w") as module_file:
-                module_file.write(self.definition)
+                module_file.write(self.header+self.definition)
 
 
 if __name__=="__main__":

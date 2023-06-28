@@ -2,10 +2,10 @@
 ===========
 RTL package
 ===========
-Simulation interface package for The System Development Kit 
+Simulation interface package for The System Development Kit
 
-Provides utilities to import verilog modules and VHDL entities to 
-python environment and sutomatically generate testbenches for the 
+Provides utilities to import verilog modules and VHDL entities to
+python environment and sutomatically generate testbenches for the
 most common simulation cases.
 
 Initially written by Marko Kosunen, 2017
@@ -15,7 +15,7 @@ import os
 import sys
 import subprocess
 import shlex
-from abc import * 
+from abc import *
 from thesdk import *
 import numpy as np
 import pandas as pd
@@ -29,23 +29,42 @@ from rtl.sv.sv import sv as sv
 from rtl.vhdl.vhdl import vhdl as vhdl
 from rtl.icarus.icarus import icarus as icarus
 from rtl.questasim.questasim import questasim as questasim
+from rtl.ghdl.ghdl import ghdl as ghdl
 
-class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
-    """Adding this class as a superclass enforces the definitions 
+class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
+    """Adding this class as a superclass enforces the definitions
     for rtl simulations in the subclasses.
-    
+
     """
 
     def __init__(self):
         pass
 
     @property
-    def preserve_rtlfiles(self):  
+    def lang(self):
+        """ str : Language of the testbench to support multilanguage simulators.
+        Default vhdl | sv (default)
+        """
+        if not hasattr(self,'_lang'):
+            self._lang = 'sv'
+        if self.model == 'icarus' and self._lang != 'sv':
+            self.print_log(t='I', msg='Only verilog supported by Icarus')
+            self._lang = 'sv'
+        elif self.model == 'ghdl' and self._lang != 'vhdl':
+            self.print_log(t='I', msg='Only VHDL supported by GHDL')
+            self._lang = 'vhdl'
+        return self._lang
+    @lang.setter
+    def lang(self,value):
+        self._lang = value
+
+    @property
+    def preserve_rtlfiles(self):
         """True | False (default)
 
         If True, do not delete testbench and copy of DUT after simulations. Useful for
         debugging testbench generation.
-        
+
         """
         if not hasattr(self,'_preserve_rtlfiles'):
             self._preserve_rtlfiles=False
@@ -57,7 +76,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def interactive_rtl(self):
         """ True | False (default)
-        
+
         Launch simulator in local machine with GUI."""
 
         if not hasattr(self,'_interactive_rtl'):
@@ -66,15 +85,15 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @interactive_rtl.setter
     def interactive_rtl(self,value):
         self._interactive_rtl=value
-    
-    @property 
+
+    @property
     def lsf_submission(self):
         """
         Defines submission prefix from thesdk.GLOBALS['LSFSUBMISSION'].
-        [ ToDo ] Transfer definition to thesdk entity. 
+        [ ToDo ] Transfer definition to thesdk entity.
 
         Usually something like 'bsub -K'
-        
+
         """
         if not hasattr(self, '_lsf_submission'):
             if self.has_lsf:
@@ -107,7 +126,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         return self._name
 
     @property
-    def rtlmisc(self): 
+    def rtlmisc(self):
         """List<String>
 
         List of manual commands to be pasted to the testbench. The strings are
@@ -125,7 +144,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._rtlmisc = []
         return self._rtlmisc
     @rtlmisc.setter
-    def rtlmisc(self,value): 
+    def rtlmisc(self,value):
             self._rtlmisc = value
 
     @property
@@ -189,6 +208,8 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self._simdut = self.questasim_simdut
             elif self.model == 'vhdl':
                 self._simdut = self.questasim_simdut
+            elif self.model == 'ghdl':
+                self._simdut = self.ghdl_simdut
             else:
                 self.print_log(type='F', msg='Unsupported model %s' % self.model)
         return self._simdut
@@ -203,11 +224,11 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_simtb'):
             if self.model == 'icarus':
-                return self.icarus_simtb
-            elif self.model == 'sv':
-                return self.questasim_simtb
-            elif self.model == 'vhdl':
-                return self.questasim_simtb
+                self._simtb = self.icarus_simtb
+            elif self.model == 'sv' or self.model=='vhdl':
+                self._simtb = self.questasim_simtb
+            elif self.model == 'ghdl':
+                self._simtb = self.ghdl_simtb
         return self._simtb
 
     @property
@@ -238,9 +259,12 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='W',msg='Could not remove %s' %self.rtlworkpath)
 
     @property
-    def rtlparameters(self): 
-        '''Dictionary of parameters passed to the simulator 
-        during the simulation invocation
+    def rtlparameters(self):
+        '''Dictionary of parameters passed to the simulator
+        during the simulation invocation.
+
+        Example:
+        {'name' : (type,value) }
 
         '''
         if not hasattr(self, '_rtlparameters'):
@@ -248,10 +272,10 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         return self._rtlparameters
 
     @rtlparameters.setter
-    def rtlparameters(self,value): 
+    def rtlparameters(self,value):
             self._rtlparameters = value
     @rtlparameters.deleter
-    def rtlparameters(self): 
+    def rtlparameters(self):
             self._rtlparameters = None
 
     @property
@@ -272,14 +296,84 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 run -all
                 wave zoom full
             """
-        
+
         '''
         if not hasattr(self, '_interactive_control_contents'):
             self._interactive_control_contents = ''
         return self._interactive_control_contents
     @interactive_control_contents.setter
-    def interactive_control_contents(self,value): 
+    def interactive_control_contents(self,value):
         self._interactive_control_contents = value
+
+    @property
+    def simulator_control_contents(self):
+        ''' Content of the simulator rtl control file.
+
+        If this property is set, a new controlfile is written to the simulation
+        path. This takes precedence over the file pointed by
+        `simulator_controlfile`.
+
+        For example, the contents can be defined in the top testbench as::
+
+            self.simulator_control_contents="""
+            # Path format for signals in entities :
+            /top/sub/clock
+            """
+
+        '''
+        if not hasattr(self, '_simulator_control_contents'):
+            self._simulator_control_contents = ''
+        return self._simulator_control_contents
+
+    @simulator_control_contents.setter
+    def simulator_control_contents(self,value):
+        self._simulator_control_contents = value
+
+    @property
+    def simulator_controlfile(self):
+        ''' Path to simulator control file.
+
+        Different simulators use different ways to control the simulation. In simulators
+        with integrated waveform viewer, there is only one control,file e.g 'dofile' and
+        Questasim . Other option, for example used with GHDL is to control the simulator with
+        '--read-wave-opt=<file>'. This property provides a method to set that filepath. It is mapped
+        to an argument of a proper option with the simulator specific class.
+
+        The content of the file can be defined in `simulator_control_contents`. If the
+        content is not set in 'simulator_control_contents` -property, the control file
+        read from this file path. Default is set in simulator specific property for each simulator.
+        '''
+        if self.model == 'icarus':
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.icarus_controlfilepaths
+        elif self.model == 'sv':
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.questasim_controlfilepaths
+        elif self.model == 'vhdl':
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.questasim_controlfilepaths
+        elif self.model == 'ghdl':
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.ghdl_controlfilepaths
+        else:
+            self.print_log(type='F', msg='Unsupported model %s' % self.model)
+
+        if not hasattr(self, '_simulator_controlfile'):
+            if not os.path.exists(controlfiledir):
+                self.print_log(type='I',msg='Creating %s' % controlfiledir)
+                os.makedirs(controlfiledir)
+            # Simulator control contents always overrdes the file 
+            if self.simulator_control_contents != '':
+                # Give a warning if default/custom path contains a do-file already
+                if os.path.isfile(controlfile):
+                    self.print_log(type='W',msg='Simulator control file %s ignored and simulator_control_contents used instead.' % controlfile)
+                # Write simulator_control_contents to a temporary file
+                self.print_log(type='I',msg='Writing simulator_control_contents to file %s' % generatedcontrolfile)
+                with open(generatedcontrolfile,'w') as fileptr:
+                    fileptr.write(self.simulator_control_contents)
+                    self._simulator_controlfile = generatedcontrolfile
+            # Use default control file location
+            self._simulator_controlfile = controlfile
+        return self._simulator_controlfile
+    @simulator_controlfile.setter
+    def simulator_controlfile(self,value):
+        self._simulator_controlfile = value
 
     @property
     def interactive_controlfile(self):
@@ -291,47 +385,48 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         `./interactive_control_files/modelsim/dofile.do`.
         '''
         if self.model == 'icarus':
-            (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.icarus_dofilepaths
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.icarus_dofilepaths
         elif self.model == 'sv':
-            (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.questasim_dofilepaths
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.questasim_dofilepaths
         elif self.model == 'vhdl':
-            (dofiledir, dofilepath, obsoletepath, newdofilepath) = self.questasim_dofilepaths
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.questasim_dofilepaths
+        elif self.model == 'ghdl':
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.ghdl_dofilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
-
+        
         if not hasattr(self, '_interactive_controlfile'):
+            # No contents or path given -> use default path (or obsolete path)
+            if os.path.exists(obsoletedofile):
+                self.print_log(type='O',msg='Found obsoleted do-file in %s' % obsoletedofile)
+                self.print_log(type='O',msg='To fix the obsolete warning:')
+                self.print_log(type='O',msg='Move the obsoleted file %s to the default path %s' % (obsoletedofile,dofile))
+                self.print_log(type='O',msg='Or, set a custom do-file path to self.interactive_controlfile.')
+                self.print_log(type='O',msg='Or, define the do-file contents in self.interactive_control_contents in your testbench.')
+                self.print_log(type='O',msg='Using the obsoleted file for now.')
+                self._interactive_controlfile = obsoletedofile
+            else:
+                # Use default do-file location if it exists
+                if os.path.isfile(dofile):
+                    self._interactive_controlfile = dofile
+
             if not os.path.exists(dofiledir):
                 self.print_log(type='I',msg='Creating %s' % dofiledir)
                 os.makedirs(dofiledir)
             # Property interactive_control_contents already given and new temporary
             # file not yet created -> create new file and use that
-            if self.interactive_control_contents != '' and not os.path.isfile(newdofilepath):
-                # Check if a custom file path was given
-                if hasattr(self, '_interactive_controlfile'):
-                    dofilepath = self._interactive_controlfile
+            if self.interactive_control_contents != '':
                 # Give a warning if default/custom path contains a do-file already
-                if os.path.isfile(dofilepath):
-                    self.print_log(type='W',msg='Interactive control file %s ignored and interactive_control_contents used instead.' % dofilepath)
+                if os.path.isfile(dofile):
+                    self.print_log(type='W',msg='Interactive control file %s ignored and interactive_control_contents used instead.' % dofile)
                 # Write interactive_control_contents to a temporary file
-                self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % newdofilepath)
-                with open(newdofilepath,'w') as dofile:
-                    dofile.write(self.interactive_control_contents)
-                self._interactive_controlfile = newdofilepath
-            # No contents or path given -> use default path (or obsolete path)
-            elif os.path.exists(obsoletepath):
-                self.print_log(type='O',msg='Found obsoleted do-file in %s' % obsoletepath)
-                self.print_log(type='O',msg='To fix the obsolete warning:')
-                self.print_log(type='O',msg='Move the obsoleted file %s to the default path %s' % (obsoletepath,dofilepath))
-                self.print_log(type='O',msg='Or, set a custom do-file path to self.interactive_controlfile.')
-                self.print_log(type='O',msg='Or, define the do-file contents in self.interactive_control_contents in your testbench.')
-                self.print_log(type='O',msg='Using the obsoleted file for now.')
-                self._interactive_controlfile = obsoletepath
-            else:
-                # Use default do-file location
-                self._interactive_controlfile = dofilepath
+                self.print_log(type='I',msg='Writing interactive_control_contents to file %s' % generateddofile)
+                with open(generateddofile,'w') as dofileptr:
+                    dofileptr.write(self.interactive_control_contents)
+                    self._interactive_controlfile = generateddofile
         return self._interactive_controlfile
     @interactive_controlfile.setter
-    def interactive_controlfile(self,value): 
+    def interactive_controlfile(self,value):
         self._interactive_controlfile = value
 
     @property
@@ -344,9 +439,11 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             if self.model == 'icarus':
                 return self.icarus_rtlcmd
             elif self.model=='sv':
-                return self.questasim_svcmd
+                return self.questasim_rtlcmd
             elif self.model=='vhdl':
-                return self.questasim_vhdlcmd
+                return self.questasim_rtlcmd
+            elif self.model=='ghdl':
+                return self.ghdl_rtlcmd
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.model))
         return self._rtlcmd
@@ -358,17 +455,17 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @rtlcmd.deleter
     def rtlcmd(self):
         self._rtlcmd=None
-    
+
     def create_connectors(self):
-        '''Creates connector definitions from 
-           1) From a iofile that is provided in the Data 
+        '''Creates connector definitions from
+           1) From a iofile that is provided in the Data
            attribute of an IO.
            2) IOS of the verilog DUT
 
         '''
         #currently only sv connectors are supported
         self.sv_create_connectors()
-               
+
     def connect_inputs(self):
         '''Assigns all IOS.Members[name].Data to
            self.iofile_bundle.Members[ioname].Data
@@ -386,9 +483,9 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     # Define if the signals are signed or not
     # Can these be deducted?
     def format_ios(self):
-        '''Verilog module does not contain information if 
+        '''Verilog module does not contain information if
         the bus is signed or not.
-        Prior to writing output file, the type of the 
+        Prior to writing output file, the type of the
         connecting wire defines how the bus values are interpreted.
 
          '''
@@ -400,7 +497,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                             self.tb.connectors.Members[assocname].type='signed'
                     self.tb.connectors.Members[assocname].ioformat=val.ioformat
             else:
-                self.print_log(type='F', 
+                self.print_log(type='F',
                     msg='List of associated ionames not defined for IO %s\n. Provide it as list of strings' %(ioname))
 
     def copy_or_relink(self,**kwargs):
@@ -456,7 +553,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                     self.copy_or_relink(src=srcfile,dst=dstfile)
 
-            # copy additional VHDL files 
+            # copy additional VHDL files
             for entfile in self.vhdlentityfiles:
                 srcfile = os.path.join(self.vhdlsrcpath, entfile)
                 dstfile = os.path.join(self.rtlsimpath, entfile)
@@ -467,9 +564,10 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.copy_or_relink(src=srcfile,dst=dstfile)
 
         # nothing generates vhdl so simply copy all files to rtlsimpath
-        elif self.model == 'vhdl':
+        elif self.model == 'vhdl' or self.model == 'ghdl':
             vhdlsrc_exists = os.path.isfile(self.vhdlsrc)   # verilog source present in self.entitypath/sv
             simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
+
             if not vhdlsrc_exists and not simdut_exists:
                 self.print_log(type='F', msg="Missing vhdl source for 'vhdl' model at: %s" % self.vlogsrc)
             # vhdlsrc exists, simdut doesn't exist => copy vhdlsrc to simdut
@@ -494,7 +592,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                     self.copy_or_relink(src=srcfile,dst=dstfile)
 
-            # copy additional VHDL files 
+            # copy additional VHDL files
             for entfile in self.vhdlentityfiles:
                 srcfile = os.path.join(self.vhdlsrcpath, entfile)
                 dstfile = os.path.join(self.rtlsimpath, entfile)
@@ -522,14 +620,14 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             count +=1
             if count >filetimeout:
                 self.print_log(type='F', msg='Verilog infile writing timeout')
-            for name, file in self.iofile_bundle.Members.items(): 
+            for name, file in self.iofile_bundle.Members.items():
                 if file.dir=='in':
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
             time.sleep(int(1)) #Wait for one second
 
         #Remove existing output files before execution
-        for name, file in self.iofile_bundle.Members.items(): 
+        for name, file in self.iofile_bundle.Members.items():
             if file.dir=='out':
                 try:
                     #Still keep the file in the infiles list
@@ -555,12 +653,12 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             if count >filetimeout:
                 self.print_log(type='F', msg="Verilog outfile timeout")
             time.sleep(int(1))
-            for name, file in self.iofile_bundle.Members.items(): 
+            for name, file in self.iofile_bundle.Members.items():
                 if file.dir=='out':
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
 
-    
+
     @property
     def assignment_matchlist(self):
         '''List, which signals are connected in assignment stage during testbench generation
@@ -586,14 +684,14 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         self._custom_connectors = bundle
 
     def add_connectors(self):
-        '''Adds custom connectors to the testbench. 
+        '''Adds custom connectors to the testbench.
         Also connects rtl matchlist to testbench matchlist.
         Custom connectors should be saved in self.custom_connectors
-        Matchlist for these connectors should be saved in self.assignment_matchlist 
+        Matchlist for these connectors should be saved in self.assignment_matchlist
         '''
         self.tb.connectors.update(bundle=self.custom_connectors.Members)
         self.tb.assignment_matchlist += self.assignment_matchlist
-    
+
     def run_rtl(self):
         '''1) Copies rtl sources to a temporary simulation directory
            2) Creates a testbench
@@ -606,25 +704,24 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
            9) Exports the testbench to file
            10) Writes input files
            11) Executes the simulation
-           12) Read outputfiles 
+           12) Read outputfiles
            13) Connects the outputs
            14) Cleans up the intermediate files
 
-           You should overload this method while creating the simulation 
+           You should overload this method while creating the simulation
            and debugging the testbench.
 
         '''
-        if self.load_state != '': 
+        if self.load_state != '':
             # Loading a previously stored state
             self._read_state()
         else:
             self.copy_rtl_sources()
-            self.tb=vtb(self)             
-            self.tb.define_testbench()    
+            self.tb=vtb(parent=self,lang=self.lang)
+            self.tb.define_testbench()
             self.add_connectors()
             self.create_connectors()
-            self.connect_inputs()         
-
+            self.connect_inputs()
             if hasattr(self,'define_io_conditions'):
                 self.define_io_conditions()   # Local, this is dependent on how you
                                               # control the simulation
@@ -652,7 +749,7 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         for name, val in self.iofile_bundle.Members.items():
             if val.dir=='in':
                 self.iofile_bundle.Members[name].write()
-    
+
     #This reads all outfiles
     def read_outfile(self):
         '''Reads the oputput files
@@ -669,4 +766,4 @@ class rtl(questasim,icarus,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         for name, val in self.iofile_bundle.Members.items():
             if val.dir=='out':
                 self.IOS.Members[name].Data=self.iofile_bundle.Members[name].Data
-              
+

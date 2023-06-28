@@ -3,6 +3,7 @@
 *.pdf
 *~
 *.swp
+*.swo
 *.nfs
 *.svn
 *.asv

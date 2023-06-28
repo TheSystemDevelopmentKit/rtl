@@ -45,9 +45,27 @@ class testbench_common(module):
         self._parameters=Bundle()
 
     @property
+    def rtl_timescale(self):
+        if not hasattr(self,'_lang'):
+            self._lang=self.parent.lang
+        return self._lang
+    @rtl_timescale.setter
+    def lang(self,val):
+        self._lang = val
+
+    @property
+    def lang(self):
+        if not hasattr(self,'_lang'):
+            self._lang=self.parent.lang
+        return self._lang
+    @lang.setter
+    def lang(self,val):
+        self._lang = val
+
+    @property
     def connectors(self):
         if not hasattr(self,'_connectors'):
-            self._connectors=rtl_connector_bundle()
+            self._connectors=rtl_connector_bundle(lang=self.lang)
         return self._connectors
     @connectors.setter
     def connectors(self,val):
@@ -67,11 +85,23 @@ class testbench_common(module):
 
         """
         if not hasattr(self,'_dut_instance'):
-            if self.parent.model in ['sv', 'icarus']:
+            if self.parent.model == 'icarus':
                 self._dut_instance=verilog_module(**{'file':self._dutfile})
-            elif self.parent.model=='vhdl':
-                self._dut_instance=vhdl_entity(**{'file':self._dutfile})
+            if self.parent.model == 'sv':
+                    self._dut_instance=verilog_module(**{'file':self._dutfile})
+            elif self.parent.model == 'vhdl':
+                    self._dut_instance=vhdl_entity(**{'file':self._dutfile})
+            elif self.parent.model == 'ghdl':
+                    self._dut_instance=vhdl_entity(**{'file':self._dutfile})
+            else:
+                self.print_log(t='F', msg='Mpdel %s not supported' %(self.parent.model))
         return self._dut_instance
+
+    
+    #We should not need this, but it is wise to enable override
+    @dut_instance.setter
+    def dut_instance(self,value):
+        self._dut_instance=value
 
     @property
     def verilog_instances(self):
@@ -111,12 +141,16 @@ class testbench_common(module):
         Code that generates a VCD dumpfile when running the testbench with icarus verilog.
         This dumpfile can be used with gtkwave. 
         """
-        dumpStr="// Generates dumpfile with iverilog\n"
-        if self.parent.model == 'icarus' and self.parent.interactive_rtl:
-            dumpStr += "initial begin\n"
-            dumpStr += '  $dumpfile("' + self.parent.name + '_dump.vcd");\n'
-            dumpStr += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
-        return dumpStr
+
         
+        if self.parent.model == 'icarus' and self.parent.interactive_rtl:
+            dump_str="// Generates dumpfile with iverilog\n"
+            dump_str += "initial begin\n"
+            dump_str += '  $dumpfile("' + self.parent.name + '_dump.vcd");\n'
+            dump_str += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
+        else:
+            dump_str = ''
+        return dump_str
+
 if __name__=="__main__":
     pass

@@ -14,6 +14,14 @@ from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 
 class vhdl(thesdk,metaclass=abc.ABCMeta):
     @property
+    def vhdlsimtb(self):
+        ''' Name of the VHDL testbench
+        '''
+        return self.rtlsimpath + '/tb_' + self.name + self.vhdlext
+
+
+
+    @property
     def vhdlsrcpath(self):
         ''' VHDL search path
             self.entitypath/vhdl
@@ -38,8 +46,23 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_vhdlsrc'):
-            self._vhdlsrc=self.vhdlsrcpath + '/' + self.name + '.vhd'
+            self._vhdlsrc=self.vhdlsrcpath + '/' + self.name + self.vhdlext
         return self._vhdlsrc
+
+    @property
+    def vhdlext(self):
+        ''' File extension for verilog files
+
+            Default is '.vhd', but this can be overridden.
+
+        '''
+        if not hasattr(self, '_vhdlext'):
+            self._vhdlext = '.vhd'
+        return self._vhdlext
+
+    @vhdlext.setter
+    def vhdlext(self, value):
+        self._vhdlext = value
 
     @property
     def vhdlcompargs(self):
@@ -69,4 +92,15 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
     def vhdlentityfiles(self): 
             self._vhdlentityfiles = None 
 
+    @property
+    def vhdlsimargs(self):
+        '''Custom parameters for VHDL simulation
+        Provide as a list of strings
+        '''
+        if not hasattr(self, '_vhdl_sim_args'):
+            self._vhdlsimargs = []
+        return self._vhdlsimargs
+    @vhdlsimargs.setter
+    def vhdlsimargs(self, simparam):
+        self._vhdlsimargs = simparam
 

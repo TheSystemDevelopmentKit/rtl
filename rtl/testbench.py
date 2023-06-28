@@ -14,8 +14,10 @@ Refactored from 'testbench' by Marko Kosunen 20221119, marko.kosunen@aalto.fi
 """
 import os
 import sys
+import pdb
 from rtl.testbench_common import testbench_common
 from rtl.sv.verilog_testbench import verilog_testbench
+from rtl.vhdl.vhdl_testbench import vhdl_testbench
 
 class testbench(testbench_common):
     """ Testbench class. Extends `module` through 'testbench_commom'
@@ -37,20 +39,6 @@ class testbench(testbench_common):
         super().__init__(parent=parent,**kwargs)
 
     @property
-    def lang(self):
-        """Description language used.
-
-        Default: `sv`
-
-        """
-        if not hasattr(self,'_lang'):
-            self._lang='sv'
-        return self._lang
-    @lang.setter
-    def lang(self,value):
-            self._lang=value
-
-    @property
     def langmodule(self):
         """The language specific operation is defined with an instance of 
         language specific class. Properties and methods return values from that class.
@@ -62,10 +50,10 @@ class testbench(testbench_common):
                         file=self.file, name=self.name, 
                         instname=self.instname)
             elif self.lang == 'vhdl':  
-                parent.print_log(type='F', msg='VHDL testbenches not supported')
-                #self._langmodule=vhdl_testbench(
-                #        file=self.file, name=self.name, 
-                #        instname=self.instname)
+                self._langmodule=vhdl_testbench(
+                        parent=self.parent,
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
         return self._langmodule
     @property
     def iofiles(self):
@@ -79,7 +67,7 @@ class testbench(testbench_common):
         """Overload to pass values to langmodule.
         """
         if not hasattr(self.langmodule,'_connectors'):
-            self.langmodule.connectors=rtl_connector_bundle()
+            self.langmodule.connectors=rtl_connector_bundle(lang=self.lang)
         return self.langmodule.connectors
     @connectors.setter
     def connectors(self,val):
@@ -105,23 +93,6 @@ class testbench(testbench_common):
     def content_parameters(self,val):
         self.langmodule.content_parameters=val
 
-    @property
-    def dut_instance(self):
-        """RTL module parsed from the verilog or VHDL file of the parent depending on `parent.model`
-
-        """
-        if not hasattr(self,'_dut_instance'):
-            if self.parent.model in ['sv', 'icarus']:
-                self._dut_instance=verilog_module(**{'file':self._dutfile})
-            elif self.parent.model=='vhdl':
-                self._dut_instance=vhdl_entity(**{'file':self._dutfile})
-        return self._dut_instance
-
-    
-    #We should not need this, but it is wise to enable override
-    @dut_instance.setter
-    def dut_instance(self,value):
-        self._dut_instance=value
 
     @property
     def verilog_instances(self):
@@ -159,6 +130,7 @@ class testbench(testbench_common):
         """Parameter  and variable definition strings of the testbench
 
         """
+
         return self.langmodule.parameter_definitions
     
     @property
@@ -199,6 +171,16 @@ class testbench(testbench_common):
         return self.langmodule.iofile_close
 
     @property
+    def end_condition(self):
+        """ RTL structure that sets the thesdk_simulation_completed to true.
+        Default for VHDL: 'thesdk_simulation_completed <= thesdk_file_io_completed;'
+        """
+        return self.langmodle._end_condition
+    @end_condition.setter
+    def end_condition(self,value):
+        self.langmodule._end_condition = value
+
+    @property
     def misccmd(self):
         """String
         
@@ -213,21 +195,6 @@ class testbench(testbench_common):
     @misccmd.deleter
     def misccmd(self,value):
         self.langmodule.misccmd=None
-
-    @property
-    def dumpfile(self):
-        """String
-        
-        Code that generates a VCD dumpfile when running the testbench with icarus verilog.
-        This dumpfile can be used with gtkwave. 
-        """
-        dumpStr="// Generates dumpfile with iverilog\n"
-        if self.parent.model == 'icarus' and self.parent.interactive_rtl:
-            dumpStr += "initial begin\n"
-            dumpStr += '  $dumpfile("' + self.parent.name + '_dump.vcd");\n'
-            dumpStr += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
-        return dumpStr
-
 
     # This method 
     def define_testbench(self):
@@ -244,7 +211,7 @@ class testbench(testbench_common):
         # See controller.py
         for ioname,val in self.parent.IOS.Members.items():
             if val.iotype != 'file':
-                self.parent.iofile_bundle.Members[ioname].verilog_connectors=\
+                self.parent.iofile_bundle.Members[ioname].rtl_connectors=\
                         self.connectors.list(names=val.ionames)
                 if val.dir == 'in': 
                     # Data must be properly shaped
@@ -254,7 +221,7 @@ class testbench(testbench_common):
                     if val.dir == 'in': 
                         # Adoption transfers parenthood of the files to this instance
                         self.IOS.Members[ioname].Data.Members[bname].adopt(parent=self)
-                    for connector in bval.verilog_connectors:
+                    for connector in bval.rtl_connectors:
                         self.tb.connectors.Members[connector.name]=connector
                         # Connect them to DUT
                         try: 
@@ -267,6 +234,17 @@ class testbench(testbench_common):
         # Define the iofiles of the testbench. '
         # Needed for creating file io routines 
         self.tb.iofiles=self.iofile_bundle
+
+    @property
+    def definition(self):
+        '''Entity definition part extracted for the file. Contains generics and 
+        IO definitions.
+
+        Overloads the property inherited from 'module', as wish to control whan we generate the headers.
+        [TO BE RECONSIDERED]
+        '''
+        self._definition=self.langmodule.header+self.langmodule.definition
+        return self._definition
 
     def generate_contents(self):
         """Call language specific contents generator.

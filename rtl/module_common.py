@@ -122,16 +122,6 @@ class module_common(thesdk):
         '''
         return self.langmodule.definition
 
-    # Instance is defined through the io_signals
-    # Therefore it is always regenerated
-    @property
-    @abstractmethod
-    def instance(self):
-        '''Instantioation string of the module. Can be used inside of the other modules.
-
-        '''
-        return self.langmodule.instance
-
     #Methods
     @abstractmethod
     def export(self,**kwargs):
@@ -145,6 +135,82 @@ class module_common(thesdk):
 
         '''
         self.langmodule.export(force=kwargs.get('force'))
+
+    # Instance is defined through the io_signals
+    # Therefore it is always regenerated
+    @property
+    def verilog_instance(self):
+        '''Instantioation string of the module/entity for use inside of verilog modules.
+
+        '''
+        #First we write the parameter section
+        if self.parameters.Members:
+            parameters=''
+            first=True
+            for name, val in self.parameters.Members.items():
+                if first:
+                    parameters='#(\n    .%s(%s)' %(name,name)
+                    first=False
+                else:
+                    parameters=parameters+',\n    .%s(%s)' %(name,name)
+            parameters=parameters+'\n)'
+            self._verilog_instance='%s  %s %s' %(self.name, parameters, self.instname)
+        else:
+            self._verilog_instance='%s %s ' %(self.name, self.instname)
+        first=True
+        # Then we write the IOs
+        if self.ios.Members:
+            for ioname, io in self.ios.Members.items():
+                if first:
+                    self._verilog_instance=self._verilog_instance+'(\n'
+                    first=False
+                else:
+                    self._verilog_instance=self._verilog_instance+',\n'
+                if io.cls in [ 'input', 'output', 'inout' ]:
+                        self._verilog_instance=(self._verilog_instance+
+                                ('    .%s(%s)' %(io.name, io.connect.name)))
+                else:
+                    self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
+            self._verilog_instance=self._verilog_instance+('\n)')
+        self._verilog_instance=self._verilog_instance+(';\n')
+        return self._verilog_instance
+
+    @property
+    def vhdl_instance(self):
+        '''Instantioation string of the module/entity for use inside of vhdl entities.
+
+        '''
+        #First we write the parameter section
+        if self.parameters.Members:
+            parameters=''
+            first=True
+            for name, val in self.parameters.Members.items():
+                if first:
+                    parameters='generic map(\n    %s => %s' %(name,name)
+                    first=False
+                else:
+                    parameters=parameters+',\n    %s > %s' %(name,name)
+            parameters=parameters+'\n)'
+            self._vhdl_instance='%s  is entity work.%s\n%s\n' %(self.instname, self.name, parameters)
+        else:
+            self._vhdl_instance='%s : entity work.%s\n ' %(self.instname, self.name)
+        first=True
+        # Then we write the IOs
+        if self.ios.Members:
+            for ioname, io in self.ios.Members.items():
+                if first:
+                    self._vhdl_instance=self._vhdl_instance+'port map(\n'
+                    first=False
+                else:
+                    self._vhdl_instance=self._vhdl_instance+',\n'
+                if io.cls in [ 'input', 'output', 'inout' ]:
+                        self._vhdl_instance=(self._vhdl_instance+
+                                ('    %s => %s' %(io.name, io.connect.name)))
+                else:
+                    self.print_log(type='F', msg='Assigning signal direction %s to VHDL entity IO.' %(io.cls))
+            self._vhdl_instance=self._vhdl_instance+('\n    )')
+        self._vhdl_instance=self._vhdl_instance+(';\n')
+        return self._vhdl_instance
 
 if __name__=="__main__":
     pass
