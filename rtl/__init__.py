@@ -377,9 +377,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
     @property
     def interactive_controlfile(self):
-        ''' Path to interactive rtl control file (.do -file).
+        ''' Path to interactive rtl control file used in interactive simulations.
 
-        The content of the file can be defined in `interactive_control`. If the
+        The content of the file can be defined in `interactive_control_contents`. If the
         content is not set in `interactive_control` -property, the do-file is
         read from this file path. Default path is
         `./interactive_control_files/modelsim/dofile.do`.

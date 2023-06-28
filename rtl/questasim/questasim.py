@@ -30,7 +30,8 @@ class questasim(thesdk):
             if len(vhdlmodulesstring) == 0:
                 vhdlcompcmd = ' echo '' > /dev/null '
             else:
-                vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
+                vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' 
+                               + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
 
         elif self.lang=='sv' and self.model=='vhdl':
             #We need to compile vhdl sources anyway, but no testbench
@@ -70,25 +71,33 @@ class questasim(thesdk):
         for name, file in self.iofile_bundle.Members.items():
             fileparams+=' '+file.simparam
 
-
-        if self.interactive_rtl:
-            submission = ''
-            dofile=self.interactive_controlfile
-            if os.path.isfile(dofile):
-                dostring=' -do "'+dofile+'"'
-                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-            else:
-                dostring=' -do "run -all; quit;"'
-                self.print_log(type='I',msg='No interactive control file set.')
-
-            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
+        controlfile=self.simulator_controlfile
+        if os.path.isfile(controlfile):
+            controlstring=' -do "'+controlfile+'"'
+            self.print_log(type='I',msg='Using control file %s' % controlfile)
         else:
-            dostring=' -do "run -all; quit;"'
+            controlstring=' -do "run -all; quit;"'
+            self.print_log(type='I',msg='No simulator control file set.')
+
+        interactive_controlfile=self.interactive_controlfile
+        if os.path.isfile(interactive_controlfile):
+            interactive_string=' -do "'+_interactive_controlfile+'"'
+            self.print_log(type='I',msg='Using interactive control file %s' % interactive_controlfile)
+        else:
+            interactive_string=' -do "run -all; quit;"'
+            self.print_log(type='I',msg='No interactive control file set.')
+
+        # Choose command 
+        if not self.interactive_rtl:
             rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
                     + fileparams + ' ' + gstring
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
-                    + dostring)
+                    + controlstring)
+        else:
+            submission="" #Local execution
+            rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
+                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name 
+                         + interactive_string )
 
         self._rtlcmd =  rtllibcmd
         self._rtlcmd += ' && ' + rtllibmapcmd
