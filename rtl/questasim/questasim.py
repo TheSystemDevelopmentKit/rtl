@@ -150,7 +150,7 @@ class questasim(thesdk):
         dofile = '%s/dofile.do' % dofiledir
         obsoletefile = '%s/Simulations/rtlsim/dofile.do' % self.entitypath
         generateddofile = '%s/dofile.do' % self.simpath
-        return (dofiledir, dofile, obsoletedofile, generateddofile)
+        return (dofiledir, dofile, obsoletefile, generateddofile)
 
     @property
     def questasim_controlfilepaths(self):
