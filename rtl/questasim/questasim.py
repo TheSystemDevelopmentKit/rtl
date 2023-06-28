@@ -81,7 +81,7 @@ class questasim(thesdk):
 
         interactive_controlfile=self.interactive_controlfile
         if os.path.isfile(interactive_controlfile):
-            interactive_string=' -do "'+_interactive_controlfile+'"'
+            interactive_string=' -do "'+ interactive_controlfile+'"'
             self.print_log(type='I',msg='Using interactive control file %s' % interactive_controlfile)
         else:
             interactive_string=' -do "run -all; quit;"'
