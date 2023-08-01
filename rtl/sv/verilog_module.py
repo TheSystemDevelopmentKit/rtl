@@ -371,7 +371,7 @@ class verilog_module(module_common,thesdk):
         if not os.path.isfile(self.file):
             self.print_log(msg='Exporting verilog_module to %s.' %(self.file))
             with open(self.file, "w") as module_file:
-                module_file.write(self.definition)
+                module_file.write(self.header+self.definition)
 
         elif os.path.isfile(self.file) and not kwargs.get('force'):
             self.print_log(type='F', msg=('Export target file %s exists.\n Force overwrite with force=True.' %(self.file)))

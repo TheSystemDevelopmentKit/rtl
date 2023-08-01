@@ -32,7 +32,7 @@ class verilog_testbench(testbench_common):
         
         """
         super().__init__(parent,**kwargs)
-        self.header=''
+        self.header='`timescale ' + self.rtl_timescale + ' / '+ self.rtl_timescale+'\n'
         
     @property
     def parameter_definitions(self):
