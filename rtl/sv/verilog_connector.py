@@ -27,23 +27,27 @@ class verilog_connector(connector_common,thesdk):
 
     @property
     def type(self):
+        ''' Type defaults to None mening that all signals are handled as unsigned integers.
+        Can be explicitly set to 'signed' if needed.
+        '''
+
         # We must handle parametrized widths
         if not hasattr(self, '_type'):
             if type(self.width) == str:
-                self._type = 'signed'
+                self._type = None
             elif self.width == 1:
                 self._type = None
             elif self.width > 1:
-                self._type = 'signed'
+                self._type = None
         else:
             if type(self.width) == str and self._type != 'signed':
-                self.print_log(type='I', msg='Setting type \'%s\' to type \'signed\' due to parametrized width ' %(self._type))
-                self._type = 'signed'
+                self.print_log(type='I', msg='Setting type \'%s\' to type None due to parametrized width ' %(self._type))
+                self._type = None
             elif self.width == 1 and self._type != 'signed':
-                pass
+                self._type = None
             elif self.width > 1 and self._type != 'signed':
-                self.print_log(type='I', msg='Setting type \'%s\' of signal \'%s\' to type \'signed\'' %(self._type,self.name))
-                self._type = 'signed'
+                self.print_log(type='I', msg='Setting type \'%s\' of signal \'%s\' to type None' %(self._type,self.name))
+                self._type = None
         return self._type
     @type.setter
     def type(self,value):

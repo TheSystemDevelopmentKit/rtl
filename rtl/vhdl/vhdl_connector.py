@@ -25,13 +25,14 @@ class vhdl_connector(connector_common,thesdk):
         self._type=kwargs.get('type', 'std_logic_vector' ) # Depends on language
     @property
     def type(self):
+        ''' Type defaults to std_logic_vector meaning that all signals are handled as unsigned integers.
+        '''
         if not hasattr(self, '_type'):
             if type(self.width) == str:
                 self._type = 'std_logic_vector'
             elif self.width == 1:
                 self._type = 'std_logic'
             elif self.width > 1:
-                self._type = 'signed'
                 self._type = 'std_logic_vector'
         else:
             if self.width == 1 and self._type != 'std_logic':

@@ -243,6 +243,7 @@ class testbench(testbench_common):
         Overloads the property inherited from 'module', as wish to control whan we generate the headers.
         [TO BE RECONSIDERED]
         '''
+        pdb.set_trace()
         self._definition=self.langmodule.header+self.langmodule.definition
         return self._definition
 
