@@ -34,24 +34,6 @@ class vhdl_testbench(testbench_common):
         super().__init__(parent,**kwargs)
         self.header="""library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.numeric_std.all;\nuse std.textio.all;\n\n"""
 
-    # For some reason unknown to me, overloading he property here is not effective
-    #@property
-    #def header(self):
-    #    """ str : Header line of the VHDL testbench file.
-    #    Default: 
-    #        library ieee;
-    #        use ieee.std_logic_1164.all;
-    #        use ieee.numeric_std.all;
-    #        use std.textio.all;
-
-    #    """
-    #    
-    #    if not hasattr (self, '_header'):
-    #        self._header="""library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.numeric_std.all;\nuse std.textio.all;\n\n"""
-    #    return self._header
-    #@header.setter
-    #def header(self,val):
-    #    self._header = val
         
     @property
     def parameter_definitions(self):

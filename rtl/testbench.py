@@ -241,6 +241,7 @@ class testbench(testbench_common):
         IO definitions.
 
         Overloads the property inherited from 'module', as wish to control whan we generate the headers.
+        [TO BE RECONSIDERED]
         '''
         self._definition=self.langmodule.header+self.langmodule.definition
         return self._definition
