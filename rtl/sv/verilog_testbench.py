@@ -32,7 +32,31 @@ class verilog_testbench(testbench_common):
         
         """
         super().__init__(parent,**kwargs)
-        self.header='`timescale ' + self.rtl_timescale + ' / '+ self.rtl_timescale+'\n'
+        if self.parent.add_tb_timescale:
+            self.header='`timescale ' + self.rtl_timescale + ' / '+ self.rtl_timescale+'\n'
+        else:
+            self.header=''
+
+    # For some reason unknown to me, overloading he property here is not effective
+    #@property
+    #def header(self):
+    #    """ str : Header line of the verilog testbench file.
+    #    Default: If self.add_tb_timescale = True, adds the timescale directive to the testbench top.
+    #    according ot self.rtl_timescale attribute.   
+    #    """
+    #    
+    #    if not hasattr (self, '_header'):
+    #        if self.parent.add_tb_timescale:
+    #            self._defheader='`timescale ' + self.rtl_timescale + ' / '+ self.rtl_timescale+'\n'
+    #        else:
+    #            self._defheader=''
+    #        return self._defheader    
+    #    else:
+    #        return self._header
+
+    #@header.setter
+    #def header(self,val):
+    #    self._header = val
         
     @property
     def parameter_definitions(self):
