@@ -116,6 +116,22 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._rtl_timescale = val
 
     @property
+    def add_tb_timescale(self):
+        """Bool : Defines if timescale directive is added to testbench. Can
+        be used in cases where submodules have timescale directives, and 
+        you wish to control that from the testbench toplevel. Effective only for 
+        elf.lang = 'sv'
+
+        Default: False
+        """
+        if not hasattr(self,'_add_tb_timescale'):
+            self._add_tb_timescale = False
+        return self._add_tb_timescale
+    @add_tb_timescale.setter
+    def add_tb_timescale(self,val):
+        self._add_tb_timescale = val 
+        
+    @property
     def name(self):
         ''' Name of the entity
             Extracted from the _classfile attribute
