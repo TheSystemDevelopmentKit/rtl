@@ -440,6 +440,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 with open(generateddofile,'w') as dofileptr:
                     dofileptr.write(self.interactive_control_contents)
                     self._interactive_controlfile = generateddofile
+            if not hasattr(self,'_interactive_controlfile'):
+                    self._interactive_controlfile = None
+
         return self._interactive_controlfile
     @interactive_controlfile.setter
     def interactive_controlfile(self,value):
@@ -530,7 +533,11 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         src=kwargs.get('src')
         dst=kwargs.get('dst')
         if os.path.islink(src):
-            os.symlink(os.path.join(os.path.dirname(src), os.readlink(src)), dst)
+            if not os.path.islink(dst):
+                os.symlink(os.path.join(os.path.dirname(src), os.readlink(src)), dst)
+            else:
+                os.remove(dst)
+                os.symlink(os.path.join(os.path.dirname(src), os.readlink(src)), dst)
         else:
             shutil.copyfile(src, dst, follow_symlinks=False)
 
@@ -617,7 +624,6 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 else:
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                     self.copy_or_relink(src=srcfile,dst=dstfile)
-                    self.copy_or_relink(src=self.vhdlsrc,dst=dstfile)
 
         # flush cached writes to disk
         output = subprocess.check_output("sync %s" % self.rtlsimpath, shell=True)

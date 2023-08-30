@@ -35,7 +35,9 @@ class vhdl_connector(connector_common,thesdk):
             elif self.width > 1:
                 self._type = 'std_logic_vector'
         else:
-            if self.width == 1 and self._type != 'std_logic':
+            if type(self.width) == str:
+                self._type = 'std_logic_vector'
+            elif self.width == 1 and self._type != 'std_logic':
                 self.print_log(type='I', msg='Converting type \'%s\' to type \'std_logic\' for VHDL simulations ' %(self._type))
                 self._type = 'std_logic'
             elif self.width > 1 and self._type != 'std_logic_vector':
