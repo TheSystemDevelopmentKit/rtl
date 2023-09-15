@@ -357,16 +357,28 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
         self.langmodule.rtl_io_condition_append(**kwargs)
 
     @property 
-    def rtl_io_sync(self):
-        '''File io synchronization condition for sample type input.
+    def rtl_input_sync(self):
+        '''File input synchronization condition for sample type input.
         Default: `@(posedge clock)`
 
         '''
-        return self.langmodule.rtl_io_sync
+        return self.langmodule.rtl_input_sync
 
-    @rtl_io_sync.setter
-    def rtl_io_sync(self,value):
-        self.langmodule.rtl_io_sync=value
+    @rtl_input_sync.setter
+    def rtl_input_sync(self,value):
+        self.langmodule.rtl_input_sync=value
+
+    @property 
+    def rtl_output_sync(self):
+        '''File output synchronization condition for sample type output.
+        Default: `@(posedge clock)`
+
+        '''
+        return self.langmodule.rtl_output_sync
+
+    @rtl_output_sync.setter
+    def rtl_output_sync(self,value):
+        self.langmodule.rtl_output_sync=value
 
     def rtl_io_condition_append(self,**kwargs ):
         '''Append new condition string to `rtl_io_condition`
