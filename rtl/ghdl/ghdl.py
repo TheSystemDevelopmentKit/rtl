@@ -60,6 +60,7 @@ class ghdl(thesdk):
 
         self._rtlcmd =  vhdlcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
+                ' && ' +vhdlanalysiscmd + \
                 ' && ' + submission +\
                 rtlsimcmd
 
