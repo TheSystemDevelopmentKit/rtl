@@ -588,49 +588,49 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 #
 #        if not self.interactive_rtl:
 ###########################################    
-        submission=self.verilog_submission
-        if self.model == 'icarus':
-            os.mkdir(self.rtlworkpath)
-        else:
-            rtllibcmd =  'vlib ' +  self.rtlworkpath
-            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
-
-        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles])
-
-        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
-
-        if self.model=='sv':
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
-        elif self.model=='vhdl':
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
-                    + ' ' + self.simtb )
-        elif self.model=='icarus':
-            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name + vlogmodulesstring
-    	            + ' ' + self.simdut + ' ' + self.simtb )
-
-        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
-        
-        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
-            for param,val in iter(self.rtlparameters.items()) ])
-
-        vlogsimargs = ' '.join(self.vlogsimargs)
-
-        fileparams=''
-        for name, file in self.iofile_bundle.Members.items():
-            fileparams+=' '+file.simparam
-
-        dofile=self.interactive_controlfile
-        if os.path.isfile(dofile):
-            dostring=' -do "'+dofile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
-        else:
-            dostring=''
-            self.print_log(type='I',msg='No interactive control file set.')
-
+#        submission=self.verilog_submission
+#        if self.model == 'icarus':
+#            os.mkdir(self.rtlworkpath)
+#        else:
+#            rtllibcmd =  'vlib ' +  self.rtlworkpath
+#            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
+#
+#        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+#            str(param) for param in self.vlogmodulefiles])
+#
+#        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+#            str(param) for param in self.vhdlentityfiles])
+#
+#        if self.model=='sv':
+#            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+#                    + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
+#        elif self.model=='vhdl':
+#            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+#                    + ' ' + self.simtb )
+#        elif self.model=='icarus':
+#            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name + vlogmodulesstring
+#    	            + ' ' + self.simdut + ' ' + self.simtb )
+#
+#        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
+#                       vhdlmodulesstring + ' ' + self.vhdlsrc )
+#        
+#        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
+#            for param,val in iter(self.rtlparameters.items()) ])
+#
+#        vlogsimargs = ' '.join(self.vlogsimargs)
+#
+#        fileparams=''
+#        for name, file in self.iofile_bundle.Members.items():
+#            fileparams+=' '+file.simparam
+#
+#        dofile=self.interactive_controlfile
+#        if os.path.isfile(dofile):
+#            dostring=' -do "'+dofile+'"'
+#            self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+#        else:
+#            dostring=''
+#            self.print_log(type='I',msg='No interactive control file set.')
+#
         if not hasattr(self, '_rtlcmd'):
             if self.model == 'icarus':
                 return self.icarus_rtlcmd
