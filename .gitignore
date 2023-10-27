@@ -3,8 +3,10 @@
 *.pdf
 *~
 *.swp
+*.swo
 *.nfs
 *.svn
 *.asv
+tags
 Makefile
 doc/build/**

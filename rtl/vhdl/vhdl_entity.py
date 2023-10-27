@@ -1,6 +1,6 @@
 """
 ===========
-Entity
+VHDL_entity
 ===========
 VHDL import features for RTL simulation package of The System Development Kit 
 
@@ -11,49 +11,61 @@ cross language compilations.
 
 Initially written by Marko Kosunen, 2017
 
-Transferred from VHL package in Dec 2019
-
-Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 21.01.2020 19:27
+Transferred from VHDL package in Dec 2019
 
 """
 import os
+import pdb
 from thesdk import *
 from copy import deepcopy
 from rtl import *
-from rtl.module import verilog_module
-from rtl.connector import verilog_connector
-from rtl.connector import verilog_connector_bundle
+from rtl.connector import rtl_connector
+from rtl.connector import rtl_connector_bundle
+from rtl.module_common import module_common
 
-class vhdl_entity(verilog_module):
-    @property
-    def _classfile(self):
-        ''' Mandatory because of thesdk class 
-        
-        '''
-        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+class vhdl_entity(module_common,thesdk):
+    """Objective:
+
+        1) 
+           a) Collect IO's to database
+           b) collect parameters to dict
+
+        2) Reconstruct the entity definition
+
+        3) 
+           a) Implement methods provide signal connections
+           b) Implement methods to provide generic assingments   
+              
+        4) Create a method to create assigned module \
+           definition, where signals are \
+           
+           a) assigned by name
+           b) to arbitrary name vector.
+
+        5) Add contents, if required, and include that to definition
+            
+    """
 
     def __init__(self, **kwargs):
-        ''' Executes init of verilog_module, thus having the same attributes and 
+        ''' Executes init of module_common, thus having the same attributes and 
         parameters.
 
         Parameters
         ----------
             **kwargs :
-               See module module
+               See module module_common
         
         '''
         super().__init__(**kwargs)
     
-
     @property
     def ios(self):
-        '''Verilog connector bundle containing connectors for all module IOS.
+        '''Rtl connector bundle containing connectors for all module IOS.
            All the IOs are connected to signal connectors that 
            have the same name than the IOs. This is due to fact the we have decided 
            that all signals are connectors. 
 
         '''
-        
         if not hasattr(self,'_ios'):
             startmatch=re.compile(r"entity *(?="+self.name+r"\s*is)"+r".*.+$")
             iomatch=re.compile(r".*port\(.*$")
@@ -62,7 +74,7 @@ class vhdl_entity(verilog_module):
             iostopmatch=re.compile(r'.*\);.*$')
             dut=''
             # Extract the module definition
-            self._ios=verilog_connector_bundle()
+            self._ios=rtl_connector_bundle()
             if os.path.isfile(self.file):
                 with open(self.file) as infile:
                     wholefile=infile.readlines()
@@ -110,14 +122,13 @@ class vhdl_entity(verilog_module):
                     if dut:
                         for ioline in dut.split(';'):
                             extr=ioline.split(':')
-                            signal=verilog_connector()
+                            signal=rtl_connector(lang='vhdl')
                             if extr[1]=='in':
                                 signal.cls='input'
                             elif extr[1]=='out':
                                 signal.cls='output'
                             signal.name=extr[0]
-                            #signal.type=extr[2]
-                            signal.type=''
+                            signal.type=extr[2]
                             busdef=re.match(r"^.*\(\s*(.*)(\s+downto\s+|\s+to\s+)(.*)\s*\)",extr[2])
                             if busdef:
                                 signal.ll=busdef.group(1)
@@ -142,7 +153,7 @@ class vhdl_entity(verilog_module):
 
     @property
     def parameters(self):
-        '''Verilog parameters extracted from generics of the VHDL entity
+        '''Generics of the VHDL entity
 
         '''
         if not hasattr(self,'_parameters'):
@@ -227,9 +238,107 @@ class vhdl_entity(verilog_module):
     @contents.setter
     def contents(self,value):
         self._contents=value
-    @contents.deleter
-    def contents(self,value):
-        self._contents=None
+
+    @property
+    def io_signals(self):
+        '''Bundle containing the signal connectors for IO connections.
+
+        '''
+        if not hasattr(self,'_io_signals'):
+            self._io_signals=rtl_connector_bundle()
+            for ioname, io in self.ios.Members.items():
+                # Connectior is created already in io definitio
+                # just point to it  
+                self._io_signals.Members[ioname]=io.connect
+        return self._io_signals
+
+    @io_signals.setter
+    def io_signals(self,value):
+        for conn in value.Members :
+            self._io_signals.Members[conn.name].connect=conn
+        return self._io_signals
+
+    @property
+    def header(self):
+        """Header configuring the e.g. libraries if needed"""
+        if not hasattr(self,'_header'):
+            self._header=''
+        return self._header
+    @header.setter
+    def header(self,value):
+        if not hasattr(self,'_header'):
+            self._header=value
+
+    @property
+    def definition(self):
+        '''Entity definition part extracted for the file. Contains generics and 
+        IO definitions.
+
+        '''
+        if not hasattr(self,'_definition'):
+            #First we print the parameter section
+            if self.parameters.Members:
+                parameters=''
+                first=True
+                for name, val in self.parameters.Members.items():
+                    if type(val) is not tuple:
+                        self.print_log(type='F', msg='Parameter %s must be defined as {\'<name>\': (\'<type>\',value)}' %(name))
+                    if first:
+                        parameters='generic(\n %s : %s := %s' %(name,val[0],val[1])
+                        first=False
+                    else:
+                        parameters=parameters+';\n %s : %s := %s' %(name,val[0],val[1])
+                parameters=parameters+'\n);'
+                self._definition='entity %s is\n%s' %(self.name, parameters)
+            else:
+                self._definition='entity %s is\n' %(self.name)
+            first=True
+            if self.ios.Members:
+                for ioname, io in self.ios.Members.items():
+                    if first:
+                        self._definition=self._definition+'\nport(\n'
+                        first=False
+                    else:
+                        self._definition=self._definition+',\n'
+                    if io.cls in [ 'input', 'output', 'inout' ]:
+                        if io.width==1:
+                            self._definition=(self._definition+
+                                    ('    %s %s' %(io.cls, io.name)))
+                        else:
+                            self._definition=(self._definition+
+                                    ('    %s [%s:%s] %s' %(io.cls, io.ll, io.rl, io.name)))
+                    else:
+                        self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
+                self._definition=self._definition+'\n)'
+            self._definition=self._definition+'\nend entity;\n'
+            if self.contents:
+                self._definition=self._definition+self.contents
+        return self._definition
+
+
+    #Methods
+    def export(self,**kwargs):
+        '''Method to export the module. Exports self.headers+self.definition to a given file.
+
+        Parameters
+        ----------
+           **kwargs :
+
+               force: Bool
+
+        '''
+        if not os.path.isfile(self.file):
+            self.print_log(msg='Exporting vhdl_entity to %s.' %(self.file))
+            with open(self.file, "w") as module_file:
+                module_file.write(self.header+self.definition)
+
+        elif os.path.isfile(self.file) and not kwargs.get('force'):
+            self.print_log(type='F', msg=('Export target file %s exists.\n Force overwrite with force=True.' %(self.file)))
+
+        elif kwargs.get('force'):
+            self.print_log(msg='Forcing overwrite of vhdl_entity to %s.' %(self.file))
+            with open(self.file, "w") as module_file:
+                module_file.write(self.header+self.definition)
 
 if __name__=="__main__":
     pass
