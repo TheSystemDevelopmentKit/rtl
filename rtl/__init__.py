@@ -343,18 +343,24 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         provided in a file given by the 'VLOGLIBFILE' global variable in TheSDK.config
         '''
         if not hasattr(self, '_vloglibfilemodules'):
-            libfile = thesdk.GLOBALS['VLOGLIBFILE']
-            self._vloglibfilemodules = list()
-            if libfile == '':
-                self.print_log(type='W',msg='Global TheSDK variable VLOGLIBFILE not set.')
-            else:
-                self.print_log(type='I',msg='Using VLOGLIBFILE: %s' % libfile)
-                try:
-                    with open(libfile, 'r') as fd:
-                        modulefiles = [line.strip() for line in fd.readlines()]
-                        self._vloglibfilemodules.extend(modulefiles)
-                except Exception as e:
-                    self.print_log(type='F',msg='Could not read verilog module files from VLOGLIBFILE:\n\t%s' % e)
+            try:
+                libfile = thesdk.GLOBALS['VLOGLIBFILE']
+                if libfile == '':
+                    raise ValueError
+                else:
+                    self._vloglibfilemodules = list()
+                    if libfile == '':
+                        self.print_log(type='W',msg='Global TheSDK variable VLOGLIBFILE not set.')
+                    else:
+                        self.print_log(type='I',msg='Using VLOGLIBFILE: %s' % libfile)
+                        try:
+                            with open(libfile, 'r') as fd:
+                                modulefiles = [line.strip() for line in fd.readlines()]
+                                self._vloglibfilemodules.extend(modulefiles)
+                        except Exception as e:
+                            self.print_log(type='F',msg='Could not read verilog module files from VLOGLIBFILE:\n\t%s' % e)
+            except:
+                 self._vloglibfilemodules = []
         return self._vloglibfilemodules
     @vloglibfilemodules.setter
     def vloglibfilemodules(self,value):
@@ -362,10 +368,6 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @vloglibfilemodules.deleter
     def vloglibfilemodules(self):
             self._vloglibfilemodules = None
-
-    @property
-    def vhdlentityfiles(self):
-        '''List of VHDL entity files to be compiled in addition to DUT
 
     @property
     def vhdlentityfiles(self):
@@ -550,6 +552,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 #            rtllibcmd =  'vlib ' +  self.rtlworkpath
 #            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
 #
+###              Need to figure out how to handle the vloglibfilemodules    
 #        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
 #            str(param) for param in self.vlogmodulefiles + self.vloglibfilemodules])
 #
