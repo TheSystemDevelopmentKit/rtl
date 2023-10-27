@@ -146,7 +146,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def add_tb_timescale(self):
         """Bool : Defines if timescale directive is added to testbench. Can
-        be used in cases where submodules have timescale directives, and 
+        be used in cases where submodules have timescale directives, and
         you wish to control that from the testbench toplevel. Effective only for 
         self.lang = 'sv'
 
@@ -157,7 +157,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         return self._add_tb_timescale
     @add_tb_timescale.setter
     def add_tb_timescale(self,val):
-        self._add_tb_timescale = val 
+        self._add_tb_timescale = val
         
     @property
     def name(self):
@@ -602,27 +602,34 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 #            str(param) for param in self.vhdlentityfiles])
 #
 #        if self.model=='sv':
+########        In questasim-py
 #            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
 #                    + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
 #        elif self.model=='vhdl':
+########        In questasim-py
 #            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
 #                    + ' ' + self.simtb )
 #        elif self.model=='icarus':
 #            vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name + vlogmodulesstring
 #    	            + ' ' + self.simdut + ' ' + self.simtb )
 #
+########        In questasim-py
 #        vhdlcompcmd = ( 'vcom -work work ' + ' ' +
 #                       vhdlmodulesstring + ' ' + self.vhdlsrc )
 #        
+########        In questasim-py
 #        gstring=' '.join([ ('-g ' + str(param) +'='+ str(val)) 
 #            for param,val in iter(self.rtlparameters.items()) ])
 #
+########        In questasim-py
 #        vlogsimargs = ' '.join(self.vlogsimargs)
 #
+########        In questasim-py
 #        fileparams=''
 #        for name, file in self.iofile_bundle.Members.items():
 #            fileparams+=' '+file.simparam
 #
+########   Refactored for all simulators separately
 #        dofile=self.interactive_controlfile
 #        if os.path.isfile(dofile):
 #            dostring=' -do "'+dofile+'"'
@@ -642,15 +649,18 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 return self.ghdl_rtlcmd
             else:
 #<<<<<<< HEAD Check where to transfer
+########        In questasim-py
 #                if dostring == '':
 #                    dostring=' -do "run -all; quit;"'
 #
+###              Need to figure out how to handle the timeparameters leave it as is for now    
 #                rtlsimcmd = ( 'vsim -64 -batch -voptargs=+acc ' 
 #                        + fileparams + ' ' + gstring
 #                        + ' ' + vlogsimargs + ' work.tb_' + self.name  
 #                        + dostring)
 #        else:
 #            submission="" #Local execution
+########        In icarus-py
 #            if self.model == 'icarus':
 #                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
 #                        + ' && gtkwave -S' + dofile + ' ' + self.name + '_dump.vcd')
@@ -658,6 +668,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 #                rtlsimcmd = ( 'vsim -64 -novopt ' + fileparams 
 #                        + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
 #
+########        In questasim-py
 #        if self.model=='sv':
 #            self._rtlcmd =  rtllibcmd  +\
 #                    ' && ' + rtllibmapcmd +\
@@ -674,50 +685,12 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 #                    ' && ' + submission +\
 #                    rtlsimcmd
 #        if self.model=='icarus':
+########        In icarus-py
 #            self._rtlcmd =  vlogcompcmd +\
 #                    ' && sync ' + self.rtlworkpath +\
 #                    ' && ' + submission +\
 #                    rtlsimcmd
 #
-#||||||| 30941e9
-#                if dostring == '':
-#                    dostring=' -do "run -all; quit;"'
-#
-#                rtlsimcmd = ( 'vsim -64 -batch -t ' + self.rtl_timescale + ' -voptargs=+acc ' 
-#                        + fileparams + ' ' + gstring
-#                        + ' ' + vlogsimargs + ' work.tb_' + self.name  
-#                        + dostring)
-#        else:
-#            submission="" #Local execution
-#            if self.model == 'icarus':
-#                rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
-#                        + ' && gtkwave -S' + dofile + ' ' + self.name + '_dump.vcd')
-#            else:
-#                rtlsimcmd = ( 'vsim -64 -t ' + self.rtl_timescale + ' -novopt ' + fileparams 
-#                        + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name + dostring )
-#
-#        if self.model=='sv':
-#            self._rtlcmd =  rtllibcmd  +\
-#                    ' && ' + rtllibmapcmd +\
-#                    ' && ' + vlogcompcmd +\
-#                    ' && sync ' + self.rtlworkpath +\
-#                    ' && ' + submission +\
-#                    rtlsimcmd
-#        elif self.model=='vhdl':
-#            self._rtlcmd =  rtllibcmd  +\
-#                    ' && ' + rtllibmapcmd +\
-#                    ' && ' + vhdlcompcmd +\
-#                    ' && ' + vlogcompcmd +\
-#                    ' && sync ' + self.rtlworkpath +\
-#                    ' && ' + submission +\
-#                    rtlsimcmd
-#        if self.model=='icarus':
-#            self._rtlcmd =  vlogcompcmd +\
-#                    ' && sync ' + self.rtlworkpath +\
-#                    ' && ' + submission +\
-#                    rtlsimcmd
-#
-#=======
                 self.print_log(type='F', msg='Model %s not supported' %(self.model))
         return self._rtlcmd
 
