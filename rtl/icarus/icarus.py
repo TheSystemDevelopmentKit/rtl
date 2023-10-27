@@ -6,6 +6,7 @@ Initially written by Marko kosunen 20221030
 """
 
 from thesdk import *
+import pdb
 class icarus(thesdk,metaclass=abc.ABCMeta):
     @property
     def icarus_rtlcmd(self):
@@ -43,7 +44,7 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
                 dostring=''
                 self.print_log(type='I',msg='No interactive control file set.')
             rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
-                         + ' && gtkwave ' + dostring + ' ' + self.name + '_dump.vcd')
+                         + ' && gtkwave ' + dostring + ' ' + self.rtlsimpath + '/' + self.name + '_dump.vcd')
         else:
             rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
 
