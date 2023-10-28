@@ -12,7 +12,7 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
         submission=self.lsf_submission
         if not os.path.exists(self.rtlworkpath):
             os.mkdir(self.rtlworkpath)
-        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+        vlogmodulesstring=' '.join(self.vloglibfilemodules) + ' ' + ' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
