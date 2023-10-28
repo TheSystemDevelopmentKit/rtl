@@ -14,7 +14,7 @@ class questasim(thesdk):
          
         vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
             str(param) for param in self.vlogmodulefiles ])
-        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+        vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
         # The following cases are possible

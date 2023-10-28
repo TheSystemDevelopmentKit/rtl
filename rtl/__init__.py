@@ -385,6 +385,31 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @vhdlentityfiles.deleter
     def vhdlentityfiles(self): 
             self._vhdlentityfiles = None 
+    @property
+    def vhdllibfileentities(self):
+        '''List of VHDL entities to be compiled in addition to DUT
+        provided in a file given by the 'VHDLLIBFILE' global variable in TheSDK.config
+        '''
+        if not hasattr(self, '_vhdllibfileentities'):
+            try:
+                libfile = thesdk.GLOBALS['VHDLLIBFILE']
+                if libfile == '':
+                    raise ValueError
+                else:
+                    self._vhdllibfileentities = list()
+                    if libfile == '':
+                        self.print_log(type='W',msg='Global TheSDK variable VHDLLIBFILE not set.')
+                    else:
+                        self.print_log(type='I',msg='Using VHDLLIBFILE: %s' % libfile)
+                        try:
+                            with open(libfile, 'r') as fd:
+                                modulefiles = [line.strip() for line in fd.readlines()]
+                                self._vhdllibfileentities.extend(modulefiles)
+                        except Exception as e:
+                            self.print_log(type='F',msg='Could not read verilog module files from VHDLLIBFILE:\n\t%s' % e)
+            except:
+                 self._vhdllibfileentities = []
+        return self._vhdllibfileentities
 
     @property
     def interactive_control_contents(self):
