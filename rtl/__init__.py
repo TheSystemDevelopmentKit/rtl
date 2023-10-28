@@ -105,11 +105,11 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def rtl_timescale(self):
         """
-        Defines the rtl timescale. Default '1ps'
+        Defines the rtl timescal. This is the time unit shown by the simulator
+        and used in testbench delays. Default '1ps'
 
         """
         if not hasattr(self, '_rtl_timescale'):
-            self.print_log(type='O', msg='Use `rtl_timeunit` and `rtl_timeprecision` instead')
             self._rtl_timescale = '1ps'
         return self._rtl_timescale
     @rtl_timescale.setter
@@ -119,24 +119,26 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def rtl_timeunit(self):
         """
-        Defines rtl time unit. This is the time unit shown by the simulator
-        and used in testbench delays. Default '1 ps'.
+        Defines rtl time unit. OBSOLETE: use rtl_timescale.
         """
         if not hasattr(self, '_rtl_timeunit'):
+            self.print_log(type='O', msg='Use `rtl_timescale` and `rtl_timeprecision` instead')
             self._rtl_timeunit = '1 ps'
         return self._rtl_timeunit
     @rtl_timeunit.setter
     def rtl_timeunit(self, val):
+        self.print_log(type='O', msg='Use `rtl_timescale` and `rtl_timeprecision` instead')
         self._rtl_timeunit = val
 
     @property
     def rtl_timeprecision(self):
         """
         Defines rtl time precision. This is the smallest time step representable in simulation.
-        This should be less than equal to ``rtl_timeunit``. Default '1 ps'.
+        This should be less than equal to ``rtl_timeunit``. Default '1 ps'. 
+
         """
         if not hasattr(self, '_rtl_timeprecision'):
-            self._rtl_timeprecision = '1 ps'
+            self._rtl_timeprecision = self.rtl_timescale
         return self._rtl_timeprecision
     @rtl_timeprecision.setter
     def rtl_timeprecision(self, val):
@@ -553,6 +555,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 #            rtllibmapcmd = 'vmap work ' + self.rtlworkpath
 #
 ###              Need to figure out how to handle the vloglibfilemodules    
+#        # in Modelsim.py and in icarus.py
 #        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
 #            str(param) for param in self.vlogmodulefiles + self.vloglibfilemodules])
 #
