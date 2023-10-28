@@ -55,8 +55,8 @@ class ghdl(thesdk):
             rtlsimcmd = ('ghdl -r --std=08 --workdir=' + self.rtlworkpath + ' ' + controlstring + ' tb_' + self.name)
         else:
             submission="" #Local execution
-            rtlsimcmd = ('ghdl -r --std=08  --workdir=' + self.rtlworkpath + ' ' + 'tb_' + self.name + controlstring + ' --vcd='+self.name +'_dump.vcd'
-                         + ' && gtkwave ' + interactive_string + ' ' + self.name + '_dump.vcd')
+            rtlsimcmd = ('ghdl -r --std=08  --workdir=' + self.rtlworkpath + ' ' + 'tb_' + self.name + controlstring + ' --vcd='+ self.rtlsimpath + '/' + self.name +'_dump.vcd'
+                         + ' && gtkwave ' + interactive_string + ' ' + self.rtlsimpath +'/' + self.name + '_dump.vcd')
 
         self._rtlcmd =  vhdlcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
