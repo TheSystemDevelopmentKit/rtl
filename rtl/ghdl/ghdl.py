@@ -12,9 +12,9 @@ class ghdl(thesdk):
         submission=self.lsf_submission
         if not os.path.exists(self.rtlworkpath):
             os.mkdir(self.rtlworkpath)
-        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles])
-        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+        vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
+            str(param) for param in self.vlogmodulefiles ])
+        vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
         if vlogmodulesstring != '':
@@ -60,6 +60,7 @@ class ghdl(thesdk):
 
         self._rtlcmd =  vhdlcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
+                ' && ' +vhdlanalysiscmd + \
                 ' && ' + submission +\
                 rtlsimcmd
 

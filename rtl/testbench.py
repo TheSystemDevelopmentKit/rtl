@@ -33,6 +33,33 @@ class testbench(testbench_common):
             **kwargs :
                See module testbench_common
         
+#<<<<<<< HEAD Check where to transfer
+#        #The methods for these are derived from verilog_module
+#        self._name=''
+#        self._directives=['`timescale %s / %s'
+#                % (self.parent.rtl_timeunit, self.parent.rtl_timeprecision)]
+#        self._parameters=Bundle()
+#        self.connectors=verilog_connector_bundle()
+#        self.iofiles=Bundle()
+#        self.content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
+#        self.assignment_matchlist=[]
+#        
+#    @property
+#    def file(self):
+#        '''Path to the testbench file
+#||||||| 30941e9
+#        #The methods for these are derived from verilog_module
+#        self._name=''
+#        self._parameters=Bundle()
+#        self.connectors=verilog_connector_bundle()
+#        self.iofiles=Bundle()
+#        self.content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
+#        self.assignment_matchlist=[]
+#        
+#    @property
+#    def file(self):
+#        '''Path to the testbench file
+#=======
         """
 
         #This should be language specific.
@@ -242,8 +269,37 @@ class testbench(testbench_common):
 
         Overloads the property inherited from 'module', as wish to control whan we generate the headers.
         '''
-        self._definition=self.langmodule.header+self.langmodule.definition
-        return self._definition
+#<<<<<<< HEAD Check where to transfer
+#    # Start the testbench contents
+#        contents = "\n"+\
+#self.parameter_definitions+\
+#self.connector_definitions+\
+#self.assignments() +\
+#self.iofile_definitions+\
+#self.misccmd+\
+#self.dumpfile+\
+#"""
+#//DUT definition
+#"""+\
+#self.dut_instance.instance
+#||||||| 30941e9
+#    # Start the testbench contents
+#        contents="""
+#//timescale 1ps this should probably be a global model parameter
+#"""+self.parameter_definitions+\
+#self.connector_definitions+\
+#self.assignments() +\
+#self.iofile_definitions+\
+#self.misccmd+\
+#self.dumpfile+\
+#"""
+#//DUT definition
+#"""+\
+#self.dut_instance.instance
+#=======
+#        self._definition=self.langmodule.header+self.langmodule.definition
+#        return self._definition
+#>>>>>>> 39c35c571b87c6868ca9c165f9409f88be497566
 
     def generate_contents(self):
         """Call language specific contents generator.

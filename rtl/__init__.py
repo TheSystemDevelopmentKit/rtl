@@ -105,7 +105,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def rtl_timescale(self):
         """
-        Defines the rtl timescale. Default '1ps'
+        Defines the rtl timescal. This is the time unit shown by the simulator
+        and used in testbench delays. Default '1ps'
 
         """
         if not hasattr(self, '_rtl_timescale'):
@@ -116,11 +117,40 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._rtl_timescale = val
 
     @property
+    def rtl_timeunit(self):
+        """
+        Defines rtl time unit. OBSOLETE: use rtl_timescale.
+        """
+        if not hasattr(self, '_rtl_timeunit'):
+            self.print_log(type='O', msg='Use `rtl_timescale` and `rtl_timeprecision` instead')
+            self._rtl_timeunit = '1 ps'
+        return self._rtl_timeunit
+    @rtl_timeunit.setter
+    def rtl_timeunit(self, val):
+        self.print_log(type='O', msg='Use `rtl_timescale` and `rtl_timeprecision` instead')
+        self._rtl_timeunit = val
+
+    @property
+    def rtl_timeprecision(self):
+        """
+        Defines rtl time precision. This is the smallest time step representable in simulation.
+        This should be less than equal to ``rtl_timeunit``. Default '1 ps'. 
+
+        """
+        if not hasattr(self, '_rtl_timeprecision'):
+            self._rtl_timeprecision = self.rtl_timescale
+        return self._rtl_timeprecision
+    @rtl_timeprecision.setter
+    def rtl_timeprecision(self, val):
+        self._rtl_timeprecision = val
+
+
+    @property
     def add_tb_timescale(self):
         """Bool : Defines if timescale directive is added to testbench. Can
-        be used in cases where submodules have timescale directives, and 
+        be used in cases where submodules have timescale directives, and
         you wish to control that from the testbench toplevel. Effective only for 
-        elf.lang = 'sv'
+        self.lang = 'sv'
 
         Default: False
         """
@@ -129,7 +159,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         return self._add_tb_timescale
     @add_tb_timescale.setter
     def add_tb_timescale(self,val):
-        self._add_tb_timescale = val 
+        self._add_tb_timescale = val
         
     @property
     def name(self):
@@ -293,6 +323,93 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @rtlparameters.deleter
     def rtlparameters(self):
             self._rtlparameters = None
+
+    @property
+    def vlogmodulefiles(self):
+        '''List of verilog modules to be compiled in addition of DUT
+
+        '''
+        if not hasattr(self, '_vlogmodulefiles'):
+            self._vlogmodulefiles =list([])
+        return self._vlogmodulefiles
+    @vlogmodulefiles.setter
+    def vlogmodulefiles(self,value): 
+            self._vlogmodulefiles = value
+    @vlogmodulefiles.deleter
+    def vlogmodulefiles(self): 
+            self._vlogmodulefiles = None 
+
+    @property
+    def vloglibfilemodules(self):
+        '''List of verilog modules to be compiled in addition to DUT
+        provided in a file given by the 'VLOGLIBFILE' global variable in TheSDK.config
+        '''
+        if not hasattr(self, '_vloglibfilemodules'):
+            try:
+                libfile = thesdk.GLOBALS['VLOGLIBFILE']
+                if libfile == '':
+                    raise ValueError
+                else:
+                    self._vloglibfilemodules = list()
+                    if libfile == '':
+                        self.print_log(type='W',msg='Global TheSDK variable VLOGLIBFILE not set.')
+                    else:
+                        self.print_log(type='I',msg='Using VLOGLIBFILE: %s' % libfile)
+                        try:
+                            with open(libfile, 'r') as fd:
+                                modulefiles = [line.strip() for line in fd.readlines()]
+                                self._vloglibfilemodules.extend(modulefiles)
+                        except Exception as e:
+                            self.print_log(type='F',msg='Could not read verilog module files from VLOGLIBFILE:\n\t%s' % e)
+            except:
+                 self._vloglibfilemodules = []
+        return self._vloglibfilemodules
+    @vloglibfilemodules.setter
+    def vloglibfilemodules(self,value):
+            self._vloglibfilemodules = value
+    @vloglibfilemodules.deleter
+    def vloglibfilemodules(self):
+            self._vloglibfilemodules = None
+
+    @property
+    def vhdlentityfiles(self):
+        '''List of VHDL entity files to be compiled in addition to DUT
+
+        '''
+        if not hasattr(self, '_vhdlentityfiles'):
+            self._vhdlentityfiles =list([])
+        return self._vhdlentityfiles
+    @vhdlentityfiles.setter
+    def vhdlentityfiles(self,value): 
+            self._vhdlentityfiles = value
+    @vhdlentityfiles.deleter
+    def vhdlentityfiles(self): 
+            self._vhdlentityfiles = None 
+    @property
+    def vhdllibfileentities(self):
+        '''List of VHDL entities to be compiled in addition to DUT
+        provided in a file given by the 'VHDLLIBFILE' global variable in TheSDK.config
+        '''
+        if not hasattr(self, '_vhdllibfileentities'):
+            try:
+                libfile = thesdk.GLOBALS['VHDLLIBFILE']
+                if libfile == '':
+                    raise ValueError
+                else:
+                    self._vhdllibfileentities = list()
+                    if libfile == '':
+                        self.print_log(type='W',msg='Global TheSDK variable VHDLLIBFILE not set.')
+                    else:
+                        self.print_log(type='I',msg='Using VHDLLIBFILE: %s' % libfile)
+                        try:
+                            with open(libfile, 'r') as fd:
+                                modulefiles = [line.strip() for line in fd.readlines()]
+                                self._vhdllibfileentities.extend(modulefiles)
+                        except Exception as e:
+                            self.print_log(type='F',msg='Could not read verilog module files from VHDLLIBFILE:\n\t%s' % e)
+            except:
+                 self._vhdllibfileentities = []
+        return self._vhdllibfileentities
 
     @property
     def interactive_control_contents(self):
@@ -567,7 +684,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                         % (self.vlogsrc, self.simdut, self.simdut))
 
             # copy other verilog files
-            for modfile in self.vlogmodulefiles:
+            for modfile in self.vlogmodulefiles+self.vloglibfilemodules:
                 srcfile = os.path.join(self.vlogsrcpath, modfile)
                 dstfile = os.path.join(self.rtlsimpath, modfile)
                 if os.path.isfile(dstfile):

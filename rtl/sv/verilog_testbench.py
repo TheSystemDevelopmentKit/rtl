@@ -33,7 +33,7 @@ class verilog_testbench(testbench_common):
         """
         super().__init__(parent,**kwargs)
         if self.parent.add_tb_timescale:
-            self.header='`timescale ' + self.rtl_timescale + ' / '+ self.rtl_timescale+'\n'
+            self.header='`timescale ' + self.rtl_timescale + ' / '+ self.rtl_timeprecision+'\n'
         else:
             self.header=''
 
