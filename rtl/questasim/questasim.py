@@ -12,9 +12,9 @@ class questasim(thesdk):
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
          
-        vlogmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles])
-        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+        vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
+            str(param) for param in self.vlogmodulefiles ])
+        vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+ 
             str(param) for param in self.vhdlentityfiles])
 
         # The following cases are possible

@@ -49,6 +49,10 @@ class testbench_common(module):
         return self.parent.rtl_timescale
 
     @property
+    def rtl_timeprecision(self):
+        return self.parent.rtl_timeprecision
+
+    @property
     def lang(self):
         if not hasattr(self,'_lang'):
             self._lang=self.parent.lang
