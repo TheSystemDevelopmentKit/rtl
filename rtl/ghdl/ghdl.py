@@ -38,7 +38,7 @@ class ghdl(thesdk):
         controlfile=self.simulator_controlfile
         if os.path.isfile(controlfile):
             controlstring=' --read-wave-opt="'+controlfile+'"'
-            self.print_log(type='I',msg='Using interactive control file %s' % controlfile)
+            self.print_log(type='I',msg='Using simulator control file %s' % controlfile)
         else:
             controlstring=''
             self.print_log(type='I',msg='No simulator control file set.')
@@ -52,7 +52,7 @@ class ghdl(thesdk):
             self.print_log(type='I',msg='No interactive control file set.')
 
         if not self.interactive_rtl:
-            rtlsimcmd = ('ghdl -r --std=08 --workdir=' + self.rtlworkpath + ' tb_' + self.name)
+            rtlsimcmd = ('ghdl -r --std=08 --workdir=' + self.rtlworkpath +  ' tb_' + self.name + ' ' + controlstring)
         else:
             submission="" #Local execution
             rtlsimcmd = ('ghdl -r --std=08  --workdir=' + self.rtlworkpath + ' ' + 'tb_' + self.name + controlstring + ' --vcd='+ self.rtlsimpath + '/' + self.name +'_dump.vcd'
