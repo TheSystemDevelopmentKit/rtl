@@ -145,7 +145,7 @@ class testbench_common(module):
         if self.parent.model == 'icarus' and self.parent.interactive_rtl:
             dump_str="// Generates dumpfile with iverilog\n"
             dump_str += "initial begin\n"
-            dump_str += '  $dumpfile("' + self.parent.name + '_dump.vcd");\n'
+            dump_str += '  $dumpfile("' + self.parent.rtlsimpath + '/'+ self.parent.name + '_dump.vcd");\n'
             dump_str += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
         else:
             dump_str = ''
