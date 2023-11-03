@@ -52,7 +52,7 @@ class ghdl(thesdk):
             self.print_log(type='I',msg='No interactive control file set.')
 
         if not self.interactive_rtl:
-            rtlsimcmd = ('ghdl -r --std=08 --workdir=' + self.rtlworkpath + ' ' + controlstring + ' tb_' + self.name)
+            rtlsimcmd = ('ghdl -r --std=08 --workdir=' + self.rtlworkpath + ' tb_' + self.name)
         else:
             submission="" #Local execution
             rtlsimcmd = ('ghdl -r --std=08  --workdir=' + self.rtlworkpath + ' ' + 'tb_' + self.name + controlstring + ' --vcd='+ self.rtlsimpath + '/' + self.name +'_dump.vcd'
