@@ -503,7 +503,10 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self._simulator_controlfile = generatedcontrolfile
             # Use default control file location
         else:
-            self._simulator_controlfile = controlfile
+            if os.path.isfile(controlfile):
+                self._simulator_controlfile = controlfile
+            else:
+                self._simulator_controlfile = None
         return self._simulator_controlfile
     @simulator_controlfile.setter
     def simulator_controlfile(self,value):
