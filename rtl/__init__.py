@@ -502,8 +502,11 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     fileptr.write(self.simulator_control_contents)
                     self._simulator_controlfile = generatedcontrolfile
             # Use default control file location
-        else:
-            self._simulator_controlfile = controlfile
+            else:
+                if os.path.isfile(controlfile):
+                    self._simulator_controlfile = controlfile
+                else:
+                    self._simulator_controlfile = ''
         return self._simulator_controlfile
     @simulator_controlfile.setter
     def simulator_controlfile(self,value):
@@ -543,6 +546,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 # Use default do-file location if it exists
                 if os.path.isfile(dofile):
                     self._interactive_controlfile = dofile
+                else:
+                    self._interactive_controlfile = ''
 
             if not os.path.exists(dofiledir):
                 self.print_log(type='I',msg='Creating %s' % dofiledir)
@@ -558,8 +563,6 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 with open(generateddofile,'w') as dofileptr:
                     dofileptr.write(self.interactive_control_contents)
                     self._interactive_controlfile = generateddofile
-            if not hasattr(self,'_interactive_controlfile'):
-                    self._interactive_controlfile = None
 
         return self._interactive_controlfile
     @interactive_controlfile.setter
