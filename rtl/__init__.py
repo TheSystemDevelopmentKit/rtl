@@ -508,8 +508,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self._simulator_controlfile = controlfile
                 else:
                     self._simulator_controlfile = ''
-        else:
-            self._simulator_controlfile = controlfile
+
         return self._simulator_controlfile
     @simulator_controlfile.setter
     def simulator_controlfile(self,value):
