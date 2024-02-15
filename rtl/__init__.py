@@ -487,7 +487,6 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
 
-
         if not hasattr(self, '_simulator_controlfile'):
             if not os.path.exists(controlfiledir):
                 self.print_log(type='I',msg='Creating %s' % controlfiledir)
@@ -548,6 +547,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 # Use default do-file location if it exists
                 if os.path.isfile(dofile):
                     self._interactive_controlfile = dofile
+                else:
+                    self._interactive_controlfile = ''
 
             if not os.path.exists(dofiledir):
                 self.print_log(type='I',msg='Creating %s' % dofiledir)
@@ -563,10 +564,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 with open(generateddofile,'w') as dofileptr:
                     dofileptr.write(self.interactive_control_contents)
                     self._interactive_controlfile = generateddofile
-
             if not hasattr(self,'_interactive_controlfile'):
                     self._interactive_controlfile = ''
-
         return self._interactive_controlfile
     @interactive_controlfile.setter
     def interactive_controlfile(self,value):
