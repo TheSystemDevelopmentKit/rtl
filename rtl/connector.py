@@ -64,12 +64,12 @@ class rtl_connector(connector_common,thesdk):
             return self._verilog_langobject
         if self.lang == 'vhdl':
             return self._vhdl_langobject
-    #@property
-    #def type(self):
-    #    return self.langobject.type
-    #@type.setter
-    #def type(self,value):
-    #    self.langobject.type = value
+    @property
+    def type(self):
+        return self.langobject.type
+    @type.setter
+    def type(self,value):
+        self.langobject.type = value
 
     @property
     def definition(self):

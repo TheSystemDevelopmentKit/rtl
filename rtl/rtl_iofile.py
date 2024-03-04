@@ -353,7 +353,6 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
            cond : str
 
         '''
-        pdb.set_trace()
         self.langmodule.rtl_io_condition_append(**kwargs)
 
     @property 
