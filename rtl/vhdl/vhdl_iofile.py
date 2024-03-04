@@ -323,9 +323,9 @@ class vhdl_iofile(rtl_iofile_common):
                                       %(self.rtl_fptr)),level=1)
                 self._rtl_io+=indent(text='wait until %s;\n' %(self.rtl_io_sync),level=2)
                 self._rtl_io+=indent(text='if ( %s ) then \n' %(self.rtl_io_condition), level=3)
+                self._rtl_io+=indent(text='readline(%s,line_%s);\n'
+                                     %(self.rtl_fptr,self.rtl_fptr,), level=4)
                 for connector in self.parent.rtl_connectors:
-                    self._rtl_io+=indent(text='readline(%s,line_%s);\n'
-                                         %(self.rtl_fptr,self.rtl_fptr,), level=4)
                     self._rtl_io+=indent(text='read(line_%s,v_%s,status_%s);\n' 
                                          %(self.rtl_fptr,connector.name,connector.name), level=4)
                     #verilog-like formatting
