@@ -28,7 +28,7 @@ class verilog_connector(connector_common,thesdk):
     @property
     def type(self):
         ''' Type defaults to None mening that all signals are handled as unsigned integers.
-        Can be explicitly set to 'signed' if needed.
+        Can be explicitly set to 'signed' if needed for type conversion of the output signals.
         '''
 
         # We must handle parametrized widths

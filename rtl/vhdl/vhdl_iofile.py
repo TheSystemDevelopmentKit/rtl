@@ -288,7 +288,7 @@ class vhdl_iofile(rtl_iofile_common):
                     if connector.width == 1:
                         if connector.ioformat =='%d':
                             self._rtl_io+=indent(text='v_%s := to_integer(unsigned\'(\"0\" & %s));\n' 
-                                                 %(connector.name,connector.name),level=3)
+                                                 %(connector.name,connector.name),level=4)
                         elif connector.ioformat== '%s':
                             self._rtl_io+='v_%s := to_string(%s)' %(connector.name,connector.name)
                         else:
@@ -296,8 +296,12 @@ class vhdl_iofile(rtl_iofile_common):
                                            msg='Connector format %s not supported' %(connector.ioformat))
                     else:
                         if connector.ioformat =='%d':
-                            self._rtl_io+=indent(text='v_%s := to_integer(signed(%s));\n' 
-                                                 %(connector.name,connector.name),level=3)
+                            if connector.type == 'signed':
+                                self._rtl_io+=indent(text='v_%s := to_integer(signed(%s));\n' 
+                                                     %(connector.name,connector.name),level=4)
+                            else:
+                                self._rtl_io+=indent(text='v_%s := to_integer(unsigned(%s));\n' 
+                                                     %(connector.name,connector.name),level=4)
                         elif connector.ioformat== '%s':
                             self._rtl_io+='v_%s := to_string(%s)' %(connector.name,connector.name)
                         else:
@@ -309,7 +313,7 @@ class vhdl_iofile(rtl_iofile_common):
                                          %(self.rtl_fptr,connector.name), level=3)
                         first = False
                     else:
-                        self._rtl_io+=indent(text='write(line_%s, HT);'%(self.rtl_fptr), level=3)
+                        self._rtl_io+=indent(text='write(line_%s, HT);'%(self.rtl_fptr), level=4)
                         self._rtl_io+=indent(text='write(line_%s,v_%s);' 
                                          %(self.rtl_fptr,connector.name), level=3)
 
@@ -334,11 +338,11 @@ class vhdl_iofile(rtl_iofile_common):
                         if connector.width == 1:
                             self._rtl_io+=indent(text=('%s <= std_logic(to_unsigned(v_%s,1)(0));\n'
                                                     %(connector.name,connector.name)
-                                                   ),level=3)
+                                                   ),level=4)
                         else:
                             self._rtl_io+=indent(text=('%s <= std_logic_vector(to_signed(v_%s,%s));\n'
                                                     %(connector.name,connector.name,connector.width)
-                                                   ),level=3)
+                                                   ),level=4)
                     elif connector.ioformat== '%s':
                         # String is assumed to be logic
                         self._rtl_io+=indent(text='%s <= v_%s;\n',level=4)

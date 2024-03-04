@@ -25,29 +25,53 @@ class vhdl_connector(connector_common,thesdk):
         self._type=kwargs.get('type', 'std_logic_vector' ) # Depends on language
     @property
     def type(self):
-        ''' Type defaults to std_logic_vector meaning that all signals are handled as unsigned integers.
+        ''' Type defaults to None meaning that all signals are handled as unsigned integers.
+        Can be explicitly set to 'signed' if needed for type conversion of the output signals.
         '''
+
+        # We must handle parametrized widths
         if not hasattr(self, '_type'):
             if type(self.width) == str:
-                self._type = 'std_logic_vector'
+                self._type = None
             elif self.width == 1:
-                self._type = 'std_logic'
+                self._type = None
             elif self.width > 1:
-                self._type = 'std_logic_vector'
+                self._type = None
         else:
-            if type(self.width) == str:
-                self._type = 'std_logic_vector'
-            elif self.width == 1 and self._type != 'std_logic':
-                self.print_log(type='I', msg='Converting type \'%s\' to type \'std_logic\' for VHDL simulations ' %(self._type))
-                self._type = 'std_logic'
-            elif self.width > 1 and self._type != 'std_logic_vector':
-                self.print_log(type='I', msg='Converting type \'%s\' to type \'std_logic_vector\' for VHDL simulations ' %(self._type))
-                self._type = 'std_logic_vector'
+            if type(self.width) == str and self._type != 'signed':
+                self.print_log(type='I', msg='Setting type of \'%s\' to \'None\' due to parametrized width ' %(self.name))
+                self._type = None
+            elif self.width == 1 and self._type != 'signed':
+                self._type = None
+            elif self.width > 1 and self._type != 'signed':
+                self._type = None
         return self._type
     @type.setter
     def type(self,value):
+       self.print_log(type='I', msg='Setting type of \'%s\' to \'%s\' ' %(self.name,value))
        self._type = value
 
+    @property
+    def vhdl_signal_type(self):
+        ''' Type defaults to std_logic_vector meaning that all signals are handled as unsigned integers.
+        '''
+        if not hasattr(self, '_vhdl_signal_type'):
+            if type(self.width) == str:
+                self._vhdl_signal_type = 'std_logic_vector'
+            elif self.width == 1:
+                self._vhdl_signal_type = 'std_logic'
+            elif self.width > 1:
+                self._vhdl_signal_type = 'std_logic_vector'
+        else:
+            if type(self.width) == str:
+                self._vhdl_signal_type = 'std_logic_vector'
+            elif self.width == 1 and self._vhdl_signal_type != 'std_logic':
+                self.print_log(type='I', msg='Setting vhdl_signal_type of \'%s\' to type \'std_logic\' for VHDL simulations ' %(self.name))
+                self._vhdl_signal_type = 'std_logic'
+            elif self.width > 1 and self._vhdl_signal_type != 'std_logic_vector':
+                self.print_log(type='I', msg='Setting vhdl_signal_type of \'%s\' to \'std_logic_vector\' for VHDL simulations ' %(self.name))
+                self._vhdl_signal_type = 'std_logic_vector'
+        return self._vhdl_signal_type
 
     @property
     def ioformat(self):
@@ -61,20 +85,16 @@ class vhdl_connector(connector_common,thesdk):
     @property
     def definition(self):
         if self.width==1:
-            if not self.type:
-                self.type='std_logic'
             if not self.init:
-                self._definition='signal %s :  %s;\n' %(self.name, self.type,)
+                self._definition='signal %s :  %s;\n' %(self.name, self.vhdl_signal_type,)
             else:
-                self._definition='signal %s :  %s := %s;\n' %(self.name, self.type,self.init)
+                self._definition='signal %s :  %s := %s;\n' %(self.name, self.vhdl_signal_type,self.init)
 
         else:
-            if not self.type:
-                self.type='std_logic_vector'
             if not self.init:
-                self._definition='signal %s : %s(%s downto %s);\n' %(self.name, self.type, self.ll, self.rl)
+                self._definition='signal %s : %s(%s downto %s);\n' %(self.name, self.vhdl_signal_type, self.ll, self.rl)
             else:
-                self._definition='signal %s : %s(%s downto %s) := %s ;\n' %(self.name, self.type, self.ll, self.rl, self.init)
+                self._definition='signal %s : %s(%s downto %s) := %s ;\n' %(self.name, self.vhdl_signal_type, self.ll, self.rl, self.init)
         return self._definition
 
     @property
