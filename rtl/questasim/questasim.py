@@ -6,6 +6,18 @@ Initially written by Marko kosunen 20221030
 """
 from thesdk import *
 class questasim(thesdk):
+
+    @property
+    def dep_lang(self):
+        if not hasattr(self, '_dep_lang'):
+            self._dep_lang = "vhdl"
+    @dep_lang.setter
+    def dep_lang(self, value):
+        if value in ["sv", "vhdl"]:
+            self._dep_lang = value
+        else:
+            raise ValueError("Invalid value for dep_lang: %s" % (value))
+
     @property
     def questasim_rtlcmd(self):
         submission=self.lsf_submission
@@ -21,7 +33,6 @@ class questasim(thesdk):
             timescalestring = ' -t ' + self.rtl_timescale
         else:
             timescalestring = ''
-
 
 
         # The following cases are possible
