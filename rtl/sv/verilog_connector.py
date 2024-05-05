@@ -28,7 +28,7 @@ class verilog_connector(connector_common,thesdk):
     @property
     def type(self):
         ''' Type defaults to None mening that all signals are handled as unsigned integers.
-        Can be explicitly set to 'signed' if needed.
+        Can be explicitly set to 'signed' if needed for type conversion of the output signals.
         '''
 
         # We must handle parametrized widths
@@ -41,16 +41,16 @@ class verilog_connector(connector_common,thesdk):
                 self._type = None
         else:
             if type(self.width) == str and self._type != 'signed':
-                self.print_log(type='I', msg='Setting type \'%s\' to type None due to parametrized width ' %(self._type))
+                self.print_log(type='I', msg='Setting type of \'%s\' to \'None\' due to parametrized width ' %(self.name))
                 self._type = None
             elif self.width == 1 and self._type != 'signed':
                 self._type = None
             elif self.width > 1 and self._type != 'signed':
-                self.print_log(type='I', msg='Setting type \'%s\' of signal \'%s\' to type None' %(self._type,self.name))
                 self._type = None
         return self._type
     @type.setter
     def type(self,value):
+       self.print_log(type='I', msg='Setting type of \'%s\' to \'%s\' ' %(self.name,value))
        self._type = value
 
     @property

@@ -91,7 +91,7 @@ class vhdl_testbench(testbench_common):
         """VHDL signal definition strings
 
         """
-        #Update the language formatting. We are operating in verilog
+        #Update the language formatting. We are operating in vhdl
         for name, val in self.connectors.Members.items():
             val.lang='vhdl'
         # Registers first
@@ -207,8 +207,10 @@ class vhdl_testbench(testbench_common):
         """Defines the tb connectivity, creates reset and clock, and initializes them to zero
 
         """
-        # Dut is creted automaticaly, if vhdl file for it exists
+        # Dut is created automaticaly, if vhdl file for it exists
         self.connectors.update(bundle=self.dut_instance.io_signals.Members)
+        for key,val in  self.connectors.Members.items():
+            val.lang=self.lang
         #Assign verilog simulation parameters to testbench
         self.parameters=self.parent.rtlparameters
 
