@@ -6,6 +6,19 @@ Initially written by Marko kosunen 20221030
 """
 from thesdk import *
 class questasim(thesdk):
+
+    @property
+    def dep_lang(self):
+        if not hasattr(self, '_dep_lang'):
+            self._dep_lang = "vhdl"
+        return self._dep_lang
+    @dep_lang.setter
+    def dep_lang(self, value):
+        if value in ["sv", "vhdl"]:
+            self._dep_lang = value
+        else:
+            raise ValueError("Invalid value for dep_lang: %s" % (value))
+
     @property
     def questasim_rtlcmd(self):
         submission=self.lsf_submission
@@ -106,13 +119,20 @@ class questasim(thesdk):
 
         self._rtlcmd =  rtllibcmd
         self._rtlcmd += ' && ' + rtllibmapcmd
+
         # Commpile dependencies first.
+        compile_dep_vlog = vlogmodulesstring != ''
+        compile_dep_vhdl = vhdlmodulesstring != ''
         if self.dep_lang == 'vhdl':
-            self._rtlcmd += ' && ' + vhdlcompcmd
-            self._rtlcmd += ' && ' + vlogcompcmd
+            if compile_dep_vhdl:
+                self._rtlcmd += ' && ' + vhdlcompcmd
+            if compile_dep_vlog:
+                self._rtlcmd += ' && ' + vlogcompcmd
         elif self.dep_lang == 'sv':
-            self._rtlcmd += ' && ' + vlogcompcmd
-            self._rtlcmd += ' && ' + vhdlcompcmd
+            if compile_dep_vlog:
+                self._rtlcmd += ' && ' + vlogcompcmd
+            if compile_dep_vhdl:
+                self._rtlcmd += ' && ' + vhdlcompcmd
         self._rtlcmd += ' && ' + dutcompcmd
         self._rtlcmd += ' && sync ' + self.rtlworkpath 
         self._rtlcmd += ' && ' + submission 
