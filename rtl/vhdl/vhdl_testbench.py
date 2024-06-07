@@ -80,7 +80,10 @@ class vhdl_testbench(testbench_common):
 
         """
         if not hasattr(self,'_content_parameters'):
-            self._content_parameters={'c_Ts': ('time','1.0/(g_Rs*1.0e-12)*1.0 ps')} 
+            # Unit is always two characters
+            stripped = self.rtl_timescale.strip()
+            unit = stripped[-2] + stripped[-1]
+            self._content_parameters={'c_Ts': ('time',f'1.0/(g_Rs*{self.rtl_timescale_num:.1e})*1.0 {unit}')} 
         return self._content_parameters
     @content_parameters.setter    
     def content_parameters(self,val):
