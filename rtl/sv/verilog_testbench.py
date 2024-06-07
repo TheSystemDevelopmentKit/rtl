@@ -83,7 +83,7 @@ class verilog_testbench(testbench_common):
 
         """
         if not hasattr(self,'_content_parameters'):
-            self._content_parameters={'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
+            self._content_parameters={'c_Ts': ('integer',f'1/(g_Rs*{self.rtl_timescale_num})')} 
         return self._content_parameters
     @content_parameters.setter    
     def content_parameters(self,val):

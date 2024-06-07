@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from functools import reduce
 import shutil
+import re
 
 from rtl.connector import indent, rtl_connector_bundle, verilog_connector_bundle
 from rtl.testbench import testbench as vtb
@@ -39,6 +40,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
     def __init__(self):
         pass
+
 
     @property
     def lang(self):
@@ -105,7 +107,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def rtl_timescale(self):
         """
-        Defines the rtl timescal. This is the time unit shown by the simulator
+        Defines the rtl timescale. This is the time unit shown by the simulator
         and used in testbench delays. Default '1ps'
 
         """
@@ -113,8 +115,52 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._rtl_timescale = '1ps'
         return self._rtl_timescale
     @rtl_timescale.setter
-    def rtl_timescale(self,val):
-            self._rtl_timescale = val
+    def rtl_timescale(self, val):
+        self._rtl_timescale = val
+
+    @property
+    def rtl_timescale_num(self):
+        """
+        Returns rtl_timescale as a floating point number. Determined from rtl_timescale.
+        No setter.
+        """
+        val = self.rtl_timescale
+        match = re.match(r'(\d+)(\D+)', val.replace(" ",""))
+        if match:
+            number = int(match.group(1))
+            text = match.group(2)
+        else:
+            self.print_log(type='F', msg=f"Invalid rtl_timescale string: {val}. Allowed e.g. 1ps")
+        if text == "ms": number *= 1e-3
+        elif text == "us": number *= 1e-6
+        elif text == "ns": number *= 1e-9
+        elif text == "ps": number *= 1e-12
+        elif text == "fs": number *= 1e-15
+        else:
+            self.print_log(type='F', msg=f"Invalid rtl_timescale unit: {val}. Allowed ms,us,ns,ps,fs")
+        return number
+
+    @property
+    def rtl_timeprecision_num(self):
+        """
+        Returns rtl_timeprecision as a floating point number. Determined from rtl_timeprecision.
+        No setter.
+        """
+        val = self.rtl_timescale
+        match = re.match(r'(\d+)(\D+)', val.replace(" ",""))
+        if match:
+            number = int(match.group(1))
+            text = match.group(2)
+        else:
+            self.print_log(type='F', msg=f"Invalid rtl_timeprecision string: {val}. Allowed e.g. 1ps")
+        if text == "ms": number *= 1e-3
+        elif text == "us": number *= 1e-6
+        elif text == "ns": number *= 1e-9
+        elif text == "ps": number *= 1e-12
+        elif text == "fs": number *= 1e-15
+        else:
+            self.print_log(type='F', msg=f"Invalid rtl_timeprecision unit: {val}. Allowed ms,us,ns,ps,fs")
+        return number
 
     @property
     def rtl_timeunit(self):
