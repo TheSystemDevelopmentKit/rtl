@@ -94,14 +94,14 @@ class testbench_common(module):
         if not hasattr(self,'_dut_instance'):
             if self.parent.model == 'icarus':
                 self._dut_instance=verilog_module(**{'file':self._dutfile})
-            if self.parent.model == 'sv':
+            elif self.parent.model == 'sv':
                     self._dut_instance=verilog_module(**{'file':self._dutfile})
             elif self.parent.model == 'vhdl':
                     self._dut_instance=vhdl_entity(**{'file':self._dutfile})
             elif self.parent.model == 'ghdl':
                     self._dut_instance=vhdl_entity(**{'file':self._dutfile})
             else:
-                self.print_log(t='F', msg='Mpdel %s not supported' %(self.parent.model))
+                self.print_log(type='F', msg='Model %s not supported' %(self.parent.model))
         return self._dut_instance
 
     
