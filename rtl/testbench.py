@@ -18,6 +18,7 @@ import pdb
 from rtl.testbench_common import testbench_common
 from rtl.sv.verilog_testbench import verilog_testbench
 from rtl.vhdl.vhdl_testbench import vhdl_testbench
+from rtl.verilator.verilator_testbench import verilator_testbench
 
 class testbench(testbench_common):
     """ Testbench class. Extends `module` through 'testbench_commom'
@@ -51,6 +52,11 @@ class testbench(testbench_common):
                         instname=self.instname)
             elif self.lang == 'vhdl':  
                 self._langmodule=vhdl_testbench(
+                        parent=self.parent,
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
+            elif self.lang == 'verilator':  
+                self._langmodule=verilator_testbench(
                         parent=self.parent,
                         file=self.file, name=self.name, 
                         instname=self.instname)

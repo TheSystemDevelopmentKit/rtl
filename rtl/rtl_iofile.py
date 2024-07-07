@@ -95,6 +95,8 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
             return self._langmodule_verilog
         elif self.parent.lang=='vhdl': 
             return self._langmodule_vhdl
+        elif self.parent.lang=='verilator': 
+            return self._langmodule_verilator
     @property
     def rtl_timescale(self):
         ''' Timescale for RTL simulations inherited from parent

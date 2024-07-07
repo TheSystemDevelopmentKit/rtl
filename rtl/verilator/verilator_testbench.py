@@ -4,21 +4,6 @@ verilator_testbench
 ===================
 
 Verilator testbench generator utility module for TheSyDeKick. Documentation provided in 'testbench' class
-    def verilog_instance_add(self,**kwargs):
-        '''Add verilog instance to the Bundle fro a file
-
-        Parameters
-        ----------
-        **kwargs:
-           name : str
-             name of the module
-           file :
-               File defining the module
-
-        '''
-        name=kwargs.get('name')
-        file=kwargs.get('file')
-        self.verilog_instances.Members[name]=verilator_module(file=file,instname=name)
 
 Extends `testbench_common`.
 
@@ -31,9 +16,6 @@ import pdb
 from rtl import indent
 from rtl.connector import rtl_connector
 from rtl.testbench_common import testbench_common
-#Refactor these to rtl_connector
-#from rtl.verilator_connector import verilator_connector, verilator_connector_bundle
-#from rtl.verilator_module import verilator_module
 
 class verilator_testbench(testbench_common):
     """Verilator testbench class.
@@ -59,11 +41,32 @@ class verilator_testbench(testbench_common):
         '''
         definitions='// Parameter definitions\n'
         for name, val in self.content_parameters.items():
-            definitions += val[0]+ ' ' + name + '=' + val[1] + ';\n'
+            definitions += 'auto ' + name + '=' + str(val[1]) + ';\n'
         for name, val in self.parameters.Members.items():
-            definitions += 'auto ' + name + '=' + str(val) + ';\n'
+            definitions += 'auto ' + name + '=' + str(val[1]) + ';\n'
 
         return definitions
+
+    @property
+    def content_parameters(self):
+        """ Parameters used inside the testbench
+
+            Dict :  {name: (type,value)}
+
+            Example
+            -------
+
+                ::
+
+                {'c_Ts': ('integer','1/(g_Rs*1e-12)')}
+
+        """
+        if not hasattr(self,'_content_parameters'):
+            self._content_parameters={'c_Ts': ('integer',f'1/(g_Rs*{self.rtl_timescale_num})')}
+        return self._content_parameters
+    @content_parameters.setter
+    def content_parameters(self,val):
+        self._content_parameters=val
 
     @property
     def connector_definitions(self):
@@ -136,40 +139,38 @@ class verilator_testbench(testbench_common):
     # This method
     def define_testbench(self):
         '''Defines the tb connectivity, creates reset and clock, and initializes them to zero
-        TODO FOR VERILATOR
+
         '''
         # Dut is creted automaticaly, if verilog file for it exists
-        #import pdb; pdb.set_trace()
-
-        #print(self.dut_instance.io_signals)
-        #self.dut_instance.io_signals = verilator_connector_bundle()
-        #for ioname, io in self.ios.Members.items():
-        #    self.dut_instance.Members[ioname] = io.connect
         self.connectors.update(bundle=self.dut_instance.io_signals.Members)
         #Assign verilog simulation parameters to testbench
         self.parameters=self.parent.rtlparameters
 
-        # Create clock if nonexistent
+        # Create clock if nonexistent and reset it
         if 'clock' not in self.dut_instance.ios.Members:
-            self.connectors.Members['clock']=verilator_connector(
-                    name='clock',cls='reg', init='\'b0')
+            self.connectors.Members['clock']=rtl_connector(lang='verilator',
+                    name='clock',cls='reg', init='0')
+        elif self.connectors.Members['clock'].init=='':
+            self.connectors.Members['clock'].init='0'
 
-        # Create reset if nonexistent
+        # Create reset if nonexistent and reset it
         if 'reset' not in self.dut_instance.ios.Members:
-            self.connectors.Members['reset']=verilator_connector(
-                    name='reset',cls='reg', init='\'b0')
+            self.connectors.Members['reset']=rtl_connector(lang='verilator',
+                    name='reset',cls='reg', init='0')
+        elif self.connectors.Members['reset'].init=='':
+            self.connectors.Members['reset'].init='0'
 
         ## Start initializations
         #Init the signals connected to the dut input to zero
         for name, val in self.dut_instance.ios.Members.items():
             if val.cls=='input':
-                val.connect.init='\'b0'
+                val.connect.init='0'
 
-    # Automate this bsed in dir
+    # This is a copy from verilog_testbench
     def connect_inputs(self):
-        '''Define connections to DUT inputs.
-        TODO FOR VERILATOR
-        '''
+        """Define connections to DUT inputs.
+
+        """
         # Create TB connectors from the control file
         # See controller.py
         for ioname,val in self.parent.IOS.Members.items():

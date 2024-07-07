@@ -15,7 +15,6 @@ from rtl import *
 from rtl.module import module
 from rtl.sv.verilog_module import verilog_module
 from rtl.vhdl.vhdl_entity import vhdl_entity
-from rtl.verilator.verilator_module import verilator_module
 
 class testbench_common(module):
     ''' Testbench class. Extends `module`
@@ -102,7 +101,8 @@ class testbench_common(module):
             elif self.parent.model == 'ghdl':
                     self._dut_instance=vhdl_entity(**{'file':self._dutfile})
             elif self.parent.model == 'verilator':
-                    self._dut_instance=verilator_module(**{'file':self._dutfile})
+                    # We ahndle the instantiation in module_common
+                    self._dut_instance=verilog_module(**{'file':self._dutfile})
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.parent.model))
         return self._dut_instance

@@ -21,6 +21,7 @@ from rtl.connector import verilog_connector_bundle
 from rtl.module_common import module_common
 from rtl.sv.verilog_module import verilog_module
 from rtl.vhdl.vhdl_entity import vhdl_entity
+from rtl.verilator.verilator_module import verilator_module
 
 class module(module_common,thesdk):
     """ Currently module class is just an alias for verilog_module.
@@ -64,6 +65,10 @@ class module(module_common,thesdk):
                         instname=self.instname)
             elif self.lang == 'vhdl':  
                 self._langmodule=vhdl_entity(
+                        file=self.file, name=self.name, 
+                        instname=self.instname)
+            elif self.lang == 'verilator':  
+                self._langmodule=verilator_module(
                         file=self.file, name=self.name, 
                         instname=self.instname)
         return self._langmodule
@@ -138,88 +143,6 @@ class module(module_common,thesdk):
         IO definitions.
 
         '''
-#<<<<<<< HEAD Check where to transfer
-#        if not hasattr(self,'_definition'):
-#            self._definition = ''
-#            # module-wide directives
-#            self._definition += '\n'.join(self.directives) + '\n'
-#            # module parameters
-#            if self.parameters.Members:
-#                parameters=''
-#                first=True
-#                for name, val in self.parameters.Members.items():
-#                    if first:
-#                        parameters='#(\n    parameter %s = %s' %(name,val)
-#                        first=False
-#                    else:
-#                        parameters=parameters+',\n    parameter %s = %s' %(name,val)
-#                parameters=parameters+'\n)'
-#                self._definition+='module %s %s' %(self.name, parameters)
-#            else:
-#                self._definition+='module %s ' %(self.name)
-#            # module io
-#            first=True
-#            if self.ios.Members:
-#                for ioname, io in self.ios.Members.items():
-#                    if first:
-#                        self._definition=self._definition+'(\n'
-#                        first=False
-#                    else:
-#                        self._definition=self._definition+',\n'
-#                    if io.cls in [ 'input', 'output', 'inout' ]:
-#                        if io.width==1:
-#                            self._definition=(self._definition+
-#                                    ('    %s %s' %(io.cls, io.name)))
-#                        else:
-#                            self._definition=(self._definition+
-#                                    ('    %s [%s:%s] %s' %(io.cls, io.ll, io.rl, io.name)))
-#                    else:
-#                        self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
-#                self._definition=self._definition+'\n)'
-#            self._definition=self._definition+';'
-#            # module body
-#            if self.contents:
-#                self._definition=self._definition+self.contents+'\nendmodule'
-#        return self._definition
-#||||||| 30941e9
-#        if not hasattr(self,'_definition'):
-#            #First we print the parameter section
-#            if self.parameters.Members:
-#                parameters=''
-#                first=True
-#                for name, val in self.parameters.Members.items():
-#                    if first:
-#                        parameters='#(\n    parameter %s = %s' %(name,val)
-#                        first=False
-#                    else:
-#                        parameters=parameters+',\n    parameter %s = %s' %(name,val)
-#                parameters=parameters+'\n)'
-#                self._definition='module %s %s' %(self.name, parameters)
-#            else:
-#                self._definition='module %s ' %(self.name)
-#            first=True
-#            if self.ios.Members:
-#                for ioname, io in self.ios.Members.items():
-#                    if first:
-#                        self._definition=self._definition+'(\n'
-#                        first=False
-#                    else:
-#                        self._definition=self._definition+',\n'
-#                    if io.cls in [ 'input', 'output', 'inout' ]:
-#                        if io.width==1:
-#                            self._definition=(self._definition+
-#                                    ('    %s %s' %(io.cls, io.name)))
-#                        else:
-#                            self._definition=(self._definition+
-#                                    ('    %s [%s:%s] %s' %(io.cls, io.ll, io.rl, io.name)))
-#                    else:
-#                        self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
-#                self._definition=self._definition+'\n)'
-#            self._definition=self._definition+';'
-#            if self.contents:
-#                self._definition=self._definition+self.contents+'\nendmodule'
-#        return self._definition
-#=======
         return self.langmodule.definition
 
     @property

@@ -34,10 +34,8 @@ from rtl.icarus.icarus import icarus as icarus
 from rtl.questasim.questasim import questasim as questasim
 from rtl.ghdl.ghdl import ghdl as ghdl
 from rtl.verilator.verilator import verilator as verilator
-# Refactor this
-# from rtl.verilatortb import verilatortb
 
-class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
+class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions
     for rtl simulations in the subclasses.
 
@@ -50,7 +48,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def lang(self):
         """ str : Language of the testbench to support multilanguage simulators.
-        Default vhdl | sv (default)
+        Default verilator | vhdl | sv (default)
         """
         if not hasattr(self,'_lang'):
             self._lang = 'sv'
@@ -60,6 +58,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         elif self.model == 'ghdl' and self._lang != 'vhdl':
             self.print_log(t='I', msg='Only VHDL supported by GHDL')
             self._lang = 'vhdl'
+        elif self.model == 'verilator' and self._lang != 'verilator':
+            self.print_log(t='I', msg='Only CPP supported by Verilator')
+            self._lang = 'verilator'
         return self._lang
     @lang.setter
     def lang(self,value):
@@ -297,6 +298,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             -------
                 self.rtlsimpath + self.name + self.vlogext for 'sv' model
                 self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
+                self.rtlsimpath + self.name + '.cpp' for 'verilator' model
         '''
         if not hasattr(self, '_simdut'):
             if self.model == 'icarus':
@@ -307,34 +309,18 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self._simdut = self.questasim_simdut
             elif self.model == 'ghdl':
                 self._simdut = self.ghdl_simdut
+            elif self.model == 'verilator':
+                self._simdut = self.verilator_simdut
             else:
                 self.print_log(type='F', msg='Unsupported model %s' % self.model)
         return self._simdut
 
-# Refactor this
-#    @property
-#    def simulator(self):
-#        '''Simulator to be used.
-#
-#        'questa' | 'verilator'
-#        '''
-#        if not hasattr(self, '_simulator'):
-#            # Use questasim as default simulator
-#            self._simulator = 'questa'
-#        return self._simulator
-#    @simulator.setter
-#    def simulator(self, sim):
-#        if sim not in ['questa', 'verilator']:
-#            self.print_log(type='E', msg= 'Simulator %s not supported!' % sim)
-#        self._simulator = sim
-#        return self._simulator
-#
     @property
     def simtb(self):
         ''' Testbench source file in simulations directory.
 
         This file and it's format is dependent on the language(s)
-        supported by the simulator. Currently we have support only for verilog testbenches.
+        supported by the simulator. 
 
         '''
         if not hasattr(self, '_simtb'):
@@ -555,6 +541,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             (controlfiledir, controlfile, generatedcontrolfile ) = self.questasim_controlfilepaths
         elif self.model == 'ghdl':
             (controlfiledir, controlfile, generatedcontrolfile ) = self.ghdl_controlfilepaths
+        elif self.model == 'verilator':
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.verilator_controlfilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
 
@@ -601,6 +589,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             (dofiledir, dofile, obsoletedofile, generateddofile) = self.questasim_dofilepaths
         elif self.model == 'ghdl':
             (dofiledir, dofile, obsoletedofile, generateddofile) = self.ghdl_dofilepaths
+        elif self.model == 'verilator':
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.verilator_dofilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
         
@@ -657,6 +647,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 return self.questasim_rtlcmd
             elif self.model=='ghdl':
                 return self.ghdl_rtlcmd
+            elif self.model=='verilator':
+                return self.verilator_rtlcmd
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.model))
         return self._rtlcmd
@@ -741,7 +733,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         '''
         # I think these should not be model dependent MK
         self.print_log(type='I', msg='Copying rtl sources to %s' % self.rtlsimpath)
-        if self.model in ['sv', 'icarus']:
+        if self.model in ['sv', 'icarus', 'verilator']:
             # copy dut source
             vlogsrc_exists = os.path.isfile(self.vlogsrc)   # verilog source present in self.entitypath/sv
             simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
@@ -780,9 +772,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                     self.copy_or_relink(src=srcfile,dst=dstfile)
 
-        # nothing generates vhdl so simply copy all files to rtlsimpath
         elif self.model == 'vhdl' or self.model == 'ghdl':
-            vhdlsrc_exists = os.path.isfile(self.vhdlsrc)   # verilog source present in self.entitypath/sv
+            vhdlsrc_exists = os.path.isfile(self.vhdlsrc)   # vhdl source present in self.entitypath/vhd
             simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
 
             if not vhdlsrc_exists and not simdut_exists:
@@ -932,29 +923,47 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             # Loading a previously stored state
             self._read_state()
         else:
+            pdb.set_trace()
             self.copy_rtl_sources()
+            pdb.set_trace()
             self.tb=vtb(parent=self,lang=self.lang)
+            pdb.set_trace()
             self.tb.define_testbench()
+            pdb.set_trace()
             self.add_connectors()
+            pdb.set_trace()
             self.create_connectors()
+            pdb.set_trace()
             self.connect_inputs()
+            pdb.set_trace()
             if hasattr(self,'define_io_conditions'):
                 self.define_io_conditions()   # Local, this is dependent on how you
                                               # control the simulation
                                               # i.e. when you want to read an write your IO's
+            pdb.set_trace()
             self.format_ios()
+            pdb.set_trace()
             self.tb.generate_contents()
+            pdb.set_trace()
             self.tb.export(force=True)
+            pdb.set_trace()
             self.write_infile()
+            pdb.set_trace()
             self.execute_rtl_sim()
+            pdb.set_trace()
             self.read_outfile()
+            pdb.set_trace()
             self.connect_outputs()
+            pdb.set_trace()
             # Save entity state
             if self.save_state:
                 self._write_state()
+            pdb.set_trace()
             # Clean simulation results
             self.delete_iofile_bundle()
+            pdb.set_trace()
             self.delete_rtlworkpath()
+            pdb.set_trace()
             self.delete_rtlsimpath()
 
     #This writes all infile
