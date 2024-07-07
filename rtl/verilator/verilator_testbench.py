@@ -1,94 +1,9 @@
-import os
-import sys
-sys.path.append(os.path.abspath("../../thesdk"))
+"""
+===================
+verilator_testbench
+===================
 
-from abc import *
-from thesdk import *
-from rtl import *
-from rtl.verilator_connector import verilator_connector, verilator_connector_bundle
-from rtl.verilator_module import verilator_module
-
-class verilatortb(verilator_module):
-    '''Verilator Testbench class. Extends `verilator_module`
-    
-    '''
-    @property
-    def _classfile(self):
-        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
-
-    def __init__(self, parent=None, **kwargs):
-        '''Parameters
-           ----------
-           parent: object, None (mandatory to define). TheSyDeKick parent entity object for this testbench.
-           **kwargs :
-              None
-
-        '''
-
-        if parent==None:
-            # TODO: replafe type to F
-            self.print_log(type='I', msg="Parent of Verilog testbench not given")
-        else:
-            self.parent=parent
-        try:  
-            # The proper files are determined in rtl based on simulation model
-            self._file = self.parent.simtb
-            self._dutfile = self.parent.simdut
-        except:
-            # TODO: replace type to F
-            self.print_log(type='I', msg="Verilog Testbench file definition failed")
-        
-        #The methods for these are derived from verilog_module
-        self._name=''
-        self._parameters=Bundle()
-        self.connectors=verilator_connector_bundle()
-        self.iofiles=Bundle()
-        self.content_parameters={'c_Ts': ('const int','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
-        self.assignment_matchlist=[]
-
-    @property
-    def file(self):
-        '''Path to the testbench file
-
-        Default: `self.parent.vlogsrcpath + '/tb_' + self.parent.name + '.cpp'`
-
-
-        '''
-        if not hasattr(self,'_file'):
-            self._file=None
-        return self._file
-
-    @file.setter
-    def file(self,value):
-            self._file=value
-
-    @property
-    def dut_instance(self):
-        '''RTL module parsed from the verilog
-
-        '''
-        if not hasattr(self,'_dut_instance'):
-            if self.parent.model=='sv':
-                self._dut_instance=verilator_module(**{'file':self._dutfile})
-            elif self.parent.model=='vhdl':
-                self.print_log(type='F', msg="Verilator supports only verilog!")
-        return self._dut_instance
-
-    #We should not need this, but it is wise to enable override
-    @dut_instance.setter
-    def dut_instance(self,value):
-        self._dut_instance=value
-
-    @property
-    def verilog_instances(self):
-        '''Verilog instances Bundle to be added to tesbench
-
-        '''
-        if not hasattr(self,'_verilog_instances'):
-            self._verilog_instances=Bundle()
-        return self._verilog_instances
-
-
+Verilator testbench generator utility module for TheSyDeKick. Documentation provided in 'testbench' class
     def verilog_instance_add(self,**kwargs):
         '''Add verilog instance to the Bundle fro a file
 
@@ -104,6 +19,47 @@ class verilatortb(verilator_module):
         name=kwargs.get('name')
         file=kwargs.get('file')
         self.verilog_instances.Members[name]=verilator_module(file=file,instname=name)
+
+Extends `testbench_common`.
+
+Initially written by Aleksi Korsman 2022, aleksi.korsman@aalto.fi
+Refactored by Marko Kosunen 20240707, marko.kosunen@aalto.fi
+"""
+import os
+import sys
+import pdb
+from rtl import indent
+from rtl.connector import rtl_connector
+from rtl.testbench_common import testbench_common
+#Refactor these to rtl_connector
+#from rtl.verilator_connector import verilator_connector, verilator_connector_bundle
+#from rtl.verilator_module import verilator_module
+
+class verilator_testbench(testbench_common):
+    """Verilator testbench class.
+
+    """
+    def __init__(self, parent=None, **kwargs):
+        """ Executes init of testbench_common, thus having the same attributes and
+        parameters.
+
+        Parameters
+        ----------
+            **kwargs :
+               See module module_common
+
+        """
+        super().__init__(parent,**kwargs)
+        self.header = '#include <verilated.h>\n'
+        self.header += '#include <verilated_vcd_c.h> // Writes VCD - TODO: add only if interactive mode\n'
+
+
+
+
+
+
+
+
 
     @property
     def parameter_definitions(self):
@@ -143,10 +99,10 @@ class verilatortb(verilator_module):
         '''
         iofile_defs='//Variables for the io_files\n'
         for name, val in self.iofiles.Members.items():
-            iofile_defs=iofile_defs+val.verilog_statdef
-            iofile_defs=iofile_defs+val.verilog_fopen
+            iofile_defs=iofile_defs+val.rtl_statdef
+            iofile_defs=iofile_defs+val.rtl_fopen
         iofile_defs=iofile_defs+'\n'
-        return iofile_defs 
+        return iofile_defs
 
     @property
     def clock_definition(self):
@@ -167,14 +123,14 @@ class verilatortb(verilator_module):
         '''
         iofile_close='\n//Close the io_files\n'
         for name, val in self.iofiles.Members.items():
-            iofile_close=iofile_close+val.verilog_fclose
+            iofile_close=iofile_close+val.rtl_fclose
         iofile_close=iofile_close+'\n'
-        return iofile_close 
+        return iofile_close
 
     @property
     def misccmd(self):
         """String
-        
+
         Miscellaneous command string corresponding to self.rtlmisc -list in
         the parent entity.
         """
@@ -185,7 +141,7 @@ class verilatortb(verilator_module):
                 self._misccmd += cmd + "\n"
         return self._misccmd
 
-    # This method 
+    # This method
     def define_testbench(self):
         '''Defines the tb connectivity, creates reset and clock, and initializes them to zero
         TODO FOR VERILATOR
@@ -201,12 +157,12 @@ class verilatortb(verilator_module):
         #Assign verilog simulation parameters to testbench
         self.parameters=self.parent.rtlparameters
 
-        # Create clock if nonexistent 
+        # Create clock if nonexistent
         if 'clock' not in self.dut_instance.ios.Members:
             self.connectors.Members['clock']=verilator_connector(
                     name='clock',cls='reg', init='\'b0')
 
-        # Create reset if nonexistent 
+        # Create reset if nonexistent
         if 'reset' not in self.dut_instance.ios.Members:
             self.connectors.Members['reset']=verilator_connector(
                     name='reset',cls='reg', init='\'b0')
@@ -226,20 +182,20 @@ class verilatortb(verilator_module):
         # See controller.py
         for ioname,val in self.parent.IOS.Members.items():
             if val.iotype != 'file':
-                self.parent.iofile_bundle.Members[ioname].verilog_connectors=\
+                self.parent.iofile_bundle.Members[ioname].rtl_connectors=\
                         self.connectors.list(names=val.ionames)
-                if val.dir == 'in': 
+                if val.dir == 'in':
                     # Data must be properly shaped
                     self.parent.iofile_bundle.Members[ioname].Data=self.parent.IOS.Members[ioname].Data
             elif val.iotype == 'file': #If the type is file, the Data is a bundle
                 for bname,bval in val.Data.Members.items():
-                    if val.dir == 'in': 
+                    if val.dir == 'in':
                         # Adoption transfers parenthood of the files to this instance
                         self.IOS.Members[ioname].Data.Members[bname].adopt(parent=self)
-                    for connector in bval.verilog_connectors:
+                    for connector in bval.rtl_connectors:
                         self.tb.connectors.Members[connector.name]=connector
                         # Connect them to DUT
-                        try: 
+                        try:
                             self.dut.ios.Members[connector.name].connect=connector
                         except:
                             pass
@@ -247,14 +203,14 @@ class verilatortb(verilator_module):
         for name, val in self.iofile_bundle.Members.items():
             self.tb.parameters.Members.update(val.rtlparam)
         # Define the iofiles of the testbench. '
-        # Needed for creating file io routines 
+        # Needed for creating file io routines
         self.tb.iofiles=self.iofile_bundle
 
     def generate_contents(self):
         ''' This is the method to generate testbench contents. Override if needed
-            Contents of the testbench is constructed from attributes in the 
+            Contents of the testbench is constructed from attributes in the
             following order ::
-            
+
                 self.parameter_definitions
                 self.connector_definitions
                 self.assignments()
@@ -266,9 +222,9 @@ class verilatortb(verilator_module):
                 self.iofiles.Members.items().verilog_io (for all members)
                 self.iofile.close (for all members)
 
-             Addtional code may be currently injected by appending desired 
+             Addtional code may be currently injected by appending desired
              strings (Verilog sytax) to the relevant string attributes.
-             
+
              TODO FOR VERILATOR
 
              Verilator testbench is in C++
@@ -276,14 +232,10 @@ class verilatortb(verilator_module):
         '''
     # Start the testbench contents
         contents="""
-#include <verilated.h>
-#include <verilated_vcd_c.h> // Writes VCD - TODO: add only if interactive mode
 
-// Include the verilated module headers
-""" \
-+ \
-"#include V%s.h\n" % self.dut_instance.instname + \
-"#include V%s___024unit.h\n" % self.dut_instance.instname + \
+// Include the verilated module headers. Should these go to headers
+"""+"#include V%s.h\n" %(self.dut_instance.instname) + \
+"#include V%s___024unit.h\n" %(self.dut_instance.instname) + \
 """
 
 """ + self.parameter_definitions + \
@@ -323,3 +275,4 @@ int main(int argc, char** argv, char** env) {
         """
         self.contents=contents
         print(contents)
+

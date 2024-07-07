@@ -22,14 +22,14 @@ class verilog_testbench(testbench_common):
 
     """
     def __init__(self, parent=None, **kwargs):
-        """ Executes init of testbench_common, thus having the same attributes and 
+        """ Executes init of testbench_common, thus having the same attributes and
         parameters.
 
         Parameters
         ----------
             **kwargs :
                See module module_common
-        
+
         """
         super().__init__(parent,**kwargs)
         if self.parent.add_tb_timescale:
@@ -42,22 +42,22 @@ class verilog_testbench(testbench_common):
     #def header(self):
     #    """ str : Header line of the verilog testbench file.
     #    Default: If self.add_tb_timescale = True, adds the timescale directive to the testbench top.
-    #    according ot self.rtl_timescale attribute.   
+    #    according ot self.rtl_timescale attribute.
     #    """
-    #    
+    #
     #    if not hasattr (self, '_header'):
     #        if self.parent.add_tb_timescale:
     #            self._defheader='`timescale ' + self.rtl_timescale + ' / '+ self.rtl_timescale+'\n'
     #        else:
     #            self._defheader=''
-    #        return self._defheader    
+    #        return self._defheader
     #    else:
     #        return self._header
 
     #@header.setter
     #def header(self,val):
     #    self._header = val
-        
+
     @property
     def parameter_definitions(self):
         """Parameter  and variable definition strings of the testbench
@@ -71,24 +71,24 @@ class verilog_testbench(testbench_common):
     @property
     def content_parameters(self):
         """ Parameters used inside the testbench
-            
+
             Dict :  {name: (type,value)}
-            
+
             Example
             -------
 
                 ::
 
-                {'c_Ts': ('integer','1/(g_Rs*1e-12)')} 
+                {'c_Ts': ('integer','1/(g_Rs*1e-12)')}
 
         """
         if not hasattr(self,'_content_parameters'):
-            self._content_parameters={'c_Ts': ('integer',f'1/(g_Rs*{self.rtl_timescale_num})')} 
+            self._content_parameters={'c_Ts': ('integer',f'1/(g_Rs*{self.rtl_timescale_num})')}
         return self._content_parameters
-    @content_parameters.setter    
+    @content_parameters.setter
     def content_parameters(self,val):
         self._content_parameters=val
-    
+
     @property
     def connector_definitions(self):
         """Verilog register and wire definition strings
@@ -119,7 +119,7 @@ class verilog_testbench(testbench_common):
         for match in matchlist:
             assigns=assigns+self.connectors.assign(match=match)
         return indent(text=assigns,level=kwargs.get('level',0))
-     
+
     @property
     def iofile_definitions(self):
         """IOfile definition strings
@@ -130,7 +130,7 @@ class verilog_testbench(testbench_common):
             iofile_defs=iofile_defs+val.rtl_statdef
             iofile_defs=iofile_defs+val.rtl_fopen
         iofile_defs=iofile_defs+'\n'
-        return iofile_defs 
+        return iofile_defs
 
     @property
     def clock_definition(self):
@@ -152,7 +152,7 @@ class verilog_testbench(testbench_common):
         for name, val in self.iofiles.Members.items():
             iofile_close=iofile_close+val.rtl_fclose
         iofile_close=iofile_close+'\n'
-        return iofile_close 
+        return iofile_close
 
     @property
     def end_condition(self):
@@ -173,7 +173,7 @@ class verilog_testbench(testbench_common):
     @property
     def misccmd(self):
         """String
-        
+
         Miscellaneous command string corresponding to self.rtlmisc -list in
         the parent entity.
         """
@@ -183,7 +183,7 @@ class verilog_testbench(testbench_common):
             for cmd in mcmd:
                 self._misccmd += cmd + "\n"
         return self._misccmd
-    
+
     @misccmd.setter
     def misccmd(self,value):
         self._misccmd=value
@@ -219,7 +219,7 @@ class verilog_testbench(testbench_common):
         for name, val in self.dut_instance.ios.Members.items():
             if val.cls=='input':
                 val.connect.init='\'b0'
-    
+
     # Automate this based in dir
     def connect_inputs(self):
         """Define connections to DUT inputs.
@@ -231,18 +231,18 @@ class verilog_testbench(testbench_common):
             if val.iotype != 'file':
                 self.parent.iofile_bundle.Members[ioname].rtl_connectors=\
                         self.connectors.list(names=val.ionames)
-                if val.dir == 'in': 
+                if val.dir == 'in':
                     # Data must be properly shaped
                     self.parent.iofile_bundle.Members[ioname].Data=self.parent.IOS.Members[ioname].Data
             elif val.iotype == 'file': #If the type is file, the Data is a bundle
                 for bname,bval in val.Data.Members.items():
-                    if val.dir == 'in': 
+                    if val.dir == 'in':
                         # Adoption transfers parenthood of the files to this instance
                         self.IOS.Members[ioname].Data.Members[bname].adopt(parent=self)
                     for connector in bval.rtl_connectors:
                         self.tb.connectors.Members[connector.name]=connector
                         # Connect them to DUT
-                        try: 
+                        try:
                             self.dut.ios.Members[connector.name].connect=connector
                         except:
                             pass
@@ -250,14 +250,14 @@ class verilog_testbench(testbench_common):
         for name, val in self.iofile_bundle.Members.items():
             self.tb.parameters.Members.update(val.rtlparam)
         # Define the iofiles of the testbench. '
-        # Needed for creating file io routines 
+        # Needed for creating file io routines
         self.tb.iofiles=self.iofile_bundle
 
     def generate_contents(self):
         """ This is the method to generate testbench contents. Override if needed
-            Contents of the testbench is constructed from attributes in the 
+            Contents of the testbench is constructed from attributes in the
             following order ::
-            
+
                 self.parameter_definitions
                 self.connector_definitions
                 self.assignments()
@@ -270,7 +270,7 @@ class verilog_testbench(testbench_common):
                 self.iofiles.Members.items().rtl_io (for all members)
                 self.iofile.close (for all members)
 
-             Addtional code may be currently injected by appending desired 
+             Addtional code may be currently injected by appending desired
              strings (Verilog sytax) to the relevant string attributes.
 
         """
@@ -310,7 +310,7 @@ self.connectors.rtl_inits(level=1)+\
 """
 
     // Sequences enabled by initdone
-    $display("Ready to read"); 
+    $display("Ready to read");
 """
 
         for key, member in self.iofiles.Members.items():
