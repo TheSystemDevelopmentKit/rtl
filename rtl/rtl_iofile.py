@@ -21,6 +21,7 @@ from rtl.rtl_iofile_common import rtl_iofile_common
 from rtl.sv.verilog_iofile import verilog_iofile
 from rtl.sv.verilog_iofile_obsoletes import verilog_iofile_obsoletes
 from rtl.vhdl.vhdl_iofile import vhdl_iofile
+from rtl.verilator.verilator_iofile import verilator_iofile
 from rtl.connector import indent
 
 class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
@@ -85,6 +86,11 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
             self._langmodule_vhdl.file=self.file
             self._langmodule_vhdl.paramname=self.paramname
             self._langmodule_vhdl.name=self.name
+        if not hasattr(self,'_langmodule_verilator'):
+            self._langmodule_verilator = verilator_iofile(self)
+            self._langmodule_verilator.file=self.file
+            self._langmodule_verilator.paramname=self.paramname
+            self._langmodule_verilator.name=self.name
         if self.parent.lang=='sv': 
             return self._langmodule_verilog
         elif self.parent.lang=='vhdl': 
@@ -359,7 +365,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     @property 
     def rtl_io_sync(self):
         '''File io synchronization condition for sample type input.
-        Default: `@(posedge clock)`
+        Defaults to positive edge.`
 
         '''
         return self.langmodule.rtl_io_sync
@@ -382,12 +388,12 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
     @property
     def rtl_io(self,**kwargs):
-        '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
+        '''File IO  write/read construct for file IO depending on the direction and file type (event/sample).
 
         Returns 
         _______
         str
-            Verilog code for file IO to read/write the IO file.
+            Language specific code for file IO to read/write the IO file.
 
 
         '''
