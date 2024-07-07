@@ -1,9 +1,9 @@
 """
 ======================
-Verilog IOfile module 
+Verilog IOfile module
 ======================
 
-Provides verilog- file-io related attributes and methods 
+Provides verilog- file-io related attributes and methods
 for TheSyDeKick RTL intereface.
 
 Initially written by Marko Kosunen, marko.kosunen@aalto.fi,
@@ -13,7 +13,7 @@ Yue Dai, 2018
 import os
 import sys
 import pdb
-from abc import * 
+from abc import *
 from thesdk import *
 #from thesdk.iofile import iofile
 from rtl.rtl_iofile_common import rtl_iofile_common
@@ -24,7 +24,7 @@ from rtl.connector import indent
 
 class verilog_iofile(rtl_iofile_common):
     """
-    Class to provide file IO for rtl simulations. When created, 
+    Class to provide file IO for rtl simulations. When created,
     adds a rtl_iofile object to the parents iofile_bundle attribute.
     Accessible as self.iofile_bundle.Members['name'].
 
@@ -38,20 +38,20 @@ class verilog_iofile(rtl_iofile_common):
         '''Formatting string for verilog file reading
            Default %d, i.e. content of the file is single column of
            integers.
-           
+ 
         '''
         if not hasattr(self,'_ioformat'):
             self._ioformat='%d'
         return self._ioformat
-    
+
     @ioformat.setter
     def ioformat(self,value):
         self._ioformat=value
 
     @property
     def rtlparam(self):
-        '''Extracts the parameter name and value from simparam attribute. 
-        Used to construct the parameter definitions for Verilog testbench. 
+        '''Extracts the parameter name and value from simparam attribute.
+        Used to construct the parameter definitions for Verilog testbench.
 
         Default {'g_file_<self.name>', ('string',self.file) }
 
@@ -69,7 +69,7 @@ class verilog_iofile(rtl_iofile_common):
 
         '''
         if not hasattr(self,'_rtl_stat'):
-            self._rtl_stat='status_%s' %(self.name)
+            self._rtl_stat = 'status_%s' %(self.name)
         return self._rtl_stat
 
     @rtl_stat.setter
@@ -124,27 +124,28 @@ class verilog_iofile(rtl_iofile_common):
         '''Verilog file read status integer variable definitions and initializations strings.
 
         '''
-        if self.parent.iotype=='sample':
-            self._rtl_statdef='integer %s, %s;\n' %(self.rtl_stat, self.rtl_fptr)
-        elif self.parent.iotype=='event':
-            self._rtl_statdef='integer %s, %s;\n' %(self.rtl_stat, self.rtl_fptr)
-            self._rtl_statdef+='time %s, %s, %s;\n' %(self.rtl_ctstamp, self.rtl_pstamp, self.rtl_tdiff)
-            self._rtl_statdef+='initial %s=0;\n' %(self.rtl_ctstamp) 
-            self._rtl_statdef+='initial %s=0;\n' %(self.rtl_pstamp) 
+        if self.parent.iotype =='sample':
+            self._rtl_statdef = 'integer %s, %s;\n' %(self.rtl_stat, self.rtl_fptr)
+        elif self.parent.iotype =='event':
+            self._rtl_statdef = 'integer %s, %s;\n' %(self.rtl_stat, self.rtl_fptr)
+            self._rtl_statdef += 'time %s, %s, %s;\n' %(self.rtl_ctstamp,
+                    self.rtl_pstamp, self.rtl_tdiff)
+            self._rtl_statdef += 'initial %s=0;\n' %(self.rtl_ctstamp)
+            self._rtl_statdef += 'initial %s=0;\n' %(self.rtl_pstamp)
             for connector in self.parent.rtl_connectors:
                 self._rtl_statdef+='integer buffer_%s;\n' %(connector.name)
         return self._rtl_statdef
 
-    # File opening, direction dependent 
+    # File opening, direction dependent
     @property
     def rtl_fopen(self):
         '''Verilog file open routine string.
 
         '''
-        if self.parent.dir=='in':
-            self._rtl_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.rtl_fptr,next(iter(self.rtlparam)))
-        if self.parent.dir=='out':
-            self._rtl_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.rtl_fptr,next(iter(self.rtlparam)))
+        if self.parent.dir == 'in':
+            self._rtl_fopen = 'initial %s = $fopen(%s,\"r\");\n' %(self.rtl_fptr,next(iter(self.rtlparam)))
+        if self.parent.dir == 'out':
+            self._rtl_fopen = 'initial %s = $fopen(%s,\"w\");\n' %(self.rtl_fptr,next(iter(self.rtlparam)))
         return self._rtl_fopen
 
     # File close
@@ -153,20 +154,20 @@ class verilog_iofile(rtl_iofile_common):
         '''Verilog file close routine sting.
 
         '''
-        self._rtl_fclose='$fclose(%s);\n' %(self.rtl_fptr)
+        self._rtl_fclose = '$fclose(%s);\n' %(self.rtl_fptr)
         return self._rtl_fclose
 
     # Condition string for monitoring if the signals are unknown
-    @property 
+    @property
     def rtl_io_condition(self):
         '''Verilog condition string that must be true in order to file IO read/write to occur.
 
         Default for output file: `~$isunknown(connector.name)` for all connectors of the file.
-        Default for input file: `'1'` 
+        Default for input file: `'1'`
         file is always read with rising edge of the clock or in the time of an event defined in the file.
 
         '''
-        if not hasattr(self,'_rtl_io_condition'):
+        if not hasattr(self, '_rtl_io_condition'):
             if self.parent.dir=='out':
                 first=True
                 for connector in self.parent.rtl_connectors:
@@ -184,7 +185,7 @@ class verilog_iofile(rtl_iofile_common):
     def rtl_io_condition(self,value):
         self._rtl_io_condition=value
 
-    @property 
+    @property
     def rtl_io_sync(self):
         '''File io synchronization condition for sample type input.
         Default: `@(posedge clock)`
@@ -192,15 +193,15 @@ class verilog_iofile(rtl_iofile_common):
         '''
 
         if not hasattr(self,'_rtl_io_sync'):
-            if self.iotype=='sample':
-                self._rtl_io_sync= '@(posedge clock)\n'
+            if self.iotype == 'sample':
+                self._rtl_io_sync = '@(posedge clock)\n'
         return self._rtl_io_sync
 
     @rtl_io_sync.setter
-    def rtl_io_sync(self,value):
-        self._rtl_io_sync=value
+    def rtl_io_sync(self, value):
+        self._rtl_io_sync = value
 
-    def rtl_io_condition_append(self,**kwargs ):
+    def rtl_io_condition_append(self, **kwargs):
         '''Append new condition string to `rtl_io_condition`
 
         Parameters
@@ -210,6 +211,7 @@ class verilog_iofile(rtl_iofile_common):
 
         '''
         cond=kwargs.get('cond', '')
+        #Maybe there is some very clever point for this I cannot recall any more.
         if not (not cond ):
             self._rtl_io_condition='%s \n%s' \
             %(self.rtl_io_condition,cond)
@@ -218,7 +220,7 @@ class verilog_iofile(rtl_iofile_common):
     def rtl_io(self):
         '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
 
-        Returns 
+        Returns
         _______
         str
             Verilog code for file IO to read/write the IO file.
@@ -259,9 +261,9 @@ class verilog_iofile(rtl_iofile_common):
                 self._rtl_io+='%s = %s-%s;\n    #%s begin\n    ' \
                         %(self.rtl_tdiff,
                         self.rtl_ctstamp, self.rtl_pstamp,
-                        self.rtl_tdiff)    
+                        self.rtl_tdiff)   
 
-                #t= Every control file requires status, diff, current_timestamp 
+                #t= Every control file requires status, diff, current_timestamp
                 # and past timestamp
                 self._rtl_io+='    %s = %s;\n    ' \
                         %(self.rtl_pstamp, self.rtl_ctstamp)
@@ -274,7 +276,7 @@ class verilog_iofile(rtl_iofile_common):
                         %(self.rtl_stat,self.rtl_fptr)
 
             #The first column is timestap
-            iolines='            %s' %(self.rtl_ctstamp) 
+            iolines='            %s' %(self.rtl_ctstamp)
             format='\"%d'
             for connector in self.parent.rtl_connectors:
                 iolines='%s,\n            buffer_%s' \
@@ -285,7 +287,7 @@ class verilog_iofile(rtl_iofile_common):
 
             #Repeat the last assignment outside the loop
             self._rtl_io+='%s = %s-%s;\n#%s begin\n' %(self.rtl_tdiff,
-                    self.rtl_ctstamp, self.rtl_pstamp,self.rtl_tdiff)    
+                    self.rtl_ctstamp, self.rtl_pstamp,self.rtl_tdiff)   
             self._rtl_io+='    %s = %s;\n' %(self.rtl_pstamp,
                     self.rtl_ctstamp)
             for connector in self.parent.rtl_connectors:
@@ -296,6 +298,3 @@ class verilog_iofile(rtl_iofile_common):
             self.print_log(type='F', msg='Iotype not defined')
         return self._rtl_io
 
-
-
-    
