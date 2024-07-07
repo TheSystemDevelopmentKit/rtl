@@ -111,6 +111,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     def ioformat(self,value):
         self.langmodule.ioformat=value
 
+
     @property
     def rtlparam(self):
         '''Extracts the parameter name and value from simparam attribute. 

@@ -95,7 +95,7 @@ class rtl_connector(connector_common,thesdk):
         value=kwargs.get('value',self.connect.name)
         return self.langobject.nbassign(time=time,value=value)
 
-    def bassign(self):
+    def bassign(self, **kwargs):
         time=kwargs.get('time','')
         value=kwargs.get('value',self.connect.name)
         return self.langobject.bassign(time=time,value=value)

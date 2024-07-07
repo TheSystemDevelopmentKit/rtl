@@ -16,6 +16,8 @@ import sys
 import subprocess
 import shlex
 from abc import *
+# Refactor this
+# from .verilator_iofile import verilator_iofile 
 from thesdk import *
 import numpy as np
 import pandas as pd
@@ -26,11 +28,15 @@ import re
 from rtl.connector import indent, rtl_connector_bundle, verilog_connector_bundle
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
+<<<<<<< HEAD
 from rtl.sv.sv import sv as sv
 from rtl.vhdl.vhdl import vhdl as vhdl
 from rtl.icarus.icarus import icarus as icarus
 from rtl.questasim.questasim import questasim as questasim
 from rtl.ghdl.ghdl import ghdl as ghdl
+from rtl.verilator import verilator
+# Refactor this
+# from rtl.verilatortb import verilatortb
 
 class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions
@@ -306,6 +312,24 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self.print_log(type='F', msg='Unsupported model %s' % self.model)
         return self._simdut
 
+# Refactor this
+#    @property
+#    def simulator(self):
+#        '''Simulator to be used.
+#
+#        'questa' | 'verilator'
+#        '''
+#        if not hasattr(self, '_simulator'):
+#            # Use questasim as default simulator
+#            self._simulator = 'questa'
+#        return self._simulator
+#    @simulator.setter
+#    def simulator(self, sim):
+#        if sim not in ['questa', 'verilator']:
+#            self.print_log(type='E', msg= 'Simulator %s not supported!' % sim)
+#        self._simulator = sim
+#        return self._simulator
+#
     @property
     def simtb(self):
         ''' Testbench source file in simulations directory.
@@ -834,7 +858,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        output = subprocess.check_output(self._rtlcmd, shell=True);
+        output = subprocess.check_output(self.rtlcmd, shell=True)
         self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
 
         count=0
