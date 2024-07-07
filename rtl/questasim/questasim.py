@@ -36,7 +36,6 @@ class questasim(thesdk):
             timescalestring = ''
 
 
-
         # The following cases are possible
         # Testbench is sv OR testbench is vhdl, identified with 'lang'
         # source is verilog OR source is vhdl, identified by 'model
@@ -107,13 +106,13 @@ class questasim(thesdk):
 
         # Choose command 
         if not self.interactive_rtl:
-            rtlsimcmd = ( 'vsim -64 -batch' + timescalestring + ' -voptargs=+acc ' 
+            rtlsimcmd = ( 'vsim -64 -batch' + timescalestring + ' ' 
                     + fileparams + ' ' + gstring
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + controlstring)
         else:
             submission="" #Local execution
-            rtlsimcmd = ( 'vsim -64 ' + timescalestring + ' -novopt ' + fileparams 
+            rtlsimcmd = ( 'vsim -64 ' + timescalestring + ' ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name 
                          + interactive_string )
 
