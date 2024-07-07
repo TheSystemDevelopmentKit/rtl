@@ -38,7 +38,7 @@ class verilog_iofile(rtl_iofile_common):
         '''Formatting string for verilog file reading
            Default %d, i.e. content of the file is single column of
            integers.
- 
+
         '''
         if not hasattr(self,'_ioformat'):
             self._ioformat='%d'
@@ -261,7 +261,7 @@ class verilog_iofile(rtl_iofile_common):
                 self._rtl_io+='%s = %s-%s;\n    #%s begin\n    ' \
                         %(self.rtl_tdiff,
                         self.rtl_ctstamp, self.rtl_pstamp,
-                        self.rtl_tdiff)   
+                        self.rtl_tdiff)
 
                 #t= Every control file requires status, diff, current_timestamp
                 # and past timestamp
@@ -287,7 +287,7 @@ class verilog_iofile(rtl_iofile_common):
 
             #Repeat the last assignment outside the loop
             self._rtl_io+='%s = %s-%s;\n#%s begin\n' %(self.rtl_tdiff,
-                    self.rtl_ctstamp, self.rtl_pstamp,self.rtl_tdiff)   
+                    self.rtl_ctstamp, self.rtl_pstamp,self.rtl_tdiff)
             self._rtl_io+='    %s = %s;\n' %(self.rtl_pstamp,
                     self.rtl_ctstamp)
             for connector in self.parent.rtl_connectors:
