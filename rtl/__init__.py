@@ -33,7 +33,7 @@ from rtl.vhdl.vhdl import vhdl as vhdl
 from rtl.icarus.icarus import icarus as icarus
 from rtl.questasim.questasim import questasim as questasim
 from rtl.ghdl.ghdl import ghdl as ghdl
-from rtl.verilator import verilator
+from rtl.verilator.verilator import verilator as verilator
 # Refactor this
 # from rtl.verilatortb import verilatortb
 
@@ -344,6 +344,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self._simtb = self.questasim_simtb
             elif self.model == 'ghdl':
                 self._simtb = self.ghdl_simtb
+            elif self.model == 'verilator':
+                self._simtb = self.verilator_simtb
         return self._simtb
 
     @property

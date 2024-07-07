@@ -53,14 +53,6 @@ class verilator_testbench(testbench_common):
         self.header = '#include <verilated.h>\n'
         self.header += '#include <verilated_vcd_c.h> // Writes VCD - TODO: add only if interactive mode\n'
 
-
-
-
-
-
-
-
-
     @property
     def parameter_definitions(self):
         '''Parameter and variable definition strings of the testbench

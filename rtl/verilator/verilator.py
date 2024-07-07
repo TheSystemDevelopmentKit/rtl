@@ -1,126 +1,105 @@
 """
-===========
+=========
 Verilator
-===========
-Module to generate a Verilator testbench for TheSyDeKick verilog entity.
+=========
+Verilator is a mixin class used to provide simulator specific
+properties and methods for RTL class
 
 Initially written by Aleksi Korsman, 2022
-
 """
 
-import os
-import sys
-sys.path.append(os.path.abspath("../../thesdk"))
-
 from thesdk import *
-from rtl.verilator_connector import verilator_connector_bundle
-from rtl.verilator_iofile import verilator_iofile
-from copy import deepcopy
+import pdb
 
-class verilator(thesdk):
-
+class verilator(thesdk,metaclass=abc.ABCMeta):
     @property
-    def _classfile(self):
-        return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
+    def verilator_rtlcmd(self):
+        submission=self.lsf_submission
+        if not os.path.exists(self.rtlworkpath):
+            os.mkdir(self.rtlworkpath)
+        vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
+            str(param) for param in self.vlogmodulefiles ])
+        vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
+            str(param) for param in self.vhdlentityfiles])
 
-    def __init__(self, tb, parent=None, **kwargs):
-        '''Parameters
-           ----------
-           parent: object, None (mandatory to define). TheSyDeKick parent entity object for this testbench.
-           **kwargs :
-              None
+        if vhdlmodulesstring != '':
+            self.print_log(type='W', msg="Verilator does not support Verilog+VHDL cosimulation, ignoring additional VHDL files.")
 
-        '''
 
-        if parent==None:
-            # TODO: replafe type to F
-            self.print_log(type='I', msg="Parent of Verilog testbench not given")
+        vlogcompcmd = ( 'verilator -Wall --cc --build --exe --trace -Mdir '+self.rtlworkpath + '/' + self.name
+                + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
+        gstring = ' '.join([ 
+                                ('-G ' + str(param) +'='+ str(val[1])) 
+                                for param,val in self.rtlparameters.items() 
+                            ])
+
+        # Still dont know what to do with these.
+        vlogsimargs = ' '.join(self.vlogsimargs)
+
+        for name, file in self.iofile_bundle.Members.items():
+            fileparams+=' '+file.simparam
+
+        if self.interactive_rtl:
+            submission="" #Local execution
+            dofile=self.interactive_controlfile
+            if os.path.isfile(dofile):
+                dostring=' -S "'+dofile+'"'
+                self.print_log(type='I',msg='Using interactive control file %s' % dofile)
+            else:
+                dostring=''
+                self.print_log(type='I',msg='No interactive control file set.')
+            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
+                         + ' && gtkwave ' + dostring + ' ' + self.rtlsimpath + '/' + self.name + '_dump.vcd')
         else:
-            self.parent=parent
-        try:  
-            # The proper files are determined in rtl based on simulation model
-            self._file = self.parent.simtb
-            self._dutfile = self.parent.simdut
-        except:
-            # TODO: replace type to F
-            self.print_log(type='I', msg="Verilog Testbench file definition failed")
-        
-        #The methods for these are derived from verilog_module
-        self._name=''
-        self.tb = tb
-        self._parameters=Bundle()
-        self.connectors=verilator_connector_bundle()
-        self.iofiles=Bundle()
-        self.content_parameters={'c_Ts': ('const int','1/(g_Rs*1e-12)')} # Dict of name: (type,value)
-        self.assignment_matchlist=[]
+            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
+
+        self._rtlcmd =  vlogcompcmd +\
+                ' && sync ' + self.rtlworkpath +\
+                ' && ' + submission +\
+                rtlsimcmd
+
+        return self._rtlcmd
 
     @property
-    def rtlcmd(self):
-        if not hasattr(self, '_rtlcmd'):
-            vlogmodulesstring=' '.join([ self.parent.rtlsimpath + '/'+ 
-                str(param) for param in self.parent.vlogmodulefiles])
+    def verilator_simdut(self):
+        ''' Source file for Device Under Test in simulations directory
 
-            compile_tool = 'verilator'
-            compile_args = ' '.join(['--cc', '--trace'])
-            compile_dut = self.parent.simdut
-            compile_extra_modules = vlogmodulesstring
-            build_args = ' '.join(['--exe'])
-            build_dut = self.parent.simtb
+            Returns
+            -------
+                self.rtlsimpath + self.name + self.vlogext for 'sv' model
+                self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
+        '''
+        extension = None
+        # Verilator supports only verilog
+        extension = self.vlogext
+        self._simdut = os.path.join(self.rtlsimpath, self.name+extension)
+        print(self.simdut)
+        return self._simdut
+    @property
+    def verilator_simtb(self):
+        ''' Verilator Testbench source file in simulations directory.
 
-            #build_cmd = ' '.join([compile_tool, compile_args, compile_dut, compile_extra_modules, build_args, build_dut])
-            build_cmd = ' '.join([compile_tool, compile_args, compile_dut])
-            print(build_cmd)
-            self._rtlcmd = build_cmd
-        return self._rtlcmd
-    @rtlcmd.setter
-    def rtlcmd(self, value):
-        self._rtlcmd = value
-    @rtlcmd.deleter
-    def rtlcmd(self):
-        self._rtlcmd = None
-
-    def create_connectors(self):
-        '''Cretes verilog connector definitions from 
-           1) From a iofile that is provided in the Data 
-           attribute of an IO.
-           2) IOS of the verilog DUT
+        This file and it's format is dependent on the language(s)
+        supported by the simulator. Verilator testbenches are written in C++.
 
         '''
-        # Create TB connectors from the control file
-        # See controller.py
-        for ioname,io in self.parent.IOS.Members.items():
-            # If input is a file, adopt it
-            if isinstance(io.Data,verilator_iofile): 
-                if io.Data.name is not ioname:
-                    self.print_log(type='I', 
-                            msg='Unifying file %s name to ioname %s' %(io.Data.name,ioname))
-                    io.Data.name=ioname
-                io.Data.adopt(parent=self)
-                self.tb.parameters.Members.update(io.Data.rtlparam)
+        self._simtb=self.rtlsimpath + '/tb_' + self.name + '.cpp'
+        return self._simtb
+    
+    @property
+    def verilator_dofilepaths(self):
+        dofiledir = '%s/interactive_control_files/gtkwave' % self.entitypath
+        dofile = '%s/general.tcl' % dofiledir
+        obsoletedofile = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
+        generateddofile = '%s/general.tcl' % self.simpath
+        return (dofiledir, dofile, obsoletedofile,generateddofile)
 
-                for connector in io.Data.verilog_connectors:
-                    self.tb.connectors.Members[connector.name]=connector
-                    # Connect them to DUT
-                    try: 
-                        self.dut.ios.Members[connector.name].connect=connector
-                    except:
-                        pass
-            # If input is not a file, look for corresponding file definition
-            elif ioname in self.iofile_bundle.Members:
-                val=self.iofile_bundle.Members[ioname]
-                for name in val.ionames:
-                    # [TODO] Sanity check, only floating inputs make sense.
-                    if not name in self.tb.connectors.Members.keys():
-                        self.print_log(type='I', 
-                                msg='Creating non-existent IO connector %s for testbench' %(name))
-                        self.tb.connectors.new(name=name, cls='reg')
-                self.iofile_bundle.Members[ioname].verilog_connectors=\
-                        self.tb.connectors.list(names=val.ionames)
-                self.tb.parameters.Members.update(val.rtlparam)
-        # Define the iofiles of the testbench. '
-        # Needed for creating file io routines 
-        self.tb.iofiles=self.iofile_bundle
-
+    @property
+    def verilator_controlfilepaths(self):
+        controlfiledir = '%s/interactive_control_files/verilator' % self.entitypath
+        controlfile = '%s/control.tcl' % controlfiledir
+        generatedcontrolfile = '%s/control.tcl' % self.simpath
+        return (controlfiledir, controlfile, generatedcontrolfile)
 
 if __name__=="__main__":
     print("WRONG FILE, FOOL")
