@@ -216,7 +216,7 @@ class verilator_testbench(testbench_common):
                 self.iofile.close (for all members)
 
              Addtional code may be currently injected by appending desired
-             strings (Verilog sytax) to the relevant string attributes.
+             strings (Verilog syntax) to the relevant string attributes.
 
              TODO FOR VERILATOR
 
@@ -224,15 +224,11 @@ class verilator_testbench(testbench_common):
 
         '''
     # Start the testbench contents
-        contents="""
-
-// Include the verilated module headers. Should these go to headers
-"""+"#include V%s.h\n" %(self.dut_instance.instname) + \
-"#include V%s___024unit.h\n" %(self.dut_instance.instname) + \
-"""
-
-""" + self.parameter_definitions + \
-    self.connector_definitions + \
+        contents = '// Include the verilated module headers.\n' 
+        contents += (self.dut_instance).definition
+        contents += '\n'
+        contents += self.parameter_definitions
+        contents += self.connector_definitions + \
 """
 
 int main(int argc, char** argv, char** env) {

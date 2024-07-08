@@ -177,7 +177,7 @@ class module_common(thesdk):
 
     @property
     def vhdl_instance(self):
-        '''Instantioation string of the module/entity for use inside of vhdl entities.
+        '''Instantiation string of the module/entity for use inside of vhdl entities.
 
         '''
         #First we write the parameter section

@@ -923,26 +923,17 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             # Loading a previously stored state
             self._read_state()
         else:
-            pdb.set_trace()
             self.copy_rtl_sources()
-            pdb.set_trace()
             self.tb=vtb(parent=self,lang=self.lang)
-            pdb.set_trace()
             self.tb.define_testbench()
-            pdb.set_trace()
             self.add_connectors()
-            pdb.set_trace()
             self.create_connectors()
-            pdb.set_trace()
             self.connect_inputs()
-            pdb.set_trace()
             if hasattr(self,'define_io_conditions'):
                 self.define_io_conditions()   # Local, this is dependent on how you
                                               # control the simulation
                                               # i.e. when you want to read an write your IO's
-            pdb.set_trace()
             self.format_ios()
-            pdb.set_trace()
             self.tb.generate_contents()
             pdb.set_trace()
             self.tb.export(force=True)

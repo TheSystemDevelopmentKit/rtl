@@ -24,6 +24,17 @@ class verilator_module(verilog_module):
         self._verilator_instance=self._vhdl_instance+(';\n')
         return self._verilator_instance
 
+    @property
+    def definition(self):
+        '''Verilator modules are define through header file inclusion.
+
+        '''
+        if not hasattr(self,'_definition'):
+            self._definition = '// Include the verilated module headers.\n' 
+            self._definition += '#include V%s.h\n' %(self.instname) 
+            self._definition += "#include V%s___024unit.h\n" %(self.instname)
+
+        return self._definition
 
 
 if __name__=="__main__":
