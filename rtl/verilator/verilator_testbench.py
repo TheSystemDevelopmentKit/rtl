@@ -32,8 +32,7 @@ class verilator_testbench(testbench_common):
 
         """
         super().__init__(parent,**kwargs)
-        self.header = '#include <verilated.h>\n'
-        self.header += '#include <verilated_vcd_c.h> // Writes VCD - TODO: add only if interactive mode\n'
+        self.header = '#include <verilated.h>\n#include <verilated_vcd_c.h> // Writes VCD - TODO: add only if interactive mode\n'
 
     @property
     def parameter_definitions(self):
@@ -136,7 +135,6 @@ class verilator_testbench(testbench_common):
                 self._misccmd += cmd + "\n"
         return self._misccmd
 
-    # This method
     def define_testbench(self):
         '''Defines the tb connectivity, creates reset and clock, and initializes them to zero
 
@@ -199,6 +197,17 @@ class verilator_testbench(testbench_common):
         # Needed for creating file io routines
         self.tb.iofiles=self.iofile_bundle
 
+    @property
+    def definition(self):
+        ''' Override definition as it is empty for Verilator tesstbench
+
+        '''
+        self._definition = ''
+        if self.contents:
+            self._definition=self._definition+self.contents
+
+        return self._definition
+
     def generate_contents(self):
         ''' This is the method to generate testbench contents. Override if needed
             Contents of the testbench is constructed from attributes in the
@@ -224,8 +233,7 @@ class verilator_testbench(testbench_common):
 
         '''
     # Start the testbench contents
-        contents = '// Include the verilated module headers.\n' 
-        contents += (self.dut_instance).definition
+        contents = self.dut_instance.definition
         contents += '\n'
         contents += self.parameter_definitions
         contents += self.connector_definitions + \
@@ -237,9 +245,9 @@ int main(int argc, char** argv, char** env) {
     VerilatedContext* contextp = new VerilatedContext;
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    // TODO: rename "top" to correspond the dut
-    Vtop* top = new Vtop{contextp};
-
+    // DUT instance
+    """ + self.dut_instance.verilator_instance +\
+"""
     // TODO: only if interactive mode (needs --trace in the verilator command as well)
     VerilatedVcdC *m_trace = new VerilatedVcdC;
     top->trace(m_trace, 5); // 5 limits the depth of trace - TODO: make changeable
@@ -263,5 +271,29 @@ int main(int argc, char** argv, char** env) {
 }
         """
         self.contents=contents
-        print(contents)
+
+    def export(self,**kwargs):
+        '''Method to export the Verilator testbench. Exports self.header+self.definition to a given file.
+        Need to override to get the definition right.
+
+        Parameters
+        ----------
+           **kwargs :
+
+               force: Bool
+
+        '''
+        print(self.header+self.definition)
+        if not os.path.isfile(self.file):
+            self.print_log(msg='Exporting verilog_module to %s.' %(self.file))
+            with open(self.file, "w") as module_file:
+                module_file.write(self.header+self.definition)
+
+        elif os.path.isfile(self.file) and not kwargs.get('force'):
+            self.print_log(type='F', msg=('Export target file %s exists.\n Force overwrite with force=True.' %(self.file)))
+
+        elif kwargs.get('force'):
+            self.print_log(msg='Forcing overwrite of verilog_module to %s.' %(self.file))
+            with open(self.file, "w") as module_file:
+                module_file.write(self.header+self.definition)
 
