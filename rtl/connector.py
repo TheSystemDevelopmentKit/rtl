@@ -14,7 +14,6 @@ from thesdk import *
 from rtl.connector_common import connector_common
 from rtl.sv.verilog_connector import verilog_connector
 from rtl.vhdl.vhdl_connector import vhdl_connector
-from rtl.verilator.verilator_connector import verilator_connector
 
 class rtl_connector(connector_common,thesdk):
     def __init__(self, **kwargs):
@@ -62,7 +61,7 @@ class rtl_connector(connector_common,thesdk):
                         connect = self.connect
                         )
         if not hasattr(self,'_verilator_langobject'):
-            self._verilator_langobject=verilator_connector(
+            self._verilator_langobject=verilog_connector(
                         name=self.name,
                         cls=self.cls,
                         type = self._typearg,

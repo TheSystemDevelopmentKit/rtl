@@ -21,7 +21,6 @@ from rtl.connector import verilog_connector_bundle
 from rtl.module_common import module_common
 from rtl.sv.verilog_module import verilog_module
 from rtl.vhdl.vhdl_entity import vhdl_entity
-from rtl.verilator.verilator_module import verilator_module
 
 class module(module_common,thesdk):
     """ Currently module class is just an alias for verilog_module.
@@ -68,7 +67,7 @@ class module(module_common,thesdk):
                         file=self.file, name=self.name, 
                         instname=self.instname)
             elif self.lang == 'verilator':  
-                self._langmodule=verilator_module(
+                self._langmodule=verilog_module(
                         file=self.file, name=self.name, 
                         instname=self.instname)
         return self._langmodule

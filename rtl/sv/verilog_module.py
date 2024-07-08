@@ -368,7 +368,6 @@ class verilog_module(module_common,thesdk):
                force: Bool
 
         '''
-        print(self.header+self.definition)
         if not os.path.isfile(self.file):
             self.print_log(msg='Exporting verilog_module to %s.' %(self.file))
             with open(self.file, "w") as module_file:

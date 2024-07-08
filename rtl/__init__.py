@@ -935,26 +935,17 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                                               # i.e. when you want to read an write your IO's
             self.format_ios()
             self.tb.generate_contents()
-            pdb.set_trace()
             self.tb.export(force=True)
-            pdb.set_trace()
             self.write_infile()
-            pdb.set_trace()
             self.execute_rtl_sim()
-            pdb.set_trace()
             self.read_outfile()
-            pdb.set_trace()
             self.connect_outputs()
-            pdb.set_trace()
             # Save entity state
             if self.save_state:
                 self._write_state()
-            pdb.set_trace()
             # Clean simulation results
             self.delete_iofile_bundle()
-            pdb.set_trace()
             self.delete_rtlworkpath()
-            pdb.set_trace()
             self.delete_rtlsimpath()
 
     #This writes all infile

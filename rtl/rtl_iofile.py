@@ -21,7 +21,6 @@ from rtl.rtl_iofile_common import rtl_iofile_common
 from rtl.sv.verilog_iofile import verilog_iofile
 from rtl.sv.verilog_iofile_obsoletes import verilog_iofile_obsoletes
 from rtl.vhdl.vhdl_iofile import vhdl_iofile
-from rtl.verilator.verilator_iofile import verilator_iofile
 from rtl.connector import indent
 
 class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
@@ -87,7 +86,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
             self._langmodule_vhdl.paramname=self.paramname
             self._langmodule_vhdl.name=self.name
         if not hasattr(self,'_langmodule_verilator'):
-            self._langmodule_verilator = verilator_iofile(self)
+            self._langmodule_verilator = verilog_iofile(self)
             self._langmodule_verilator.file=self.file
             self._langmodule_verilator.paramname=self.paramname
             self._langmodule_verilator.name=self.name

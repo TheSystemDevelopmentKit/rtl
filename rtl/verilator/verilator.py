@@ -26,8 +26,8 @@ class verilator(thesdk,metaclass=abc.ABCMeta):
             self.print_log(type='W', msg="Verilator does not support Verilog+VHDL cosimulation, ignoring additional VHDL files.")
 
 
-        vlogcompcmd = ( 'verilator -Wall --cc --build --exe --trace -Mdir '+self.rtlworkpath + '/' + self.name
-                + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
+        vlogcompcmd = ( 'verilator -Wall --Wno-lint --binary --trace --timing --Mdir ' + self.rtlworkpath +
+                ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring )
         gstring = ' '.join([ 
                                 ('-G ' + str(param) +'='+ str(val[1])) 
                                 for param,val in self.rtlparameters.items() 
@@ -36,8 +36,10 @@ class verilator(thesdk,metaclass=abc.ABCMeta):
         # Still dont know what to do with these.
         vlogsimargs = ' '.join(self.vlogsimargs)
 
+        fileparams=''
         for name, file in self.iofile_bundle.Members.items():
             fileparams+=' '+file.simparam
+
 
         if self.interactive_rtl:
             submission="" #Local execution
@@ -48,10 +50,10 @@ class verilator(thesdk,metaclass=abc.ABCMeta):
             else:
                 dostring=''
                 self.print_log(type='I',msg='No interactive control file set.')
-            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
+            rtlsimcmd = ('cd '+ self.rtlworkpath + ' && ' + './Vtb_'+ self.name 
                          + ' && gtkwave ' + dostring + ' ' + self.rtlsimpath + '/' + self.name + '_dump.vcd')
         else:
-            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
+            rtlsimcmd = ('cd '+ self.rtlworkpath + ' &&  ./Vtb_' + self.name )
 
         self._rtlcmd =  vlogcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
@@ -75,15 +77,16 @@ class verilator(thesdk,metaclass=abc.ABCMeta):
         self._simdut = os.path.join(self.rtlsimpath, self.name+extension)
         print(self.simdut)
         return self._simdut
+
     @property
     def verilator_simtb(self):
         ''' Verilator Testbench source file in simulations directory.
 
         This file and it's format is dependent on the language(s)
-        supported by the simulator. Verilator testbenches are written in C++.
+        supported by the simulator. Verilator supports verilog testbenches
 
         '''
-        self._simtb=self.rtlsimpath + '/tb_' + self.name + '.cpp'
+        self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vlogext
         return self._simtb
     
     @property
@@ -101,5 +104,3 @@ class verilator(thesdk,metaclass=abc.ABCMeta):
         generatedcontrolfile = '%s/control.tcl' % self.simpath
         return (controlfiledir, controlfile, generatedcontrolfile)
 
-if __name__=="__main__":
-    print("WRONG FILE, FOOL")
