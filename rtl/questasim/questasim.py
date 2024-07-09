@@ -6,19 +6,6 @@ Initially written by Marko kosunen 20221030
 """
 from thesdk import *
 class questasim(thesdk):
-
-    @property
-    def dep_lang(self):
-        if not hasattr(self, '_dep_lang'):
-            self._dep_lang = "vhdl"
-        return self._dep_lang
-    @dep_lang.setter
-    def dep_lang(self, value):
-        if value in ["sv", "vhdl"]:
-            self._dep_lang = value
-        else:
-            raise ValueError("Invalid value for dep_lang: %s" % (value))
-
     @property
     def questasim_rtlcmd(self):
         submission=self.lsf_submission
@@ -35,7 +22,6 @@ class questasim(thesdk):
         else:
             timescalestring = ''
 
-
         # The following cases are possible
         # Testbench is sv OR testbench is vhdl, identified with 'lang'
         # source is verilog OR source is vhdl, identified by 'model
@@ -43,40 +29,42 @@ class questasim(thesdk):
         # In total, 8 cases
         if self.lang=='sv' and self.model=='sv':
             #We need to compile verilog testbench and simdut anyway.
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring + ' '.join(self.vlogcompargs) )
-            dutcompcmd = ( 'vlog -sv -work work ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs) )
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
             # Define hdll compcmd, if we have cosim
             if len(vhdlmodulesstring) == 0:
                 vhdlcompcmd = ' echo '' > /dev/null '
             else:
-                vhdlcompcmd = ( 'vcom -2008 -work work ' + vhdlmodulesstring + ' '.join(self.vhdlcompargs))
+                vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' 
+                               + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
 
         elif self.lang=='sv' and self.model=='vhdl':
             #We need to compile vhdl sources anyway, but no testbench
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + vhdlmodulesstring )
-            dutcompcmd = ( 'vcom -2008 -work work ' + self.vhdlsrc )
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
+                       vhdlmodulesstring + ' ' + self.vhdlsrc )
             #We need to compile verilog testbench anyway, but simdut is in vhdl
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                    + ' ' + self.simtb )
             vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
                 + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
 
         elif self.lang=='vhdl' and self.model=='sv':
             # We need to compile VHDL testbench anyway, but not the source
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + vhdlmodulesstring + ' ' + self.simtb )
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
+                       vhdlmodulesstring + ' ' + self.simtb )
             #We need to compile verilog simdut anyway.
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring + ' '.join(self.vlogcompargs))
-            dutcompcmd = ( 'vlog -sv -work work '  + self.simdut + ' '.join(self.vlogcompargs) )
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+                + ' ' + self.simdut + ' '.join(self.vlogcompargs))
 
         elif self.lang=='vhdl' and self.model=='vhdl':
             # We need to compile VHDL source and testbench anyway
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + vhdlmodulesstring )
-            dutcompcmd = ( 'vcom -2008 -work work ' + self.vhdlsrc + ' ' + self.simtb )
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring 
+                    + ' ' + self.vhdlsrc + ' ' + self.simtb )
             # Define vlog compcmd, if we have cosim
             if len(vlogmodulesstring) == 0:
                 vlogcompcmd = ' echo '' > /dev/null '
             else:
                 vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring )
-
-
 
         gstring = ' '.join([ 
                                 ('-g ' + str(param) +'='+ str(val[1])) 
@@ -106,33 +94,25 @@ class questasim(thesdk):
 
         # Choose command 
         if not self.interactive_rtl:
-            rtlsimcmd = ( 'vsim -64 -batch' + timescalestring + ' ' 
+            rtlsimcmd = ( 'vsim -64 -batch' + timescalestring + ' -voptargs=+acc ' 
                     + fileparams + ' ' + gstring
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + controlstring)
         else:
             submission="" #Local execution
-            rtlsimcmd = ( 'vsim -64 ' + timescalestring + ' ' + fileparams 
+            rtlsimcmd = ( 'vsim -64 ' + timescalestring + ' -novopt ' + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name 
                          + interactive_string )
 
         self._rtlcmd =  rtllibcmd
         self._rtlcmd += ' && ' + rtllibmapcmd
-
         # Commpile dependencies first.
-        compile_dep_vlog = vlogmodulesstring != ''
-        compile_dep_vhdl = vhdlmodulesstring != ''
-        if self.dep_lang == 'vhdl':
-            if compile_dep_vhdl:
-                self._rtlcmd += ' && ' + vhdlcompcmd
-            if compile_dep_vlog:
-                self._rtlcmd += ' && ' + vlogcompcmd
-        elif self.dep_lang == 'sv':
-            if compile_dep_vlog:
-                self._rtlcmd += ' && ' + vlogcompcmd
-            if compile_dep_vhdl:
-                self._rtlcmd += ' && ' + vhdlcompcmd
-        self._rtlcmd += ' && ' + dutcompcmd
+        if self.lang == 'sv':
+            self._rtlcmd += ' && ' + vhdlcompcmd
+            self._rtlcmd += ' && ' + vlogcompcmd
+        elif self.lang == 'vhdl':
+            self._rtlcmd += ' && ' + vlogcompcmd
+            self._rtlcmd += ' && ' + vhdlcompcmd
         self._rtlcmd += ' && sync ' + self.rtlworkpath 
         self._rtlcmd += ' && ' + submission 
         self._rtlcmd +=  rtlsimcmd
