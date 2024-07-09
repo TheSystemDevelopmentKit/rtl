@@ -148,13 +148,13 @@ class testbench_common(module):
     def dumpfile(self):
         """String
         
-        Code that generates a VCD dumpfile when running the testbench with icarus verilog.
+        Code that generates a VCD dumpfile when running the testbench with Icarus or Verilator verilog.
         This dumpfile can be used with gtkwave. 
         """
 
         
-        if self.parent.model == 'icarus' and self.parent.interactive_rtl:
-            dump_str="// Generates dumpfile with iverilog\n"
+        if ( self.parent.model == 'icarus' or self.parent.model == 'verilator' ) and self.parent.interactive_rtl:
+            dump_str="// Generates dumpfile\n"
             dump_str += "initial begin\n"
             dump_str += '  $dumpfile("' + self.parent.rtlsimpath + '/'+ self.parent.name + '_dump.vcd");\n'
             dump_str += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
