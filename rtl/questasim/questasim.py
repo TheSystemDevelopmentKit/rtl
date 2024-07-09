@@ -6,6 +6,33 @@ Initially written by Marko kosunen 20221030
 """
 from thesdk import *
 class questasim(thesdk):
+
+    @property
+    def sim_optimization(self):
+        '''Presets for running optimization on the simulation.
+
+        - 'none' - use this if you want to manually control vopt related flags with vlogsimargs
+        - 'default' - not optimized simulation for interactive sims,
+        optimized with full visibility for non-interactive sims
+        - 'no-opt' - no optimizations, full visibility to signals
+        - 'full-opt' - fully optimized, might lose visibility to a lot of signals. Simulation may not work.
+        - 'top-visible' - optimized while keeping top level (testbench) signals.
+        - 'top-dut-visible' - optimized while keeping top level (testbench) and DUT signals on the first hierarchy level    
+        '''
+        if not hasattr(self, '_sim_optimization'):
+            self._sim_optimization = 'default'
+        return self._sim_optimization
+    @sim_optimization.setter
+    def sim_optimization(self, value):
+        if value not in ['none',
+                         'default',
+                         'no-opt',
+                         'full-opt',
+                         'top-visible',
+                         'top-dut-visible']:
+            self.print_log(type="E", msg=f"Unsupported optimization type: {value}")
+        self._sim_optimization = value
+
     @property
     def questasim_rtlcmd(self):
         submission=self.lsf_submission
@@ -70,6 +97,25 @@ class questasim(thesdk):
                                 ('-g ' + str(param) +'='+ str(val[1])) 
                                 for param,val in self.rtlparameters.items() 
                             ])
+
+        if self.sim_optimization == 'default':
+            self.print_log(type='I', msg=("Running simulation with default optimization settings."
+                           "Simulation may be slow. Check sim_optimization property."))
+            if self.interactive_rtl:
+                self.vlogsimargs += ['-novopt']
+            else:
+                self.vlogsimargs += ['-voptargs=+acc']
+        elif self.sim_optimization == 'no-opt':
+            self.vlogsimargs += ['-novopt']
+        elif self.sim_optimization == 'full-opt':
+            self.vlogsimargs += ['-vopt']
+        elif self.sim_optimization == 'top-visible':
+            self.vlogsimargs += ['-vopt', f'-voptargs="+acc=bcglnprst+tb_{self.name}"']
+        elif self.sim_optimization == 'top-dut-visible':
+            self.vlogsimargs += \
+                ['-vopt', f'-voptargs="+acc=bcglnprst+tb_{self.name} +acc=bcglnprst+{self.name}"']
+
+
         vlogsimargs = ' '.join(self.vlogsimargs)
 
         fileparams=''
@@ -94,13 +140,13 @@ class questasim(thesdk):
 
         # Choose command 
         if not self.interactive_rtl:
-            rtlsimcmd = ( 'vsim -64 -batch' + timescalestring + ' -voptargs=+acc ' 
+            rtlsimcmd = ( 'vsim -64 -batch' + timescalestring 
                     + fileparams + ' ' + gstring
                     + ' ' + vlogsimargs + ' work.tb_' + self.name  
                     + controlstring)
         else:
             submission="" #Local execution
-            rtlsimcmd = ( 'vsim -64 ' + timescalestring + ' -novopt ' + fileparams 
+            rtlsimcmd = ( 'vsim -64 ' + timescalestring + fileparams 
                     + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name 
                          + interactive_string )
 
