@@ -198,8 +198,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             elif self.model == 'vhdl':
                 self._sim_opt_dict = self.questasim_sim_opt_dict
             else:
-                self._sim_optimization = {}
-        return self._sim_optimization
+                self._sim_opt_dict = {}
+        return self._sim_opt_dict
     @sim_opt_dict.setter
     def sim_opt_dict(self, value):
         self._sim_opt_dict = value
@@ -211,13 +211,14 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self._sim_optimization = 'default'
             else:
                 self._sim_optimization = None
+        return self._sim_optimization
     @sim_optimization.setter
     def sim_optimization(self, value):
         if value in self.sim_opt_dict.keys():
             self._sim_optimization = value
         else:
             self.print_log(type='F', msg=(
-                f'Key not found in sim_opt_dict: {value}.'
+                f'Key not found in sim_opt_dict: {value}. '
                 f'Available keys: {self.sim_opt_dict.keys()}'))
 
     @property
