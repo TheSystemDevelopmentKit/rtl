@@ -239,7 +239,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         return self._sim_optimization
     @sim_optimization.setter
     def sim_optimization(self, value):
-        if value in [ self.sim_opt_dict.keys(), None ]:
+        if value in list(self.sim_opt_dict.keys()) + [None ]:
             self._sim_optimization = value
         else:
             self.print_log(type='F', msg=(
