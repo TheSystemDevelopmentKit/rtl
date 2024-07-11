@@ -192,6 +192,10 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
     @property
     def sim_opt_dict(self):
+        '''Preset dictionary for running optimization on the simulation.
+        The actual dictionary should be implemented in the simulator class.
+        Returns an empty dictionary for classes which have not implemented it.
+        '''
         if not hasattr(self, '_sim_opt_dict'):
             if self.model == 'sv':
                 self._sim_opt_dict = self.questasim_sim_opt_dict
@@ -206,6 +210,10 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
     @property
     def sim_optimization(self):
+        '''Simulation optimization option. The value in this property
+        is used to fetch the simulator-specific simulation argument from
+        sim_opt_dict. By default, returns 'default' if the target sim_opt_dict
+        contains a value with that key, and None otherwise.'''
         if not hasattr(self, '_sim_optimization'):
             if 'default' in self.sim_opt_dict.keys():
                 self._sim_optimization = 'default'
