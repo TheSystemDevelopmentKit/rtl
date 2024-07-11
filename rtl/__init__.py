@@ -222,13 +222,14 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         Default: 'opt-visible' for non-interactive simulations, 'no-opt'
         for interactive simulations.
         Set to 'None' is you wish to set self.vlogsimargs manually.
+
         '''
 
         if not hasattr(self, '_sim_optimization'):
-            if [ not self.interactive_rtl ]:
+            if not self.interactive_rtl:
                 self._sim_optimization = 'opt-visible'
             else:
-                self._sim_optimization = 'opt-visible'
+                self._sim_optimization = 'no-opt'
 
         return self._sim_optimization
     @sim_optimization.setter
