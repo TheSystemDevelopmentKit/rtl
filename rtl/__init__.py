@@ -190,6 +190,35 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     def rtl_timeprecision(self, val):
         self._rtl_timeprecision = val
 
+    @property
+    def sim_opt_dict(self):
+        if not hasattr(self, '_sim_opt_dict'):
+            if self.model == 'sv':
+                self._sim_opt_dict = self.questasim_sim_opt_dict
+            elif self.model == 'vhdl':
+                self._sim_opt_dict = self.questasim_sim_opt_dict
+            else:
+                self._sim_optimization = {}
+        return self._sim_optimization
+    @sim_opt_dict.setter
+    def sim_opt_dict(self, value):
+        self._sim_opt_dict = value
+
+    @property
+    def sim_optimization(self):
+        if not hasattr(self, '_sim_optimization'):
+            if 'default' in self.sim_opt_dict.keys():
+                self._sim_optimization = 'default'
+            else:
+                self._sim_optimization = None
+    @sim_optimization.setter
+    def sim_optimization(self, value):
+        if value in self.sim_opt_dict.keys():
+            self._sim_optimization = value
+        else:
+            self.print_log(type='F', msg=(
+                f'Key not found in sim_opt_dict: {value}.'
+                f'Available keys: {self.sim_opt_dict.keys()}'))
 
     @property
     def add_tb_timescale(self):
@@ -825,6 +854,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     os.remove(file.name)
                 except:
                     pass
+
+        if self.sim_optimization:
+            self.vlogsimargs += self.sim_opt_dict[self.sim_optimization]
 
         self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
 
