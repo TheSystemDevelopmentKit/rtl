@@ -16,13 +16,13 @@ class questasim(thesdk):
         - 'default' - not optimized simulation for interactive sims,
         optimized with full visibility for non-interactive sims
         - 'top-visible' - optimized while keeping top level (testbench) signals.
-        - 'top-dut-visible' - optimized while keeping top level (testbench) and DUT signals on the first hierarchy level    
+        - 'top-dut-visible' - optimized while keeping top level (testbench) and DUT signals on the first hierarchy level
         '''
         if not hasattr(self, '_sim_opt_dict'):
             self._questasim_sim_opt_dict = {
                 'no-opt': ['-novopt'],
+                'opt-visible': ['-vopt', '-voptargs=+acc'],
                 'full-opt': ['-vopt'],
-                'default': ['-novopt'] if self.interactive_rtl else ['-vopt', '-voptargs=+acc'],
                 'top-visible': [
                     '-vopt',
                     f'-voptargs="+acc=bcglnprst+tb_{self.name}"'
@@ -42,10 +42,10 @@ class questasim(thesdk):
         submission=self.lsf_submission
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
-         
-        vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
+
+        vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+
             str(param) for param in self.vlogmodulefiles ])
-        vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+ 
+        vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+
             str(param) for param in self.vhdlentityfiles])
 
         if not self.add_tb_timescale:
@@ -60,13 +60,13 @@ class questasim(thesdk):
         # In total, 8 cases
         if self.lang=='sv' and self.model=='sv':
             #We need to compile verilog testbench and simdut anyway.
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring
                 + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
             # Define hdll compcmd, if we have cosim
             if len(vhdlmodulesstring) == 0:
                 vhdlcompcmd = ' echo '' > /dev/null '
             else:
-                vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' 
+                vhdlcompcmd = ( 'vcom -2008 -work work ' + ' '
                                + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
 
         elif self.lang=='sv' and self.model=='vhdl':
@@ -74,9 +74,9 @@ class questasim(thesdk):
             vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.vhdlsrc )
             #We need to compile verilog testbench anyway, but simdut is in vhdl
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring
                     + ' ' + self.simtb )
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring
                 + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
 
         elif self.lang=='vhdl' and self.model=='sv':
@@ -84,12 +84,12 @@ class questasim(thesdk):
             vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
                        vhdlmodulesstring + ' ' + self.simtb )
             #We need to compile verilog simdut anyway.
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring 
+            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring
                 + ' ' + self.simdut + ' '.join(self.vlogcompargs))
 
         elif self.lang=='vhdl' and self.model=='vhdl':
             # We need to compile VHDL source and testbench anyway
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring 
+            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring
                     + ' ' + self.vhdlsrc + ' ' + self.simtb )
             # Define vlog compcmd, if we have cosim
             if len(vlogmodulesstring) == 0:
@@ -97,9 +97,9 @@ class questasim(thesdk):
             else:
                 vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring )
 
-        gstring = ' '.join([ 
-                                ('-g ' + str(param) +'='+ str(val[1])) 
-                                for param,val in self.rtlparameters.items() 
+        gstring = ' '.join([
+                                ('-g ' + str(param) +'='+ str(val[1]))
+                                for param,val in self.rtlparameters.items()
                             ])
 
         vlogsimargs = ' '.join(self.vlogsimargs)
@@ -124,16 +124,16 @@ class questasim(thesdk):
             interactive_string=' -do "run -all; quit;"'
             self.print_log(type='I',msg='No interactive control file set.')
 
-        # Choose command 
+        # Choose command
         if not self.interactive_rtl:
-            rtlsimcmd = ( 'vsim -64 -batch' + timescalestring 
+            rtlsimcmd = ( 'vsim -64 -batch' + timescalestring
                     + fileparams + ' ' + gstring
-                    + ' ' + vlogsimargs + ' work.tb_' + self.name  
+                    + ' ' + vlogsimargs + ' work.tb_' + self.name
                     + controlstring)
         else:
             submission="" #Local execution
-            rtlsimcmd = ( 'vsim -64 ' + timescalestring + fileparams 
-                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name 
+            rtlsimcmd = ( 'vsim -64 ' + timescalestring + fileparams
+                    + ' ' + gstring + ' ' + vlogsimargs + ' work.tb_' + self.name
                          + interactive_string )
 
         self._rtlcmd =  rtllibcmd
@@ -145,8 +145,8 @@ class questasim(thesdk):
         elif self.lang == 'vhdl':
             self._rtlcmd += ' && ' + vlogcompcmd
             self._rtlcmd += ' && ' + vhdlcompcmd
-        self._rtlcmd += ' && sync ' + self.rtlworkpath 
-        self._rtlcmd += ' && ' + submission 
+        self._rtlcmd += ' && sync ' + self.rtlworkpath
+        self._rtlcmd += ' && ' + submission
         self._rtlcmd +=  rtlsimcmd
         return self._rtlcmd
 
