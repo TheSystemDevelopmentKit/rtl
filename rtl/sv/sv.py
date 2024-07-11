@@ -105,6 +105,9 @@ class sv(thesdk,metaclass=abc.ABCMeta):
         return self._verilog_sim_args
     @vlogsimargs.setter
     def vlogsimargs(self, simparam):
+        # This might be needed
+        #_ = self.vlogsimargs
+        self.sim_optimization= None
         self._verilog_sim_args = simparam
 
     def sv_create_connectors(self):

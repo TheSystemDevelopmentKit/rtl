@@ -193,14 +193,12 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def sim_opt_dict(self):
         '''Preset abstraction dictionary for running optimization on the simulation.
-        The actual dictionary is implemented in the simulator class.  Always returns
-        default value for simulators that do not .
+        The actual dictionary is implemented in the simulator class.  Returns
+        Dict with empty strings for simulators that do not use this property'
         Valid values:
         - 'no-opt' - no optimizations, full visibility to signals
         - 'opt-visible' - optimized with full visibility.
         - 'full-opt' - fully optimized, might lose visibility to a lot of signals. Simulation may not work.
-        - 'default' - not optimized simulation for interactive sims, optimized with full visibility for
-        non-interactive sims
         - 'top-visible' - optimized while keeping top level (testbench) signals.
         - 'top-dut-visible' - optimized while keeping top level (testbench) and DUT signals on the first
         hierarchy level
@@ -211,7 +209,14 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             elif self.model == 'vhdl':
                 self._sim_opt_dict = self.questasim_sim_opt_dict
             else:
-                self._sim_opt_dict = {}
+                self._sim_opt_dict = { 
+                        'no-opt' : '',
+                        'opt-visible' : '',
+                        'full-opt' : '',
+                        'top-visible' : '',
+                        'top-dut-visible' : ''
+                        }
+
         return self._sim_opt_dict
 
     @property
@@ -234,7 +239,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         return self._sim_optimization
     @sim_optimization.setter
     def sim_optimization(self, value):
-        if value in self.sim_opt_dict.keys():
+        if value in [ self.sim_opt_dict.keys(), None ]:
             self._sim_optimization = value
         else:
             self.print_log(type='F', msg=(
