@@ -881,9 +881,6 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 except:
                     pass
 
-        if self.sim_optimization:
-            self.vlogsimargs += self.sim_opt_dict[self.sim_optimization]
-
         self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
 
         if self.interactive_rtl:
