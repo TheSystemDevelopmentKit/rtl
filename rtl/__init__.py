@@ -180,7 +180,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     def rtl_timeprecision(self):
         """
         Defines rtl time precision. This is the smallest time step representable in simulation.
-        This should be less than equal to ``rtl_timeunit``. Default '1 ps'. 
+        This should be less than equal to ``rtl_timeunit``. Default '1 ps'.
 
         """
         if not hasattr(self, '_rtl_timeprecision'):
@@ -190,12 +190,67 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     def rtl_timeprecision(self, val):
         self._rtl_timeprecision = val
 
+    @property
+    def sim_opt_dict(self):
+        '''Preset abstraction dictionary for running optimization on the simulation.
+        The actual dictionary is implemented in the simulator class.  Returns
+        Dict with empty strings for simulators that do not use this property'
+        Valid values:
+        - 'no-opt' - no optimizations, full visibility to signals
+        - 'opt-visible' - optimized with full visibility.
+        - 'full-opt' - fully optimized, might lose visibility to a lot of signals. Simulation may not work.
+        - 'top-visible' - optimized while keeping top level (testbench) signals.
+        - 'top-dut-visible' - optimized while keeping top level (testbench) and DUT signals on the first
+        hierarchy level
+        '''
+        if not hasattr(self, '_sim_opt_dict'):
+            if self.model == 'sv':
+                self._sim_opt_dict = self.questasim_sim_opt_dict
+            elif self.model == 'vhdl':
+                self._sim_opt_dict = self.questasim_sim_opt_dict
+            else:
+                self._sim_opt_dict = { 
+                        'no-opt' : '',
+                        'opt-visible' : '',
+                        'full-opt' : '',
+                        'top-visible' : '',
+                        'top-dut-visible' : ''
+                        }
+
+        return self._sim_opt_dict
+
+    @property
+    def sim_optimization(self):
+        '''Simulation optimization option. The value in this property
+        is used to fetch the simulator-specific simulation parameters from
+        sim_opt_dict and use it for self.velogsimargs.
+        Default: 'opt-visible' for non-interactive simulations, 'no-opt'
+        for interactive simulations.
+        Set to 'None' is you wish to set self.vlogsimargs manually.
+
+        '''
+
+        if not hasattr(self, '_sim_optimization'):
+            if not self.interactive_rtl:
+                self._sim_optimization = 'opt-visible'
+            else:
+                self._sim_optimization = 'no-opt'
+
+        return self._sim_optimization
+    @sim_optimization.setter
+    def sim_optimization(self, value):
+        if value in list(self.sim_opt_dict.keys()) + [None ]:
+            self._sim_optimization = value
+        else:
+            self.print_log(type='F', msg=(
+                f'Key not found in sim_opt_dict: {value}. '
+                f'Available keys: {self.sim_opt_dict.keys()}'))
 
     @property
     def add_tb_timescale(self):
         """Bool : Defines if timescale directive is added to testbench. Can
         be used in cases where submodules have timescale directives, and
-        you wish to control that from the testbench toplevel. Effective only for 
+        you wish to control that from the testbench toplevel. Effective only for
         self.lang = 'sv'
 
         Default: False
@@ -206,7 +261,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @add_tb_timescale.setter
     def add_tb_timescale(self,val):
         self._add_tb_timescale = val
-        
+
     @property
     def name(self):
         ''' Name of the entity
@@ -379,11 +434,11 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._vlogmodulefiles =list([])
         return self._vlogmodulefiles
     @vlogmodulefiles.setter
-    def vlogmodulefiles(self,value): 
+    def vlogmodulefiles(self,value):
             self._vlogmodulefiles = value
     @vlogmodulefiles.deleter
-    def vlogmodulefiles(self): 
-            self._vlogmodulefiles = None 
+    def vlogmodulefiles(self):
+            self._vlogmodulefiles = None
 
     @property
     def vloglibfilemodules(self):
@@ -426,11 +481,11 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._vhdlentityfiles =list([])
         return self._vhdlentityfiles
     @vhdlentityfiles.setter
-    def vhdlentityfiles(self,value): 
+    def vhdlentityfiles(self,value):
             self._vhdlentityfiles = value
     @vhdlentityfiles.deleter
-    def vhdlentityfiles(self): 
-            self._vhdlentityfiles = None 
+    def vhdlentityfiles(self):
+            self._vhdlentityfiles = None
     @property
     def vhdllibfileentities(self):
         '''List of VHDL entities to be compiled in addition to DUT
@@ -537,7 +592,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             if not os.path.exists(controlfiledir):
                 self.print_log(type='I',msg='Creating %s' % controlfiledir)
                 os.makedirs(controlfiledir)
-            # Simulator control contents always overrdes the file 
+            # Simulator control contents always overrdes the file
             if self.simulator_control_contents != '':
                 # Give a warning if default/custom path contains a do-file already
                 if os.path.isfile(controlfile):
@@ -578,7 +633,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             (dofiledir, dofile, obsoletedofile, generateddofile) = self.ghdl_dofilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
-        
+
         if not hasattr(self, '_interactive_controlfile'):
             # No contents or path given -> use default path (or obsolete path)
             if os.path.exists(obsoletedofile):
