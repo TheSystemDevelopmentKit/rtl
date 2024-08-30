@@ -644,6 +644,19 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     def rtlcmd(self):
         self._rtlcmd=None
 
+    @property
+    def compile_order(self):
+        """Set manual compile order. The value should be a 2D list, where one entry contains a list
+        of modules to be compiled together. Only file name, no path.
+        """
+        if not hasattr(self, '_compile_order'):
+            self._compile_order = []
+        return self._compile_order
+
+    @compile_order.setter
+    def compile_order(self, order):
+        self._compile_order = order
+
     def create_connectors(self):
         '''Creates connector definitions from
            1) From a iofile that is provided in the Data

@@ -5,6 +5,7 @@ properties and methods for RTL class
 Initially written by Marko kosunen 20221030
 """
 from thesdk import *
+import os
 class questasim(thesdk):
     @property
     def questasim_rtlcmd(self):
@@ -12,15 +13,48 @@ class questasim(thesdk):
         rtllibcmd =  'vlib ' +  self.rtlworkpath
         rtllibmapcmd = 'vmap work ' + self.rtlworkpath
          
-        vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles ])
-        vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
 
         if not self.add_tb_timescale:
             timescalestring = ' -t ' + self.rtl_timescale
         else:
             timescalestring = ''
+
+        # Produce a list of compile commands for modules that have been defined
+        # in self.compile_order
+        comp_cmds = []
+
+        for comp_list in self.compile_order:
+            comp_cmd = ""
+            first = True
+            lang = None
+            for module in comp_list:
+                if module in self.vlogmodulefiles:
+                    if first:
+                        lang = "sv"
+                        first = False
+                        comp_cmd = ["vlog -sv -work work"]
+                    if lang != "sv":
+                        self.print_log(type='F', msg='You can only add same language modules in one entry of compile_order!')
+                    comp_cmd += [os.path.join(self.rtlsimpath, module)]
+                    self.vlogmodulefiles.remove(module)
+                elif module in self.vhdlentityfiles:
+                    if first:
+                        lang = "vhdl"
+                        first = False
+                        comp_cmd = ["vcom -2008 -work work"]
+                    if lang != "vhdl":
+                        self.print_log(type='F', msg='You can only add same language modules in one entry of compile_order!')
+                    comp_cmd += [os.path.join(self.rtlsimpath, module)]
+                    self.vhdlentityfiles.remove(module)
+                else:
+                    self.print_log(type='W', msg=f'File not included in vlogmodulefiles or vhdlentityfiles: {module}')
+            comp_cmds += [' '.join(comp_cmd)]
+
+
+        vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
+            str(param) for param in self.vlogmodulefiles ])
+        vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+ 
+            str(param) for param in self.vhdlentityfiles])
 
         # The following cases are possible
         # Testbench is sv OR testbench is vhdl, identified with 'lang'
@@ -108,9 +142,13 @@ class questasim(thesdk):
         self._rtlcmd += ' && ' + rtllibmapcmd
         # Commpile dependencies first.
         if self.lang == 'sv':
+            for comp_cmd in comp_cmds:
+                self._rtlcmd += ' && ' + comp_cmd
             self._rtlcmd += ' && ' + vhdlcompcmd
             self._rtlcmd += ' && ' + vlogcompcmd
         elif self.lang == 'vhdl':
+            for comp_cmd in comp_cmds:
+                self._rtlcmd += ' && ' + comp_cmd
             self._rtlcmd += ' && ' + vlogcompcmd
             self._rtlcmd += ' && ' + vhdlcompcmd
         self._rtlcmd += ' && sync ' + self.rtlworkpath 
