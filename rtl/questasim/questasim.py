@@ -59,6 +59,8 @@ class questasim(thesdk):
             first = True
             lang = None
             for module in comp_list:
+                # Check if the module is in vlogmodulefiles or vhdlentityfiles
+                # Same entry should contain modules from one language only
                 if module in self.vlogmodulefiles:
                     if first:
                         lang = "sv"
