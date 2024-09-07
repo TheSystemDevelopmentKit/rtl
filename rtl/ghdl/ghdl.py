@@ -13,9 +13,9 @@ class ghdl(thesdk):
         if not os.path.exists(self.rtlworkpath):
             os.mkdir(self.rtlworkpath)
         vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles ])
+            str(param) for param in self.extract_vlogfiles() ])
         vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
+            str(param) for param in self.extract_vhdlfiles()])
 
         if vlogmodulesstring != '':
             self.print_log(type='W', msg="GHDL does not support Verilog+VHDL cosimulation, ignoring additional Verilog files.")
