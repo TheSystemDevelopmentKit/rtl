@@ -16,7 +16,7 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
         vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
             str(param) for param in self.extract_vlogfiles() ])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.extract_vlogfiles()])
+            str(param) for param in self.extract_vhdlfiles()])
 
         if vhdlmodulesstring != '':
             self.print_log(type='W', msg="Icarus does not support Verilog+VHDL cosimulation, ignoring additional VHDL files.")
