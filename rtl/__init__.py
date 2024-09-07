@@ -432,9 +432,6 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_vlogmodulefiles'):
             self._vlogmodulefiles = []
-            for module in self.rtlfiles:
-                if os.path.splitext(module)[1] in [".sv", ".v"]:
-                    self._vlogmodulefiles += [module]
         return self._vlogmodulefiles
     @vlogmodulefiles.setter
     def vlogmodulefiles(self,value):
@@ -498,9 +495,6 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         '''
         if not hasattr(self, '_vhdlentityfiles'):
             self._vhdlentityfiles = []
-            for module in self.rtlfiles:
-                if os.path.splitext(module)[1] in [".vhd", ".vhdl"]:
-                    self._vhdlentityfiles += [module]
         return self._vhdlentityfiles
     @vhdlentityfiles.setter
     def vhdlentityfiles(self,value):
@@ -747,6 +741,26 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                         and val.dir == 'in':
                     # Data must be properly shaped
                     self.iofile_bundle.Members[ioname].Data=self.IOS.Members[ioname].Data
+
+    def extract_vlogfiles(self):
+        """Return extracted verilog files from ``self.rtlfiles``
+        """
+        vlogfiles = []
+        for module in self.rtlfiles:
+            _, file_ext = os.path.splitext(module)
+            if file_ext in [".sv", ".v"]:
+                vlogfiles += [module]
+        return vlogfiles
+
+    def extract_vhdlfiles(self):
+        """Return extracted vhdl files from ``self.rtlfiles``
+        """
+        vhdlfiles = []
+        for module in self.rtlfiles:
+            _, file_ext = os.path.splitext(module)
+            if file_ext in [".vhd", ".vhdl"]:
+                vhdlfiles += [module]
+        return vhdlfiles
 
     # Define if the signals are signed or not
     # Can these be deducted?
