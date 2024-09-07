@@ -22,7 +22,7 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
             self.print_log(type='W', msg="Icarus does not support Verilog+VHDL cosimulation, ignoring additional VHDL files.")
 
         vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name
-    	            + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
+                    + ' ' + vlogmodulesstring)
         gstring = ' '.join([ 
                                 ('-g ' + str(param) +'='+ str(val[1])) 
                                 for param,val in self.rtlparameters.items() 

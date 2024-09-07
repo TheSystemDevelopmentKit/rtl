@@ -20,8 +20,7 @@ class ghdl(thesdk):
         if vlogmodulesstring != '':
             self.print_log(type='W', msg="GHDL does not support Verilog+VHDL cosimulation, ignoring additional Verilog files.")
         # We need to compile VHDL source and testbench anyway
-        vhdlcompcmd = ( 'ghdl -a -Wall -Wno-unused --std=08 --workdir=' + self.rtlworkpath + ' ' + vhdlmodulesstring 
-                + ' ' + self.simdut + ' ' + self.simtb )
+        vhdlcompcmd = ( 'ghdl -a -Wall -Wno-unused --std=08 --workdir=' + self.rtlworkpath + ' ' + vhdlmodulesstring )
         vhdlanalysiscmd = ( 'ghdl -e --std=08 --workdir=' + self.rtlworkpath + ' ' + 'tb_' + self.name )
 
 
