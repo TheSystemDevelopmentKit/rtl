@@ -431,7 +431,10 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_vlogmodulefiles'):
-            self._vlogmodulefiles =list([])
+            self._vlogmodulefiles = []
+            for module in self.rtlfiles:
+                if os.path.splitext(module)[1] in [".sv", ".v"]:
+                    self._vlogmodulefiles += [module]
         return self._vlogmodulefiles
     @vlogmodulefiles.setter
     def vlogmodulefiles(self,value):
@@ -494,7 +497,10 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_vhdlentityfiles'):
-            self._vhdlentityfiles =list([])
+            self._vhdlentityfiles = []
+            for module in self.rtlfiles:
+                if os.path.splitext(module)[1] in [".vhd", ".vhdl"]:
+                    self._vhdlentityfiles += [module]
         return self._vhdlentityfiles
     @vhdlentityfiles.setter
     def vhdlentityfiles(self,value):
@@ -803,6 +809,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         tb_bname = os.path.basename(self.simtb)
 
         # Merge all different modules to one
+        # This also maintains backward compatibility
         self.rtlfiles += self.vloglibfilemodules + self.vlogmodulefiles + \
                             self.vhdllibfileentities + self.vhdlentityfiles
 
