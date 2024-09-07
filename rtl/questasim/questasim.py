@@ -50,88 +50,34 @@ class questasim(thesdk):
         else:
             timescalestring = ''
 
-        # Produce a list of compile commands for modules that have been defined
-        # in self.compile_order
+        # Produce a list of compile commands from self.rtlfiles
+        # They are compiled in order
+        # Consecutive, same language modules are grouped into one compile command
         comp_cmds = []
 
-        for comp_list in self.compile_order:
-            comp_cmd = ""
-            first = True
-            lang = None
-            for module in comp_list:
-                # Check if the module is in vlogmodulefiles or vhdlentityfiles
-                # Same entry should contain modules from one language only
-                if module in self.vlogmodulefiles:
-                    if first:
-                        lang = "sv"
-                        first = False
-                        comp_cmd = ["vlog -sv -work work"]
-                    if lang != "sv":
-                        self.print_log(type='F', msg='You can only add same language modules in one entry of compile_order!')
-                    comp_cmd += [os.path.join(self.rtlsimpath, module)]
-                    self.vlogmodulefiles.remove(module)
-                elif module in self.vhdlentityfiles:
-                    if first:
-                        lang = "vhdl"
-                        first = False
-                        comp_cmd = ["vcom -2008 -work work"]
-                    if lang != "vhdl":
-                        self.print_log(type='F', msg='You can only add same language modules in one entry of compile_order!')
-                    comp_cmd += [os.path.join(self.rtlsimpath, module)]
-                    self.vhdlentityfiles.remove(module)
+        vlog_start = ' '.join(["vlog","-sv","-work","work"] + self.vlogcompargs)
+        vhdl_start = ' '.join(["vcom","-2008","-work","work"] + self.vhdlcompargs)
+        comp_group = []
+        group_lang = ""
+        first = True
+        for module in self.rtlfiles:
+            _, file_ext = os.path.splitext(module)
+            lang = "vlog" if file_ext in [".v", ".sv"] else "vhdl"
+            if group_lang != lang and not first:
+                # Finish compilation group as language changes
+                comp_cmds += [' '.join(comp_group)]
+                comp_group = []
+            first = False
+            if comp_group == []:
+                group_lang = lang
+                # Add compile command
+                if lang == "vlog":
+                    comp_group += [vlog_start]
                 else:
-                    self.print_log(type='W', msg=f'File not included in vlogmodulefiles or vhdlentityfiles: {module}')
-            comp_cmds += [' '.join(comp_cmd)]
-
-
-        vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles ])
-        vhdlmodulesstring=' '.join(self.vhdllibfileentities + [ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
-
-        # The following cases are possible
-        # Testbench is sv OR testbench is vhdl, identified with 'lang'
-        # source is verilog OR source is vhdl, identified by 'model
-        # Has additional source files in the 'other' language, identified by 'cosim'
-        # In total, 8 cases
-        if self.lang=='sv' and self.model=='sv':
-            #We need to compile verilog testbench and simdut anyway.
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring
-                + ' ' + self.simdut + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
-            # Define hdll compcmd, if we have cosim
-            if len(vhdlmodulesstring) == 0:
-                vhdlcompcmd = ' echo '' > /dev/null '
-            else:
-                vhdlcompcmd = ( 'vcom -2008 -work work ' + ' '
-                               + vhdlmodulesstring + ' ' + ' '.join(self.vhdlcompargs))
-
-        elif self.lang=='sv' and self.model=='vhdl':
-            #We need to compile vhdl sources anyway, but no testbench
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.vhdlsrc )
-            #We need to compile verilog testbench anyway, but simdut is in vhdl
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring
-                    + ' ' + self.simtb )
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring
-                + ' ' + self.simtb + ' ' + ' '.join(self.vlogcompargs))
-
-        elif self.lang=='vhdl' and self.model=='sv':
-            # We need to compile VHDL testbench anyway, but not the source
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' +
-                       vhdlmodulesstring + ' ' + self.simtb )
-            #We need to compile verilog simdut anyway.
-            vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring
-                + ' ' + self.simdut + ' '.join(self.vlogcompargs))
-
-        elif self.lang=='vhdl' and self.model=='vhdl':
-            # We need to compile VHDL source and testbench anyway
-            vhdlcompcmd = ( 'vcom -2008 -work work ' + ' ' + vhdlmodulesstring
-                    + ' ' + self.vhdlsrc + ' ' + self.simtb )
-            # Define vlog compcmd, if we have cosim
-            if len(vlogmodulesstring) == 0:
-                vlogcompcmd = ' echo '' > /dev/null '
-            else:
-                vlogcompcmd = ( 'vlog -sv -work work ' + vlogmodulesstring )
+                    comp_group += [vhdl_start]
+            comp_group += [os.path.join(self.rtlsimpath, module)]
+        # Append the last group
+        comp_cmds += [' '.join(comp_group)]
 
         gstring = ' '.join([
                                 ('-g ' + str(param) +'='+ str(val[1]))
@@ -174,17 +120,8 @@ class questasim(thesdk):
 
         self._rtlcmd =  rtllibcmd
         self._rtlcmd += ' && ' + rtllibmapcmd
-        # Commpile dependencies first.
-        if self.lang == 'sv':
-            for comp_cmd in comp_cmds:
-                self._rtlcmd += ' && ' + comp_cmd
-            self._rtlcmd += ' && ' + vhdlcompcmd
-            self._rtlcmd += ' && ' + vlogcompcmd
-        elif self.lang == 'vhdl':
-            for comp_cmd in comp_cmds:
-                self._rtlcmd += ' && ' + comp_cmd
-            self._rtlcmd += ' && ' + vlogcompcmd
-            self._rtlcmd += ' && ' + vhdlcompcmd
+        for comp_cmd in comp_cmds:
+            self._rtlcmd += ' && ' + comp_cmd
         self._rtlcmd += ' && sync ' + self.rtlworkpath
         self._rtlcmd += ' && ' + submission
         self._rtlcmd +=  rtlsimcmd
