@@ -42,8 +42,8 @@ class rtl_connector(connector_common,thesdk):
         """
         if not hasattr(self,'_verilog_langobject'):
             self._verilog_langobject=verilog_connector(
-                        name=self.name,
-                        cls=self.cls,
+                        name=self._name,
+                        cls=self._cls,
                         type = self._typearg,
                         #ll = self.ll,
                         #rl = self.rl,
@@ -52,8 +52,8 @@ class rtl_connector(connector_common,thesdk):
                         )
         if not hasattr(self,'_vhdl_langobject'):
             self._vhdl_langobject=vhdl_connector(
-                        name=self.name,
-                        cls=self.cls,
+                        name=self._name,
+                        cls=self._cls,
                         type = self._typearg,
                         #ll = self.ll,
                         #rl = self.rl,
@@ -64,6 +64,33 @@ class rtl_connector(connector_common,thesdk):
             return self._verilog_langobject
         if self.lang == 'vhdl':
             return self._vhdl_langobject
+
+    @property
+    def name(self):
+        '''Name of the connector.
+
+        Default: ``
+
+        '''
+        return self.langobject.name
+
+    @name.setter
+    def name(self,value):
+            self.langobject.name=value
+
+    @property
+    def cls(self):
+        '''Class of the connector.
+
+        Default: ``
+
+        '''
+        return self.langobject.cls
+
+    @cls.setter
+    def cls(self,value):
+            self.langobject.cls=value
+
     @property
     def type(self):
         return self.langobject.type

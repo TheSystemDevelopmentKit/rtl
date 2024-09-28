@@ -30,13 +30,43 @@ class connector_common(thesdk):
             Default; '%d', i.e parse as integers.
             
         """
-        self.name=kwargs.get('name','')
-        self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
+        self._name=kwargs.get('name','')
+        self._cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
         self._ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
         self._rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
         self._init=kwargs.get('init','') # Initial value
         self.connect=kwargs.get('connect',None) # Can be another connector, would be recursive
         self.lang=kwargs.get('lang','sv')
+
+    @property
+    def name(self):
+        '''Name of the connector.
+
+        Default: ``
+
+        '''
+        if not hasattr(self,'_name'):
+            self._name=''
+        return self._name
+
+    @name.setter
+    def name(self,value):
+            self._name=value
+
+    @property
+    def cls(self):
+        '''class of the connector.
+
+        Default: ``
+
+        '''
+        if not hasattr(self,'_cls'):
+            self._cls=''
+        return self._cls
+
+    @cls.setter
+    def cls(self,value):
+            self._cls=value
 
     @property
     def lang(self):
