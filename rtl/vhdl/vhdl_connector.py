@@ -33,18 +33,21 @@ class vhdl_connector(connector_common,thesdk):
         if not hasattr(self, '_type'):
             if type(self.width) == str:
                 self._type = None
-            elif self.width == 1:
-                self._type = None
-            elif self.width > 1:
-                self._type = None
+            else:
+                if self.width == 1:
+                    self._type = None
+                elif self.width > 1:
+                    self._type = None
         else:
-            if type(self.width) == str and self._type != 'signed':
-                self.print_log(type='I', msg='Setting type of \'%s\' to \'None\' due to parametrized width ' %(self.name))
-                self._type = None
-            elif self.width == 1 and self._type != 'signed':
-                self._type = None
-            elif self.width > 1 and self._type != 'signed':
-                self._type = None
+            if type(self.width) == str: 
+                if self._type != 'signed':
+                    self.print_log(type='I', msg='Setting type of \'%s\' to \'None\' due to parametrized width ' %(self.name))
+                    self._type = None
+            else:
+                if self.width == 1 and self._type != 'signed':
+                    self._type = None
+                elif self.width > 1 and self._type != 'signed':
+                    self._type = None
         return self._type
     @type.setter
     def type(self,value):

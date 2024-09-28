@@ -45,9 +45,9 @@ class rtl_connector(connector_common,thesdk):
                         name=self.name,
                         cls=self.cls,
                         type = self._typearg,
-                        ll = self.ll,
-                        rl = self.rl,
-                        init = self.init,
+                        #ll = self.ll,
+                        #rl = self.rl,
+                        init = self._init,
                         connect = self.connect
                         )
         if not hasattr(self,'_vhdl_langobject'):
@@ -55,9 +55,9 @@ class rtl_connector(connector_common,thesdk):
                         name=self.name,
                         cls=self.cls,
                         type = self._typearg,
-                        ll = self.ll,
-                        rl = self.rl,
-                        init = self.init,
+                        #ll = self.ll,
+                        #rl = self.rl,
+                        init = self._init,
                         connect = self.connect
                         )
         if self.lang == 'sv':
@@ -70,6 +70,59 @@ class rtl_connector(connector_common,thesdk):
     @type.setter
     def type(self,value):
         self.langobject.type = value
+
+    @property
+    def init(self):
+        ''' Left (usually upper) limit of the connector bus: int | str (for parametrized bounds)
+
+        Strings that evaluate to integers are automatically evaluated.
+        
+        '''
+        return self.langobject.init
+    @init.setter
+    def init(self,value):
+        self.langobject.init = value
+
+    @property
+    def ll(self):
+        ''' Left (usually upper) limit of the connector bus: int | str (for parametrized bounds)
+
+        Strings that evaluate to integers are automatically evaluated.
+        
+        '''
+            
+        return self.langobject.ll
+    @ll.setter
+    def ll(self,value):
+        if type(value) == str:
+            #Try to evaluate string
+            try:
+                self.langobject.ll = eval(value)
+            except:
+                self.langobject.ll = value
+        else:
+            self.langobject.ll = value
+    @property
+    def rl(self):
+        ''' Right /usuarly lower) limit of the connector bus: int | str (for parametrized bounds)
+
+        Strings that evaluate to integers are automaticarly evaluated.
+        
+        '''
+            
+        if not hasattr(self,'_rl'):
+            self._rl=0
+        return self.langobject.rl
+    @rl.setter
+    def rl(self,value):
+        if type(value) == str:
+            #Try to evaluate string
+            try:
+                self.langobject.rl = eval(value)
+            except:
+                self.langobject.rl = value
+        else:
+            self.langobject.rl = value
 
     @property
     def definition(self):

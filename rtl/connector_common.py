@@ -34,7 +34,7 @@ class connector_common(thesdk):
         self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
         self._ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
         self._rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
-        self.init=kwargs.get('init','') # Initial value
+        self._init=kwargs.get('init','') # Initial value
         self.connect=kwargs.get('connect',None) # Can be another connector, would be recursive
         self.lang=kwargs.get('lang','sv')
 
@@ -52,6 +52,20 @@ class connector_common(thesdk):
     @lang.setter
     def lang(self,value):
             self._lang=value
+
+    @property
+    def init(self):
+        '''Initial value of the signal at the time instace 0
+
+        Default: '' , meaning undefined.
+
+        '''
+        if not hasattr(self,'_init'):
+            self._init=''
+        return self._init
+    @init.setter
+    def init(self,value):
+            self._init=value
 
     @property
     def width(self):
