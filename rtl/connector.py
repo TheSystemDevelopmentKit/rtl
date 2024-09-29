@@ -48,7 +48,7 @@ class rtl_connector(connector_common,thesdk):
                         #ll = self.ll,
                         #rl = self.rl,
                         init = self._init,
-                        connect = self.connect
+                        connect = self._connect
                         )
         if not hasattr(self,'_vhdl_langobject'):
             self._vhdl_langobject=vhdl_connector(
@@ -58,7 +58,7 @@ class rtl_connector(connector_common,thesdk):
                         #ll = self.ll,
                         #rl = self.rl,
                         init = self._init,
-                        connect = self.connect
+                        connect = self._connect
                         )
         if self.lang == 'sv':
             return self._verilog_langobject
@@ -150,6 +150,18 @@ class rtl_connector(connector_common,thesdk):
                 self.langobject.rl = value
         else:
             self.langobject.rl = value
+    
+    @property
+    def connect(self):
+        ''' Left (usually upper) limit of the connector bus: int | str (for parametrized bounds)
+
+        Strings that evaluate to integers are automatically evaluated.
+        
+        '''
+        return self.langobject.connect
+    @connect.setter
+    def connect(self,value):
+        self.langobject.connect = value
 
     @property
     def definition(self):

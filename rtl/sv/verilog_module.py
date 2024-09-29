@@ -129,6 +129,7 @@ class verilog_module(module_common,thesdk):
 
                         # By default, we create a connector that is cross connected to the input
                         signal.connect=deepcopy(signal)
+                        pdb.set_trace()
                         if signal.cls=='input':
                             signal.connect.cls='reg'
                         if signal.cls=='output':
