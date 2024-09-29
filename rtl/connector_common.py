@@ -32,9 +32,9 @@ class connector_common(thesdk):
         """
         self.name=kwargs.get('name','')
         self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
-        self._ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
-        self._rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
-        self._init=kwargs.get('init','') # Initial value
+        self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
+        self.rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
+        self.init=kwargs.get('init','') # Initial value
         self.connect=kwargs.get('connect',None) # Can be another connector, would be recursive
         self.lang=kwargs.get('lang','sv')
 
