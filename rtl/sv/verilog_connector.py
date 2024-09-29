@@ -24,6 +24,7 @@ class verilog_connector(connector_common,thesdk):
         super().__init__(**kwargs)
         #This internal attribute is needed to avoid recursive definition of 'type'
         self._type=kwargs.get('type', 'signed' ) # Depends on language
+        self.parent=kwargs.get('parent', None)
 
     @property
     def type(self):
@@ -52,6 +53,26 @@ class verilog_connector(connector_common,thesdk):
     def type(self,value):
        self.print_log(type='I', msg='Setting type of \'%s\' to \'%s\' ' %(self.name,value))
        self._type = value
+
+    @property
+    def name(self):
+        return self.parent.name
+
+    @property
+    def init(self):
+        return self.parent.init
+
+    @property
+    def width(self):
+        return self.parent.width
+
+    @property
+    def ll(self):
+        return self.parent.ll
+
+    @property
+    def rl(self):
+        return self.parent.rl
 
     @property
     def ioformat(self):

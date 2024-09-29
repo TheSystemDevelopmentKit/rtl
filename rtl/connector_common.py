@@ -28,15 +28,28 @@ class connector_common(thesdk):
             Default: None
         ioformat: str, Verilog formating string fo the signal for parsing it from a file.
             Default; '%d', i.e parse as integers.
-            
+
         """
-        self.name=kwargs.get('name','')
-        self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
-        self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
-        self.rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
-        self.init=kwargs.get('init','') # Initial value
-        self.connect=kwargs.get('connect',None) # Can be another connector, would be recursive
-        self.lang=kwargs.get('lang','sv')
+        self._name=kwargs.get('name','')
+        self._lang=kwargs.get('lang','sv')
+        self._cls=kwargs.get('cls','')   # Input,output,inout,reg,wire
+        self._ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
+        self._rl=kwargs.get('rl',0)      # Bus bus range right limit 0 by default
+        self._init=kwargs.get('init','') # Initial value
+        self._connect=kwargs.get('connect',None) # Can be another connector, would be recursive
+
+    @property
+    def name(self):
+        '''Name of the connector
+
+        '''
+        if not hasattr(self,'_name'):
+            self._name=''
+        return self._name
+
+    @name.setter
+    def name(self,value):
+            self._name=value
 
     @property
     def lang(self):
@@ -54,37 +67,28 @@ class connector_common(thesdk):
             self._lang=value
 
     @property
-    def init(self):
-        '''Initial value of the signal at the time instace 0
+    def cls(self):
+        '''Class of the connector
 
-        Default: '' , meaning undefined.
+        str : Input | output | reg | wire
 
         '''
-        if not hasattr(self,'_init'):
-            self._init=''
-        return self._init
-    @init.setter
-    def init(self,value):
-            self._init=value
+        if not hasattr(self,'_cls'):
+            self._cls='sv'
+        return self._cls
 
-    @property
-    def width(self):
-        ''' Width of the connector: int | str (for parametrized bounds)'''
-            
-        if (isinstance(self.ll,str) or isinstance(self.rl,str)):
-            self._width=str(self.ll) + '-' + str(self.rl)+'+1'
-        else: 
-            self._width=int(self.ll)-int(self.rl)+1
-        return self._width
+    @cls.setter
+    def cls(self,value):
+            self._cls=value
 
     @property
     def ll(self):
         ''' Left (usually upper) limit of the connector bus: int | str (for parametrized bounds)
 
         Strings that evaluate to integers are automatically evaluated.
-        
+
         '''
-            
+
         if not hasattr(self,'_ll'):
             self._ll = 0
         return self._ll
@@ -99,14 +103,15 @@ class connector_common(thesdk):
         else:
             self._ll = value
         return self._ll
+
     @property
     def rl(self):
         ''' Right /usuarly lower) limit of the connector bus: int | str (for parametrized bounds)
 
         Strings that evaluate to integers are automaticarly evaluated.
-        
+
         '''
-            
+
         if not hasattr(self,'_rl'):
             self._rl=0
         return self._rl
@@ -121,4 +126,43 @@ class connector_common(thesdk):
         else:
             self._rl = value
         return self._rl
+
+    @property
+    def init(self):
+        '''Initial value of the signal at the time instace 0
+
+        Default: '' , meaning undefined.
+
+        '''
+        if not hasattr(self,'_init'):
+            self._init = ''
+        return self._init
+    @init.setter
+    def init(self,value):
+            self._init = value
+
+    @property
+    def connect(self):
+        '''Connector of different name to which this connector is to be connected to.
+
+        Default: None.
+
+        '''
+        if not hasattr(self,'_connect'):
+            self._connect = None
+        return self._connect
+    @connect.setter
+    def connect(self,value):
+            self._connect = value
+
+
+    @property
+    def width(self):
+        ''' Width of the connector: int | str (for parametrized bounds)'''
+
+        if (isinstance(self.ll,str) or isinstance(self.rl,str)):
+            self._width=str(self.ll) + '-' + str(self.rl)+'+1'
+        else:
+            self._width=int(self.ll)-int(self.rl)+1
+        return self._width
 

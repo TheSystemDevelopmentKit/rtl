@@ -4,7 +4,7 @@ Connector
 =========
 Class for describing signals in wide sense, including IO's
 
-This class stores signal parameters as name, type widt and indexes, and 
+This class stores signal parameters as name, type widt and indexes, and
 returns definition strings according to given 'lang' paramenter
 
 Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
@@ -17,14 +17,14 @@ from rtl.vhdl.vhdl_connector import vhdl_connector
 
 class rtl_connector(connector_common,thesdk):
     def __init__(self, **kwargs):
-        ''' Executes init of module_common, thus having the same attributes and 
+        ''' Executes init of module_common, thus having the same attributes and
         parameters.
 
         Parameters
         ----------
             **kwargs :
                See module module_common
-        
+
         '''
 
         super().__init__(**kwargs)
@@ -33,12 +33,12 @@ class rtl_connector(connector_common,thesdk):
 
     @property
     def langobject(self):
-        """The language specific operation is defined with an instance of 
+        """The language specific operation is defined with an instance of
         language specific class. Properties and methods return values from that class.
 
         Two instances are created to have the lanquage dependent content available
         in both languages for mixed lanquage simulations. This can be further clarified later,
-        as the strings returned should not be fixed at creation. 
+        as the strings returned should not be fixed at creation.
         """
         if not hasattr(self,'_verilog_langobject'):
             self._verilog_langobject=verilog_connector(
@@ -53,6 +53,7 @@ class rtl_connector(connector_common,thesdk):
                         )
         if not hasattr(self,'_vhdl_langobject'):
             self._vhdl_langobject=vhdl_connector(
+                        parent=self,
                         name=self.name,
                         cls=self.cls,
                         type = self._typearg,
@@ -135,9 +136,9 @@ class rtl_connector_bundle(Bundle):
         #[TODO]: Write sanity checks
         bundle=kwargs.get('bundle',None)
         for key,val in bundle.items():
-            if key not in self.Members: 
+            if key not in self.Members:
                 self.Members[key]=val
-    
+
     def mv(self,**kwargs):
         #[TODO]: Write sanity checks
         fro=kwargs.get('fro')
@@ -200,7 +201,7 @@ class verilog_connector_bundle(rtl_connector_bundle,thesdk):
         typestr = "[OBSOLETE]"
         cviolet = '\33[35m'
         cend    = '\33[0m'
-        print("%s %s%s%s %s: %s" %(time.strftime("%H:%M:%S"),cviolet,typestr,cend, 
+        print("%s %s%s%s %s: %s" %(time.strftime("%H:%M:%S"),cviolet,typestr,cend,
             self.__class__.__name__ , msg))
 
 
@@ -224,7 +225,7 @@ def indent(**kwargs):
     Also adds a newline after every line (including last one)
     Parameters
     -----------
-    **kwargs : 
+    **kwargs :
         text  : text to indent (may allow line breaks)
         level : level of indent (level * 4 spaces will be added to each row)
     '''

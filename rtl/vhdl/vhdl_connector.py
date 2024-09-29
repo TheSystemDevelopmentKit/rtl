@@ -1,10 +1,10 @@
 """
 =================
-Verilog connector
+VHDL connector
 =================
-Class for describing signals in wide sense, including IO's
+Class for describing signals specific to VHDL
 
-Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
+Inititally written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
 """
 import os
 from thesdk import *
@@ -12,17 +12,20 @@ from rtl.connector_common import connector_common
 
 class vhdl_connector(connector_common,thesdk):
     def __init__(self, **kwargs):
-        ''' Executes init of connector_common, thus having the same attributes and 
+        ''' Executes init of connector_common, thus having the same attributes and
         parameters.
 
         Parameters
         ----------
             **kwargs :
                See module module_common
-        
+
         '''
         super().__init__(**kwargs)
         self._type=kwargs.get('type', 'std_logic_vector' ) # Depends on language
+        self.parent=kwargs.get('parent', None)
+
+
     @property
     def type(self):
         ''' Type defaults to None meaning that all signals are handled as unsigned integers.
@@ -39,7 +42,7 @@ class vhdl_connector(connector_common,thesdk):
                 elif self.width > 1:
                     self._type = None
         else:
-            if type(self.width) == str: 
+            if type(self.width) == str:
                 if self._type != 'signed':
                     self.print_log(type='I', msg='Setting type of \'%s\' to \'None\' due to parametrized width ' %(self.name))
                     self._type = None
@@ -53,6 +56,26 @@ class vhdl_connector(connector_common,thesdk):
     def type(self,value):
        self.print_log(type='I', msg='Setting type of \'%s\' to \'%s\' ' %(self.name,value))
        self._type = value
+
+    @property
+    def name(self):
+        return self.parent.name
+
+    @property
+    def init(self):
+        return self.parent.init
+
+    @property
+    def width(self):
+        return self.parent.width
+
+    @property
+    def ll(self):
+        return self.parent.ll
+
+    @property
+    def rl(self):
+        return self.parent.rl
 
     @property
     def vhdl_signal_type(self):
@@ -104,7 +127,7 @@ class vhdl_connector(connector_common,thesdk):
     def initialization(self):
         self.print_log(type='W', msg='Initialization is not effective for VHDL')
         return ''
-    
+
     @property
     def assignment(self,**kwargs):
         self._assignment='%s <= %s;\n' %(self.name,self.connect.name)
