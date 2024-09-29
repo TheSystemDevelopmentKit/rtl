@@ -8,23 +8,21 @@ Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
 """
 import os
 from thesdk import *
-from rtl.connector_common import connector_common
 
-class verilog_connector(connector_common,thesdk):
+class verilog_connector(thesdk):
     def __init__(self, **kwargs):
-        ''' Executes init of connector_common, thus having the same attributes and 
+        ''' Executes init of connector_common, thus having the same attributes and
         parameters.
 
         Parameters
         ----------
             **kwargs :
                See module module_common
-        
+
         '''
-        super().__init__(**kwargs)
         #This internal attribute is needed to avoid recursive definition of 'type'
-        self._type=kwargs.get('type', 'signed' ) # Depends on language
-        self.parent=kwargs.get('parent', None)
+        self._type = kwargs.get('type', 'signed' ) # Depends on language
+        self.parent = kwargs.get('parent', None)
 
     @property
     def type(self):
@@ -34,50 +32,42 @@ class verilog_connector(connector_common,thesdk):
 
         # We must handle parametrized widths
         if not hasattr(self, '_type'):
-            if type(self.width) == str:
+            if type(self.parent.width) == str:
                 self._type = None
-            elif self.width == 1:
-                self._type = None
-            elif self.width > 1:
-                self._type = None
+            else:
+                if self.parent.width == 1:
+                    self._type = None
+                elif self.parent.width > 1:
+                    self._type = None
         else:
-            if type(self.width) == str and self._type != 'signed':
-                self.print_log(type='I', msg='Setting type of \'%s\' to \'None\' due to parametrized width ' %(self.name))
+            if type(self.parent.width) == str:
+                if self._type != 'signed':
+                    self.print_log(type = 'I',
+                        msg = ('Setting type of \'%s\' to \'None\' due to parametrized width.'
+                            %(self.parent.name)
+                            )
+                        )
                 self._type = None
-            elif self.width == 1 and self._type != 'signed':
-                self._type = None
-            elif self.width > 1 and self._type != 'signed':
-                self._type = None
+            else:
+                if self.parent.width == 1 and self._type != 'signed':
+                    self._type = None
+                elif self.parent.width > 1 and self._type != 'signed':
+                    self._type = None
         return self._type
     @type.setter
     def type(self,value):
-       self.print_log(type='I', msg='Setting type of \'%s\' to \'%s\' ' %(self.name,value))
+       self.print_log(type = 'I',
+               msg = ('Setting type of \'%s\' to \'%s\'.'
+                   %(self.parent.name,value)
+                   )
+               )
        self._type = value
 
-    @property
-    def name(self):
-        return self.parent.name
-
-    @property
-    def init(self):
-        return self.parent.init
-
-    @property
-    def width(self):
-        return self.parent.width
-
-    @property
-    def ll(self):
-        return self.parent.ll
-
-    @property
-    def rl(self):
-        return self.parent.rl
 
     @property
     def ioformat(self):
         if not hasattr(self, '_ioformat') or self._ioformat == None:
-            self._ioformat='%d' #Language specific formatting
+            self._ioformat = '%d' #Language specific formatting
         return self._ioformat
 
     @ioformat.setter
@@ -86,39 +76,44 @@ class verilog_connector(connector_common,thesdk):
 
     @property
     def definition(self):
-        if self.width==1:
-            self._definition='%s %s;\n' %(self.cls, self.name)
+        if self.parent.width==1:
+            self._definition = '%s %s;\n' %(self.parent.cls, self.parent.name)
         elif self.type:
-            self._definition='%s %s [%s:%s] %s;\n' %(self.cls, self.type, self.ll, self.rl, self.name)
+            self._definition = ( '%s %s [%s:%s] %s;\n'
+                %(self.parent.cls, self.type, self.parent.ll,
+                    self.parent.rl, self.parent.name)
+            )
         else:
-            self._definition='%s [%s:%s] %s;\n' %(self.cls, self.ll, self.rl, self.name)
+            self._definition = ('%s [%s:%s] %s;\n'
+                    %(self.parent.cls, self.parent.ll,
+                        self.parent.rl, self.parent.name)
+                    )
         return self._definition
 
     @property
     def initialization(self):
-        return '%s = %s;\n' %(self.name,self.init)
-    
+        return '%s = %s;\n' %(self.parent.name,self.parent.init)
+
     @property
     def assignment(self,**kwargs):
-        self._assignment='assign %s = %s;\n' %(self.name,self.connect.name)
+        self._assignment = ( 'assign %s = %s;\n'
+                %(self.parent.name,self.parent.connect.name)
+                )
         return self._assignment
 
     def nbassign(self,**kwargs):
-        time=kwargs.get('time','')
-        value=kwargs.get('value',self.connect.name)
+        time = kwargs.get('time','')
+        value = kwargs.get('value',self.parent.connect.name)
         if time:
-            return '%s = #%s %s;\n' %(self.name,time, value)
+            return '%s = #%s %s;\n' %(self.parent.name,time, value)
         else:
-            return '%s = %s;\n' %(self.name, value)
+            return '%s = %s;\n' %(self.parent.name, value)
 
     def bassign(self):
-        time=kwargs.get('time','')
-        value=kwargs.get('value',self.connect.name)
+        time = kwargs.get('time','')
+        value = kwargs.get('value',self.parent.connect.name)
         if time:
-            return '%s <= #%s %s;\n' %(self.name,time, value)
+            return '%s <= #%s %s;\n' %(self.parent.name,time, value)
         else:
-            return '%s <= %s;\n' %(self.name, value)
-
-if __name__=="__main__":
-    pass
+            return '%s <= %s;\n' %(self.parent.name, value)
 
