@@ -8,15 +8,14 @@ are used by simulator specific classes.
 
 Initially written by Marko Kosunen 30.10.20200, marko.kosunen@aalto.fi
 """
-
-
 from thesdk import *
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
+
 class sv(thesdk,metaclass=abc.ABCMeta):
 
     @property
     def vlogsimtb(self):
-        ''' Name of the VHDL testbench
+        ''' Name of the Verilog testbench
         '''
         return self.rtlsimpath + '/tb_' + self.name + self.vlogext
 

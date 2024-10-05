@@ -85,17 +85,10 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
             self._langmodule_vhdl.file=self.file
             self._langmodule_vhdl.paramname=self.paramname
             self._langmodule_vhdl.name=self.name
-        if not hasattr(self,'_langmodule_verilator'):
-            self._langmodule_verilator = verilog_iofile(self)
-            self._langmodule_verilator.file=self.file
-            self._langmodule_verilator.paramname=self.paramname
-            self._langmodule_verilator.name=self.name
         if self.parent.lang=='sv': 
             return self._langmodule_verilog
         elif self.parent.lang=='vhdl': 
             return self._langmodule_vhdl
-        elif self.parent.lang=='verilator': 
-            return self._langmodule_verilator
     @property
     def rtl_timescale(self):
         ''' Timescale for RTL simulations inherited from parent

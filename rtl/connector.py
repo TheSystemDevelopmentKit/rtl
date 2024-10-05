@@ -204,22 +204,10 @@ class rtl_connector(thesdk):
                         parent=self,
                         type = self._typearg,
                         )
-        if not hasattr(self,'_verilator_langobject'):
-            self._verilator_langobject=verilog_connector(
-                        name=self.name,
-                        cls=self.cls,
-                        type = self._typearg,
-                        ll = self.ll,
-                        rl = self.rl,
-                        init = self.init,
-                        connect = self.connect
-                        )
         if self.lang == 'sv':
             return self._verilog_langobject
         if self.lang == 'vhdl':
             return self._vhdl_langobject
-        if self.lang == 'verilator':
-            return self._verilator_langobject
 
     @property
     def type(self):

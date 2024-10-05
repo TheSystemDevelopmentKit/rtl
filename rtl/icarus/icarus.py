@@ -1,12 +1,15 @@
 """
+======
+Icarus
+======
 Icarus is a mixin class used to provide simulator specific
 properties and methods for RTL class
 
-Initially written by Marko kosunen 20221030
+Initially written by Marko Kosunen 20221030
 """
-
 from thesdk import *
 import pdb
+
 class icarus(thesdk,metaclass=abc.ABCMeta):
     @property
     def icarus_rtlcmd(self):

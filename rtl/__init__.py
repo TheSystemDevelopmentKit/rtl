@@ -46,7 +46,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @property
     def lang(self):
         """ str : Language of the testbench to support multilanguage simulators.
-        Default verilator | vhdl | sv (default)
+        Default vhdl | sv (default)
         """
         if not hasattr(self,'_lang'):
             self._lang = 'sv'
@@ -56,9 +56,9 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         elif self.model == 'ghdl' and self._lang != 'vhdl':
             self.print_log(t='I', msg='Only VHDL supported by GHDL')
             self._lang = 'vhdl'
-        elif self.model == 'verilator' and self._lang != 'verilator':
-            self.print_log(t='I', msg='Only CPP supported by Verilator')
-            self._lang = 'verilator'
+        elif self.model == 'verilator' and self._lang != 'sv':
+            self.print_log(t='I', msg='Only verilog supported by Verilator')
+            self._lang = 'sv'
         return self._lang
     @lang.setter
     def lang(self,value):
@@ -351,7 +351,6 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             -------
                 self.rtlsimpath + self.name + self.vlogext for 'sv' model
                 self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
-                self.rtlsimpath + self.name + '.cpp' for 'verilator' model
         '''
         if not hasattr(self, '_simdut'):
             if self.model == 'icarus':

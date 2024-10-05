@@ -54,11 +54,6 @@ class testbench(testbench_common):
                         parent=self.parent,
                         file=self.file, name=self.name, 
                         instname=self.instname)
-            elif self.lang == 'verilator':  
-                self._langmodule=verilog_testbench(
-                        parent=self.parent,
-                        file=self.file, name=self.name, 
-                        instname=self.instname)
         return self._langmodule
     @property
     def iofiles(self):

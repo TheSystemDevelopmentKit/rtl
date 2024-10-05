@@ -7,7 +7,6 @@ properties and methods for RTL class
 
 Initially written by Aleksi Korsman, 2022
 """
-
 from thesdk import *
 import pdb
 
