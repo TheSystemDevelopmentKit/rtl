@@ -14,15 +14,15 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
         if not os.path.exists(self.rtlworkpath):
             os.mkdir(self.rtlworkpath)
         vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vlogmodulefiles ])
+            str(param) for param in self.extract_vlogfiles() ])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.vhdlentityfiles])
+            str(param) for param in self.extract_vhdlfiles()])
 
         if vhdlmodulesstring != '':
             self.print_log(type='W', msg="Icarus does not support Verilog+VHDL cosimulation, ignoring additional VHDL files.")
 
         vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name
-    	            + ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring)
+                    + ' ' + vlogmodulesstring)
         gstring = ' '.join([ 
                                 ('-g ' + str(param) +'='+ str(val[1])) 
                                 for param,val in self.rtlparameters.items() 

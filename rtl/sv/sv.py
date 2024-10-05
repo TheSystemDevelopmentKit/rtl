@@ -6,7 +6,7 @@ System verilog class
 This mixin class contains all system verilog and verilog related properties that
 are used by simulator specific classes.
 
-Initially written by Marko Kosunen 30.10.20200, marko.kosunen@aalto.fi 
+Initially written by Marko Kosunen 30.10.20200, marko.kosunen@aalto.fi
 """
 
 
@@ -86,27 +86,33 @@ class sv(thesdk,metaclass=abc.ABCMeta):
             self._vlogmodulefiles =list([])
         return self._vlogmodulefiles
     @vlogmodulefiles.setter
-    def vlogmodulefiles(self,value): 
+    def vlogmodulefiles(self,value):
             self._vlogmodulefiles = value
     @vlogmodulefiles.deleter
-    def vlogmodulefiles(self): 
-            self._vlogmodulefiles = None 
+    def vlogmodulefiles(self):
+            self._vlogmodulefiles = None
 
     @property
     def vlogsimargs(self):
         '''Custom parameters for verilog simulation
         Provide as a list of strings
         '''
-        if not hasattr(self, '_verilog_sim_args'):
-            self._verilog_sim_args = []
+        if self.sim_optimization:
+            self._verilog_sim_args = self.sim_opt_dict[self.sim_optimization]
+        else:
+            if not hasattr(self,'_verilog_sim_args'):
+                self._verilog_sim_args = []
         return self._verilog_sim_args
     @vlogsimargs.setter
     def vlogsimargs(self, simparam):
+        # This might be needed
+        #_ = self.vlogsimargs
+        self.sim_optimization= None
         self._verilog_sim_args = simparam
 
     def sv_create_connectors(self):
-        '''Cretes verilog connector definitions from 
-           1) From a iofile that is provided in the Data 
+        '''Cretes verilog connector definitions from
+           1) From a iofile that is provided in the Data
            attribute of an IO.
            2) IOS of the verilog DUT
 
@@ -115,9 +121,9 @@ class sv(thesdk,metaclass=abc.ABCMeta):
         # See controller.py
         for ioname,io in self.IOS.Members.items():
             # If input is a file, adopt it
-            if isinstance(io.Data,rtl_iofile): 
+            if isinstance(io.Data,rtl_iofile):
                 if io.Data.name is not ioname:
-                    self.print_log(type='I', 
+                    self.print_log(type='I',
                             msg='Unifying file %s name to ioname %s' %(io.Data.name,ioname))
                     io.Data.name=ioname
                 io.Data.adopt(parent=self)
@@ -126,7 +132,7 @@ class sv(thesdk,metaclass=abc.ABCMeta):
                 for connector in io.Data.rtl_connectors:
                     self.tb.connectors.Members[connector.name]=connector
                     # Connect them to DUT
-                    try: 
+                    try:
                         self.dut.ios.Members[connector.name].connect=connector
                     except:
                         pass
@@ -136,13 +142,13 @@ class sv(thesdk,metaclass=abc.ABCMeta):
                 for name in val.ionames:
                     # [TODO] Sanity check, only floating inputs make sense.
                     if not name in self.tb.connectors.Members.keys():
-                        self.print_log(type='I', 
+                        self.print_log(type='I',
                                 msg='Creating non-existent IO connector %s for testbench' %(name))
                         self.tb.connectors.new(name=name, cls='reg')
                 self.iofile_bundle.Members[ioname].rtl_connectors=\
                         self.tb.connectors.list(names=val.ionames)
                 self.tb.parameters.Members.update(val.rtlparam)
         # Define the iofiles of the testbench. '
-        # Needed for creating file io routines 
+        # Needed for creating file io routines
         self.tb.iofiles=self.iofile_bundle
 

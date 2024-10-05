@@ -16,8 +16,6 @@ import sys
 import subprocess
 import shlex
 from abc import *
-# Refactor this
-# from .verilator_iofile import verilator_iofile 
 from thesdk import *
 import numpy as np
 import pandas as pd
@@ -186,7 +184,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     def rtl_timeprecision(self):
         """
         Defines rtl time precision. This is the smallest time step representable in simulation.
-        This should be less than equal to ``rtl_timeunit``. Default '1 ps'. 
+        This should be less than equal to ``rtl_timeunit``. Default '1 ps'.
 
         """
         if not hasattr(self, '_rtl_timeprecision'):
@@ -196,12 +194,67 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     def rtl_timeprecision(self, val):
         self._rtl_timeprecision = val
 
+    @property
+    def sim_opt_dict(self):
+        '''Preset abstraction dictionary for running optimization on the simulation.
+        The actual dictionary is implemented in the simulator class.  Returns
+        Dict with empty strings for simulators that do not use this property'
+        Valid values:
+        - 'no-opt' - no optimizations, full visibility to signals
+        - 'opt-visible' - optimized with full visibility.
+        - 'full-opt' - fully optimized, might lose visibility to a lot of signals. Simulation may not work.
+        - 'top-visible' - optimized while keeping top level (testbench) signals.
+        - 'top-dut-visible' - optimized while keeping top level (testbench) and DUT signals on the first
+        hierarchy level
+        '''
+        if not hasattr(self, '_sim_opt_dict'):
+            if self.model == 'sv':
+                self._sim_opt_dict = self.questasim_sim_opt_dict
+            elif self.model == 'vhdl':
+                self._sim_opt_dict = self.questasim_sim_opt_dict
+            else:
+                self._sim_opt_dict = { 
+                        'no-opt' : '',
+                        'opt-visible' : '',
+                        'full-opt' : '',
+                        'top-visible' : '',
+                        'top-dut-visible' : ''
+                        }
+
+        return self._sim_opt_dict
+
+    @property
+    def sim_optimization(self):
+        '''Simulation optimization option. The value in this property
+        is used to fetch the simulator-specific simulation parameters from
+        sim_opt_dict and use it for self.velogsimargs.
+        Default: 'opt-visible' for non-interactive simulations, 'no-opt'
+        for interactive simulations.
+        Set to 'None' is you wish to set self.vlogsimargs manually.
+
+        '''
+
+        if not hasattr(self, '_sim_optimization'):
+            if not self.interactive_rtl:
+                self._sim_optimization = 'opt-visible'
+            else:
+                self._sim_optimization = 'no-opt'
+
+        return self._sim_optimization
+    @sim_optimization.setter
+    def sim_optimization(self, value):
+        if value in list(self.sim_opt_dict.keys()) + [None ]:
+            self._sim_optimization = value
+        else:
+            self.print_log(type='F', msg=(
+                f'Key not found in sim_opt_dict: {value}. '
+                f'Available keys: {self.sim_opt_dict.keys()}'))
 
     @property
     def add_tb_timescale(self):
         """Bool : Defines if timescale directive is added to testbench. Can
         be used in cases where submodules have timescale directives, and
-        you wish to control that from the testbench toplevel. Effective only for 
+        you wish to control that from the testbench toplevel. Effective only for
         self.lang = 'sv'
 
         Default: False
@@ -212,7 +265,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     @add_tb_timescale.setter
     def add_tb_timescale(self,val):
         self._add_tb_timescale = val
-        
+
     @property
     def name(self):
         ''' Name of the entity
@@ -387,14 +440,17 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
         '''
         if not hasattr(self, '_vlogmodulefiles'):
-            self._vlogmodulefiles =list([])
+            self._vlogmodulefiles = []
         return self._vlogmodulefiles
     @vlogmodulefiles.setter
-    def vlogmodulefiles(self,value): 
-            self._vlogmodulefiles = value
+    def vlogmodulefiles(self,value):
+        self.print_log(type='O', msg=(
+            'Use rtlfiles for both VHDL and Verilog files instead of vlogmodulefiles.')
+        )
+        self._vlogmodulefiles = value
     @vlogmodulefiles.deleter
-    def vlogmodulefiles(self): 
-            self._vlogmodulefiles = None 
+    def vlogmodulefiles(self):
+        self._vlogmodulefiles = None
 
     @property
     def vloglibfilemodules(self):
@@ -429,19 +485,35 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self._vloglibfilemodules = None
 
     @property
+    def rtlfiles(self):
+        '''List of VHDL and Verilog files to be compiled.
+        File suffices should be '.vhd', '.vhdl', '.sv', or '.v'.
+        Order determines compile order.
+        '''
+        if not hasattr(self, '_rtlfiles'):
+            self._rtlfiles = []
+        return self._rtlfiles
+    @rtlfiles.setter
+    def rtlfiles(self, value):
+        self._rtlfiles = value
+
+    @property
     def vhdlentityfiles(self):
         '''List of VHDL entity files to be compiled in addition to DUT
 
         '''
         if not hasattr(self, '_vhdlentityfiles'):
-            self._vhdlentityfiles =list([])
+            self._vhdlentityfiles = []
         return self._vhdlentityfiles
     @vhdlentityfiles.setter
-    def vhdlentityfiles(self,value): 
-            self._vhdlentityfiles = value
+    def vhdlentityfiles(self,value):
+        self.print_log(type='O', msg=(
+            'Use rtlfiles for both VHDL and Verilog files instead of vhdlentityfiles.')
+        )
+        self._vhdlentityfiles = value
     @vhdlentityfiles.deleter
-    def vhdlentityfiles(self): 
-            self._vhdlentityfiles = None 
+    def vhdlentityfiles(self):
+        self._vhdlentityfiles = None
     @property
     def vhdllibfileentities(self):
         '''List of VHDL entities to be compiled in addition to DUT
@@ -550,7 +622,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             if not os.path.exists(controlfiledir):
                 self.print_log(type='I',msg='Creating %s' % controlfiledir)
                 os.makedirs(controlfiledir)
-            # Simulator control contents always overrdes the file 
+            # Simulator control contents always overrdes the file
             if self.simulator_control_contents != '':
                 # Give a warning if default/custom path contains a do-file already
                 if os.path.isfile(controlfile):
@@ -593,7 +665,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             (dofiledir, dofile, obsoletedofile, generateddofile) = self.verilator_dofilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
-        
+
         if not hasattr(self, '_interactive_controlfile'):
             # No contents or path given -> use default path (or obsolete path)
             if os.path.exists(obsoletedofile):
@@ -685,6 +757,26 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     # Data must be properly shaped
                     self.iofile_bundle.Members[ioname].Data=self.IOS.Members[ioname].Data
 
+    def extract_vlogfiles(self):
+        """Return extracted verilog files from ``self.rtlfiles``
+        """
+        vlogfiles = []
+        for module in self.rtlfiles:
+            _, file_ext = os.path.splitext(module)
+            if file_ext in [".sv", ".v"]:
+                vlogfiles += [module]
+        return vlogfiles
+
+    def extract_vhdlfiles(self):
+        """Return extracted vhdl files from ``self.rtlfiles``
+        """
+        vhdlfiles = []
+        for module in self.rtlfiles:
+            _, file_ext = os.path.splitext(module)
+            if file_ext in [".vhd", ".vhdl"]:
+                vhdlfiles += [module]
+        return vhdlfiles
+
     # Define if the signals are signed or not
     # Can these be deducted?
     def format_ios(self):
@@ -731,85 +823,44 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         ''' Copy rtl sources to self.rtlsimpath
 
         '''
-        # I think these should not be model dependent MK
         self.print_log(type='I', msg='Copying rtl sources to %s' % self.rtlsimpath)
-        if self.model in ['sv', 'icarus', 'verilator']:
-            # copy dut source
-            vlogsrc_exists = os.path.isfile(self.vlogsrc)   # verilog source present in self.entitypath/sv
-            simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
-            # if neither exist throw an fatal error (missing dut source)
-            if not vlogsrc_exists and not simdut_exists:
-                self.print_log(type='F', msg="Missing verilog source for 'sv' model at: %s" % self.vlogsrc)
-            # vlogsrc exists, simdut doesn't exist => copy vlogsrc to simdut
-            elif vlogsrc_exists and not simdut_exists:
-                self.print_log(type='I', msg='Copying %s to %s' % (self.vlogsrc, self.simdut))
-                self.copy_or_relink(src=self.vlogsrc,dst=self.simdut)
-            # vlogsrc doesn't exist, simdut exists (externally generated) => use externally generated simdut
-            elif not vlogsrc_exists and simdut_exists:
-                self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
-            # if both sources are present throw a fatal error (multiple conflicting source files)
+
+        vlog_model = self.model in ['sv', 'icarus', 'verilator']
+        vhdl_model = self.model in ['ghdl', 'vhdl']
+
+        src = self.vlogsrc if vlog_model else self.vhdlsrc
+        # source generated to self.rtlsimpath
+        simdut_exists = os.path.isfile(self.simdut)
+        # source in static location (/sv/entity.sv or /vhdl/entity/vhd)
+        src_exists = os.path.isfile(src)
+        # Barename of DUT
+        dut_bname = os.path.basename(src)
+        tb_bname = os.path.basename(self.simtb)
+
+        # Merge all different modules to one
+        # This also maintains backward compatibility
+        self.rtlfiles += self.vloglibfilemodules + self.vlogmodulefiles + \
+                            self.vhdllibfileentities + self.vhdlentityfiles
+
+        # Append dut to rtlfiles
+        if dut_bname not in self.rtlfiles:
+            self.rtlfiles += [dut_bname]
+
+        # Copy files if they exist under sv/ or vhdl/
+        for modfile in self.rtlfiles:
+            _, file_ext = os.path.splitext(modfile)
+            lang = "vlog" if file_ext in [".v", ".sv"] else "vhdl"
+            tgt_dir = self.vlogsrcpath if lang == "vlog" else self.vhdlsrcpath
+            srcfile = os.path.join(tgt_dir, modfile)
+            dstfile = os.path.join(self.rtlsimpath, modfile)
+            if os.path.isfile(dstfile):
+                self.print_log(type='I', msg='Using externally generated source: %s' % modfile)
             else:
-                self.print_log(type='W', msg="Both model 'sv' source %s and generated source %s exist. Using %s."
-                        % (self.vlogsrc, self.simdut, self.simdut))
-
-            # copy other verilog files
-            for modfile in self.vlogmodulefiles+self.vloglibfilemodules:
-                srcfile = os.path.join(self.vlogsrcpath, modfile)
-                dstfile = os.path.join(self.rtlsimpath, modfile)
-                if os.path.isfile(dstfile):
-                    self.print_log(type='I', msg='Using externally generated source: %s' % modfile)
-                else:
-                    self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    self.copy_or_relink(src=srcfile,dst=dstfile)
-
-            # copy additional VHDL files
-            for entfile in self.vhdlentityfiles:
-                srcfile = os.path.join(self.vhdlsrcpath, entfile)
-                dstfile = os.path.join(self.rtlsimpath, entfile)
-                if os.path.isfile(dstfile):
-                    self.print_log(type='I', msg='Using externally generated source: %s' % entfile)
-                else:
-                    self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    self.copy_or_relink(src=srcfile,dst=dstfile)
-
-        elif self.model == 'vhdl' or self.model == 'ghdl':
-            vhdlsrc_exists = os.path.isfile(self.vhdlsrc)   # vhdl source present in self.entitypath/vhd
-            simdut_exists = os.path.isfile(self.simdut)     # verilog source generated to self.rtlsimpath
-
-            if not vhdlsrc_exists and not simdut_exists:
-                self.print_log(type='F', msg="Missing vhdl source for 'vhdl' model at: %s" % self.vlogsrc)
-            # vhdlsrc exists, simdut doesn't exist => copy vhdlsrc to simdut
-            elif vhdlsrc_exists and not simdut_exists:
-                self.print_log(type='I', msg='Copying %s to %s' % (self.vhdlsrc, self.simdut))
-                self.copy_or_relink(src=self.vhdlsrc,dst=self.simdut)
-            # vhdlsrc doesn't exist, simdut exists (externally generated) => use externally generated simdut
-            elif not vhdlsrc_exists and simdut_exists:
-                self.print_log(type='I', msg='Using externally generated source for DUT: %s' % self.simdut)
-            # if both sources are present throw a fatal error (multiple conflicting source files)
-            else:
-                self.print_log(type='W', msg="Both model 'sv' source %s and generated source %s exist. Using %s."
-                        % (self.vhdlsrc, self.simdut, self.simdut))
-
-            # copy other verilog files
-            for modfile in self.vlogmodulefiles:
-                srcfile = os.path.join(self.vlogsrcpath, modfile)
-                dstfile = os.path.join(self.rtlsimpath, modfile)
-                if os.path.isfile(dstfile):
-                    self.print_log(type='I', msg='Using externally generated source: %s' % modfile)
-                else:
-                    self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    self.copy_or_relink(src=srcfile,dst=dstfile)
-
-            # copy additional VHDL files
-            for entfile in self.vhdlentityfiles:
-                srcfile = os.path.join(self.vhdlsrcpath, entfile)
-                dstfile = os.path.join(self.rtlsimpath, entfile)
-                if os.path.isfile(dstfile):
-                    self.print_log(type='I', msg='Using externally generated source: %s' % entfile)
-                else:
-                    self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
-                    self.copy_or_relink(src=srcfile,dst=dstfile)
-
+                self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
+                self.copy_or_relink(src=srcfile,dst=dstfile)
+        # Append testbench to rtlfiles
+        if tb_bname not in self.rtlfiles:
+            self.rtlfiles += [tb_bname]
         # flush cached writes to disk
         output = subprocess.check_output("sync %s" % self.rtlsimpath, shell=True)
         output = output.decode('utf-8')
@@ -850,8 +901,13 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        output = subprocess.check_output(self.rtlcmd, shell=True)
-        self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
+        try:
+            output = subprocess.check_output(self._rtlcmd, shell=True)
+            self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
+        except subprocess.CalledProcessError as e:
+            output = e.output
+            self.print_log(type='F', msg='Simulator output:\n'+output.decode('utf-8'))
+
 
         count=0
         files_ok=False
