@@ -692,6 +692,18 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         self._interactive_controlfile = value
 
     @property
+    def workdir(self):
+        '''Directory where to run the simulation commands.
+        We cd to this location before running rtlcmd.
+        '''
+        if not hasattr(self, '_workdir'):
+            self._workdir = "."
+        return self._workdir
+    @workdir.setter
+    def workdir(self, dir):
+        self._workdir = dir
+
+    @property
     def rtlcmd(self):
         '''Command used for simulation invocation
            Compiled from various parameters. See source for details.
@@ -879,7 +891,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     os.remove(file.name)
                 except:
                     pass
-
+        self.print_log(type='I', msg=f"Moving to folder {self.workdir}")
         self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
 
         if self.interactive_rtl:
@@ -889,7 +901,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 To finish the simulation, run the simulation to end and exit.""")
 
         try:
-            output = subprocess.check_output(self._rtlcmd, shell=True)
+            rtlcmd = f"cd {self.workdir} && {self._rtlcmd}"
+            output = subprocess.check_output(rtlcmd, shell=True)
             self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
         except subprocess.CalledProcessError as e:
             output = e.output
