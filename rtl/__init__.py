@@ -271,6 +271,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         if not hasattr(self, '_name'):
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
+    @name.setter
+    def name(self, name):
+        self._name = name
 
     @property
     def rtlmisc(self):
