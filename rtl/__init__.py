@@ -708,15 +708,14 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
     @property
     def workdir(self):
-        '''str : Directory where to run the simulation commands.
-        If set, we cd to this location before running rtlcmd. If not, the
+        '''str : Directory where to run the external simulation command.
+        If set, we cd to this directory before execution. If not, the
         simulator specific default is used.
 
         Default
         -------
         None
 
-        [TODO]: Make this structure global for all simulators.
         '''
         if not hasattr(self, '_workdir'):
             self._workdir = None
