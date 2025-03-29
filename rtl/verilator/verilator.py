@@ -1,35 +1,38 @@
 """
-======
-Icarus
-======
-Icarus is a mixin class used to provide simulator specific
+=========
+Verilator
+=========
+Verilator is a mixin class used to provide simulator specific
 properties and methods for RTL class
 
-Initially written by Marko Kosunen 20221030
+Initially written by Aleksi Korsman, 2022
 """
 from thesdk import *
 import pdb
 
-class icarus(thesdk,metaclass=abc.ABCMeta):
+class verilator(thesdk,metaclass=abc.ABCMeta):
     @property
-    def icarus_rtlcmd(self):
+    def verilator_rtlcmd(self):
         submission=self.lsf_submission
         if not os.path.exists(self.rtlworkpath):
             os.mkdir(self.rtlworkpath)
         vlogmodulesstring=' '.join(self.vloglibfilemodules + [ self.rtlsimpath + '/'+ 
-            str(param) for param in self.extract_vlogfiles() ])
+            str(param) for param in self.vlogmodulefiles ])
         vhdlmodulesstring=' '.join([ self.rtlsimpath + '/'+ 
-            str(param) for param in self.extract_vhdlfiles()])
+            str(param) for param in self.vhdlentityfiles])
 
         if vhdlmodulesstring != '':
-            self.print_log(type='W', msg="Icarus does not support Verilog+VHDL cosimulation, ignoring additional VHDL files.")
+            self.print_log(type='W', msg="Verilator does not support Verilog+VHDL cosimulation, ignoring additional VHDL files.")
 
-        vlogcompcmd = ( 'iverilog -Wall -v -g2012 -o ' + self.rtlworkpath + '/' + self.name
-                    + ' ' + vlogmodulesstring)
+
+        vlogcompcmd = ( 'verilator -Wall --Wno-lint --binary --trace --timing --Mdir ' + self.rtlworkpath +
+                ' ' + self.simtb + ' ' + self.simdut + ' ' + vlogmodulesstring )
         gstring = ' '.join([ 
-                                ('-g ' + str(param) +'='+ str(val[1])) 
+                                ('-G ' + str(param) +'='+ str(val[1])) 
                                 for param,val in self.rtlparameters.items() 
                             ])
+
+        # Still dont know what to do with these.
         vlogsimargs = ' '.join(self.vlogsimargs)
 
         fileparams=''
@@ -46,10 +49,10 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
             else:
                 dostring=''
                 self.print_log(type='I',msg='No interactive control file set.')
-            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name
+            rtlsimcmd = ('cd '+ self.rtlworkpath + ' && ' + './Vtb_'+ self.name 
                          + ' && gtkwave ' + dostring + ' ' + self.rtlsimpath + '/' + self.name + '_dump.vcd')
         else:
-            rtlsimcmd = ('vvp -v ' + self.rtlworkpath + '/' + self.name + fileparams + ' ' + gstring)
+            rtlsimcmd = ('cd '+ self.rtlworkpath + ' &&  ./Vtb_' + self.name )
 
         self._rtlcmd =  vlogcompcmd +\
                 ' && sync ' + self.rtlworkpath +\
@@ -59,7 +62,7 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
         return self._rtlcmd
 
     @property
-    def icarus_simdut(self):
+    def verilator_simdut(self):
         ''' Source file for Device Under Test in simulations directory
 
             Returns
@@ -68,25 +71,25 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
                 self.rtlsimpath + self.name + '.vhd' for 'vhdl' model
         '''
         extension = None
-        # Icarus supports only verilog
+        # Verilator supports only verilog
         extension = self.vlogext
         self._simdut = os.path.join(self.rtlsimpath, self.name+extension)
         print(self.simdut)
         return self._simdut
 
     @property
-    def icarus_simtb(self):
-        ''' Icarus Testbench source file in simulations directory.
+    def verilator_simtb(self):
+        ''' Verilator Testbench source file in simulations directory.
 
         This file and it's format is dependent on the language(s)
-        supported by the simulator. Currently we have support only for verilog testbenches.
+        supported by the simulator. Verilator supports verilog testbenches
 
         '''
         self._simtb=self.rtlsimpath + '/tb_' + self.name + self.vlogext
         return self._simtb
     
     @property
-    def icarus_dofilepaths(self):
+    def verilator_dofilepaths(self):
         dofiledir = '%s/interactive_control_files/gtkwave' % self.entitypath
         dofile = '%s/general.tcl' % dofiledir
         obsoletedofile = '%s/Simulations/rtlsim/general.tcl' % self.entitypath
@@ -94,8 +97,8 @@ class icarus(thesdk,metaclass=abc.ABCMeta):
         return (dofiledir, dofile, obsoletedofile,generateddofile)
 
     @property
-    def icarus_controlfilepaths(self):
-        controlfiledir = '%s/interactive_control_files/icarus' % self.entitypath
+    def verilator_controlfilepaths(self):
+        controlfiledir = '%s/interactive_control_files/verilator' % self.entitypath
         controlfile = '%s/control.tcl' % controlfiledir
         generatedcontrolfile = '%s/control.tcl' % self.simpath
         return (controlfiledir, controlfile, generatedcontrolfile)

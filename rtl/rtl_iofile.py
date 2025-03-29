@@ -111,6 +111,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     def ioformat(self,value):
         self.langmodule.ioformat=value
 
+
     @property
     def rtlparam(self):
         '''Extracts the parameter name and value from simparam attribute. 
@@ -358,7 +359,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     @property 
     def rtl_io_sync(self):
         '''File io synchronization condition for sample type input.
-        Default: `@(posedge clock)`
+        Defaults to positive edge.`
 
         '''
         return self.langmodule.rtl_io_sync
@@ -381,12 +382,12 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
     @property
     def rtl_io(self,**kwargs):
-        '''Verilog  write/read construct for file IO depending on the direction and file type (event/sample).
+        '''File IO  write/read construct for file IO depending on the direction and file type (event/sample).
 
         Returns 
         _______
         str
-            Verilog code for file IO to read/write the IO file.
+            Language specific code for file IO to read/write the IO file.
 
 
         '''

@@ -100,6 +100,9 @@ class testbench_common(module):
                     self._dut_instance=vhdl_entity(**{'file':self._dutfile})
             elif self.parent.model == 'ghdl':
                     self._dut_instance=vhdl_entity(**{'file':self._dutfile})
+            elif self.parent.model == 'verilator':
+                    # We handle the instantiation in module_common
+                    self._dut_instance=verilog_module(**{'file':self._dutfile})
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.parent.model))
         return self._dut_instance
@@ -145,13 +148,13 @@ class testbench_common(module):
     def dumpfile(self):
         """String
         
-        Code that generates a VCD dumpfile when running the testbench with icarus verilog.
+        Code that generates a VCD dumpfile when running the testbench with Icarus or Verilator verilog.
         This dumpfile can be used with gtkwave. 
         """
 
         
-        if self.parent.model == 'icarus' and self.parent.interactive_rtl:
-            dump_str="// Generates dumpfile with iverilog\n"
+        if ( self.parent.model == 'icarus' or self.parent.model == 'verilator' ) and self.parent.interactive_rtl:
+            dump_str="// Generates dumpfile\n"
             dump_str += "initial begin\n"
             dump_str += '  $dumpfile("' + self.parent.rtlsimpath + '/'+ self.parent.name + '_dump.vcd");\n'
             dump_str += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"

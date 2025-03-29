@@ -31,8 +31,9 @@ from rtl.vhdl.vhdl import vhdl as vhdl
 from rtl.icarus.icarus import icarus as icarus
 from rtl.questasim.questasim import questasim as questasim
 from rtl.ghdl.ghdl import ghdl as ghdl
+from rtl.verilator.verilator import verilator as verilator
 
-class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
+class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
     """Adding this class as a superclass enforces the definitions
     for rtl simulations in the subclasses.
 
@@ -55,6 +56,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         elif self.model == 'ghdl' and self._lang != 'vhdl':
             self.print_log(t='I', msg='Only VHDL supported by GHDL')
             self._lang = 'vhdl'
+        elif self.model == 'verilator' and self._lang != 'sv':
+            self.print_log(t='I', msg='Only verilog supported by Verilator')
+            self._lang = 'sv'
         return self._lang
     @lang.setter
     def lang(self,value):
@@ -271,6 +275,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         if not hasattr(self, '_name'):
             self._name=os.path.splitext(os.path.basename(self._classfile))[0]
         return self._name
+    @name.setter
+    def name(self, name):
+        self._name = name
 
     @property
     def rtlmisc(self):
@@ -357,6 +364,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self._simdut = self.questasim_simdut
             elif self.model == 'ghdl':
                 self._simdut = self.ghdl_simdut
+            elif self.model == 'verilator':
+                self._simdut = self.verilator_simdut
             else:
                 self.print_log(type='F', msg='Unsupported model %s' % self.model)
         return self._simdut
@@ -366,7 +375,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         ''' Testbench source file in simulations directory.
 
         This file and it's format is dependent on the language(s)
-        supported by the simulator. Currently we have support only for verilog testbenches.
+        supported by the simulator. 
 
         '''
         if not hasattr(self, '_simtb'):
@@ -376,6 +385,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 self._simtb = self.questasim_simtb
             elif self.model == 'ghdl':
                 self._simtb = self.ghdl_simtb
+            elif self.model == 'verilator':
+                self._simtb = self.verilator_simtb
         return self._simtb
 
     @property
@@ -604,6 +615,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             (controlfiledir, controlfile, generatedcontrolfile ) = self.questasim_controlfilepaths
         elif self.model == 'ghdl':
             (controlfiledir, controlfile, generatedcontrolfile ) = self.ghdl_controlfilepaths
+        elif self.model == 'verilator':
+            (controlfiledir, controlfile, generatedcontrolfile ) = self.verilator_controlfilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
 
@@ -650,6 +663,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             (dofiledir, dofile, obsoletedofile, generateddofile) = self.questasim_dofilepaths
         elif self.model == 'ghdl':
             (dofiledir, dofile, obsoletedofile, generateddofile) = self.ghdl_dofilepaths
+        elif self.model == 'verilator':
+            (dofiledir, dofile, obsoletedofile, generateddofile) = self.verilator_dofilepaths
         else:
             self.print_log(type='F', msg='Unsupported model %s' % self.model)
 
@@ -726,6 +741,8 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 return self.questasim_rtlcmd
             elif self.model=='ghdl':
                 return self.ghdl_rtlcmd
+            elif self.model=='verilator':
+                return self.verilator_rtlcmd
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.model))
         return self._rtlcmd
@@ -830,7 +847,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
         '''
         self.print_log(type='I', msg='Copying rtl sources to %s' % self.rtlsimpath)
 
-        vlog_model = self.model in ['sv', 'icarus']
+        vlog_model = self.model in ['sv', 'icarus', 'verilator']
         vhdl_model = self.model in ['ghdl', 'vhdl']
 
         src = self.vlogsrc if vlog_model else self.vhdlsrc
@@ -863,11 +880,9 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             else:
                 self.print_log(type='I', msg='Copying %s to %s' % (srcfile, dstfile))
                 self.copy_or_relink(src=srcfile,dst=dstfile)
-
         # Append testbench to rtlfiles
         if tb_bname not in self.rtlfiles:
             self.rtlfiles += [tb_bname]
-
         # flush cached writes to disk
         output = subprocess.check_output("sync %s" % self.rtlsimpath, shell=True)
         output = output.decode('utf-8')
