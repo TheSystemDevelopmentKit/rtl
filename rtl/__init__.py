@@ -209,7 +209,7 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             elif self.model == 'vhdl':
                 self._sim_opt_dict = self.questasim_sim_opt_dict
             else:
-                self._sim_opt_dict = { 
+                self._sim_opt_dict = {
                         'no-opt' : '',
                         'opt-visible' : '',
                         'full-opt' : '',
@@ -693,12 +693,20 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
 
     @property
     def workdir(self):
-        '''Directory where to run the simulation commands.
-        We cd to this location before running rtlcmd.
+        '''str : Directory where to run the simulation commands.
+        If set, we cd to this location before running rtlcmd. If not, the
+        simulator specific default is used.
+
+        Default
+        -------
+        None
+
+        [TODO]: Make this structure global for all simulators.
         '''
         if not hasattr(self, '_workdir'):
-            self._workdir = "."
+            self._workdir = None
         return self._workdir
+
     @workdir.setter
     def workdir(self, dir):
         self._workdir = dir
@@ -891,8 +899,6 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                     os.remove(file.name)
                 except:
                     pass
-        self.print_log(type='I', msg=f"Moving to folder {self.workdir}")
-        self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
 
         if self.interactive_rtl:
             self.print_log(type='I', msg="""
@@ -901,7 +907,14 @@ class rtl(questasim,icarus,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 To finish the simulation, run the simulation to end and exit.""")
 
         try:
-            rtlcmd = f"cd {self.workdir} && {self._rtlcmd}"
+            if self.workdir:
+                self.print_log(type='I', msg=f"Executing in directory {self.workdir}")
+                execpath=self.workdir
+            else:
+                self.print_log(type='I', msg=f"Executing in directory {self.rtlsimpath}")
+                execpath=self.rtlsimpath
+            self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
+            rtlcmd = f"cd {execpath} && {self._rtlcmd}"
             output = subprocess.check_output(rtlcmd, shell=True)
             self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
         except subprocess.CalledProcessError as e:
