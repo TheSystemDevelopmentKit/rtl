@@ -12,6 +12,5 @@ RTL Entity - RTL simulator interface
    :caption: Contents:
 
    sections
-
    indices_and_tables
 
