@@ -16,16 +16,20 @@ import sys
 import subprocess
 import shlex
 from abc import *
-from thesdk import *
 import numpy as np
 import pandas as pd
 from functools import reduce
 import shutil
 import re
 
+#TheSyDeKick modules
+if not (os.path.abspath('../../thesdk') in sys.path):
+    sys.path.append(os.path.abspath('../../thesdk'))
+from thesdk import *
 from rtl.connector import indent, rtl_connector_bundle, verilog_connector_bundle
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
+# Simulator modules
 from rtl.sv.sv import sv as sv
 from rtl.vhdl.vhdl import vhdl as vhdl
 from rtl.icarus.icarus import icarus as icarus

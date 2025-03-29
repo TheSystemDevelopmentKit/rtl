@@ -17,10 +17,11 @@ class questasim(thesdk):
 
         - 'no-opt' - no optimizations, full visibility to signals
         - 'full-opt' - fully optimized, might lose visibility to a lot of signals. Simulation may not work.
-        - 'default' - not optimized simulation for interactive sims,
-        optimized with full visibility for non-interactive sims
+        - 'default' - not optimized simulation for interactive sims, 
+           optimized with full visibility for non-interactive sims
         - 'top-visible' - optimized while keeping top level (testbench) signals.
         - 'top-dut-visible' - optimized while keeping top level (testbench) and DUT signals on the first hierarchy level
+
         '''
         if not hasattr(self, '_sim_opt_dict'):
             self._questasim_sim_opt_dict = {
