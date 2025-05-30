@@ -924,6 +924,8 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
+        stdout = None
+        stderr = None
         try:
             if self.workdir:
                 self.print_log(type='I', msg=f"Executing in directory {self.workdir}")
@@ -933,12 +935,13 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 execpath=self.rtlsimpath
             self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
             rtlcmd = f"cd {execpath} && {self._rtlcmd}"
-            output = subprocess.check_output(rtlcmd, shell=True)
-            self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
+            proc = subprocess.Popen(self._rtlcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout = proc.stdout.read().decode('utf-8')
+            stderr = proc.stderr.read().decode('utf-8')
+            self.print_log(type='I', msg='Simulator output:\n'+stdout)
         except subprocess.CalledProcessError as e:
             output = e.output
             self.print_log(type='F', msg='Simulator output:\n'+output.decode('utf-8'))
-
 
         count=0
         files_ok=False
@@ -951,6 +954,9 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 if file.dir=='out':
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
+
+        # return simulator stdout and stderr logs for later analysis
+        return (stdout, stderr)
 
 
     @property
@@ -1024,7 +1030,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self.tb.generate_contents()
             self.tb.export(force=True)
             self.write_infile()
-            self.execute_rtl_sim()
+            (stdout, stderr) = self.execute_rtl_sim()
             self.read_outfile()
             self.connect_outputs()
             # Save entity state
@@ -1034,6 +1040,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self.delete_iofile_bundle()
             self.delete_rtlworkpath()
             self.delete_rtlsimpath()
+            return (stdout, stderr)
 
     #This writes all infile
     def write_infile(self):
