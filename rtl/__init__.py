@@ -21,6 +21,8 @@ import pandas as pd
 from functools import reduce
 import shutil
 import re
+import select
+import io
 
 #TheSyDeKick modules
 if not (os.path.abspath('../../thesdk') in sys.path):
@@ -924,8 +926,8 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
-        stdout = None
-        stderr = None
+        stdout = ""
+        stderr = ""
         try:
             if self.workdir:
                 self.print_log(type='I', msg=f"Executing in directory {self.workdir}")
@@ -936,9 +938,42 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
             rtlcmd = f"cd {execpath} && {self._rtlcmd}"
             proc = subprocess.Popen(self._rtlcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout = proc.stdout.read().decode('utf-8')
-            stderr = proc.stderr.read().decode('utf-8')
-            self.print_log(type='I', msg='Simulator output:\n'+stdout)
+
+            # recode output streams to utf-8 so that we can read single unicode code points at a time. This should
+            # produce correct output character if a single character is encoded as multiple bytes.
+            try:
+                utf8_stdout = io.TextIOWrapper(proc.stdout, encoding='utf-8')
+                utf8_stderr = io.TextIOWrapper(proc.stderr, encoding='utf-8')
+            except Exception as e:
+                self.print_log(type='F', msg=f"Could not open simulator output stream: {e}")
+
+            # keep printing simulator output in real time until simulator process closes output streams
+            self.print_log(type='I', msg='Simulator output:\n')
+            while True:
+                # multiplex reads from stdout and stderr, print them, and append to respective variable
+                (rready, _, _) = select.select([utf8_stdout, utf8_stderr], [], [], 0.001)
+                for stream in rready:
+                    # not the most efficient way to print out stuff, but we want to be able to see individual characters
+                    # being printed out in real time, possibly without newlines, so print and flush one at a time.
+                    codepoint = stream.read(1)
+                    sys.stdout.write(codepoint)
+                    sys.stdout.flush()
+                    if stream == utf8_stdout:
+                        stdout += codepoint
+                    if stream == utf8_stderr:
+                        stderr += codepoint
+                
+                # wait for simulator process to terminate
+                try:
+                    status = proc.wait(timeout=1e-6)
+                    self.print_log(type='I', msg=f"Simulator exited with status code {status}")
+                    # read any remaining output
+                    stdout += utf8_stdout.read()
+                    stderr += utf8_stderr.read()
+                    break
+                except subprocess.TimeoutExpired:
+                    pass
+                    
         except subprocess.CalledProcessError as e:
             output = e.output
             self.print_log(type='F', msg='Simulator output:\n'+output.decode('utf-8'))
