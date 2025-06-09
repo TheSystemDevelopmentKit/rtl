@@ -937,7 +937,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 execpath=self.rtlsimpath
             self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
             rtlcmd = f"cd {execpath} && {self._rtlcmd}"
-            proc = subprocess.Popen(self._rtlcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            proc = subprocess.Popen(rtlcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             # recode output streams to utf-8 so that we can read single unicode code points at a time. This should
             # produce correct output character if a single character is encoded as multiple bytes.
