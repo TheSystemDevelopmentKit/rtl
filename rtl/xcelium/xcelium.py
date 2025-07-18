@@ -17,11 +17,11 @@ class xcelium(thesdk):
         verilog_files = glob.glob(os.path.join(self.rtlsimpath, "*.v"))
         systemverilog_files = glob.glob(os.path.join(self.rtlsimpath, "*.sv"))
         all_files = sorted(self.vloglibfilemodules + verilog_files + systemverilog_files)
-        module_string = " ".join(all_files)
 
+        module_string = " ".join(all_files)
         gui_string = "-gui" if self.interactive_rtl else ""
         tb_string = f"tb_{self.name}"
-        input_file = f"self."
+
         self._rtlcmd = f"xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} {gui_string}"
         return self._rtlcmd
 
