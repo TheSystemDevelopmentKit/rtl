@@ -103,6 +103,8 @@ class testbench_common(module):
             elif self.parent.model == 'verilator':
                     # We handle the instantiation in module_common
                     self._dut_instance=verilog_module(**{'file':self._dutfile})
+            elif self.parent.model == 'xcelium':
+                    self._dut_instance=verilog_module(**{'file':self._dutfile})
             else:
                 self.print_log(type='F', msg='Model %s not supported' %(self.parent.model))
         return self._dut_instance
