@@ -14,19 +14,14 @@ Initially written by Marko Kosunen, 2017
 import os
 import sys
 import subprocess
-import shlex
-from abc import *
-import numpy as np
-import pandas as pd
-from functools import reduce
 import shutil
 import re
 
 #TheSyDeKick modules
-if not (os.path.abspath('../../thesdk') in sys.path):
+if (os.path.abspath('../../thesdk') not in sys.path):
     sys.path.append(os.path.abspath('../../thesdk'))
-from thesdk import *
-from rtl.connector import indent, rtl_connector_bundle, verilog_connector_bundle
+from thesdk import thesdk, ABCMeta, time
+from rtl.connector import rtl_connector_bundle 
 from rtl.testbench import testbench as vtb
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 # Simulator modules
@@ -37,7 +32,7 @@ from rtl.questasim.questasim import questasim as questasim
 from rtl.ghdl.ghdl import ghdl as ghdl
 from rtl.verilator.verilator import verilator as verilator
 
-class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
+class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=ABCMeta):
     """Adding this class as a superclass enforces the definitions
     for rtl simulations in the subclasses.
 
@@ -139,11 +134,16 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             text = match.group(2)
         else:
             self.print_log(type='F', msg=f"Invalid rtl_timescale string: {val}. Allowed e.g. 1ps")
-        if text == "ms": number *= 1e-3
-        elif text == "us": number *= 1e-6
-        elif text == "ns": number *= 1e-9
-        elif text == "ps": number *= 1e-12
-        elif text == "fs": number *= 1e-15
+        if text == "ms":
+            number *= 1e-3
+        elif text == "us":
+            number *= 1e-6
+        elif text == "ns":
+            number *= 1e-9
+        elif text == "ps":
+            number *= 1e-12
+        elif text == "fs":
+            number *= 1e-15
         else:
             self.print_log(type='F', msg=f"Invalid rtl_timescale unit: {val}. Allowed ms,us,ns,ps,fs")
         return number
@@ -161,11 +161,16 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             text = match.group(2)
         else:
             self.print_log(type='F', msg=f"Invalid rtl_timeprecision string: {val}. Allowed e.g. 1ps")
-        if text == "ms": number *= 1e-3
-        elif text == "us": number *= 1e-6
-        elif text == "ns": number *= 1e-9
-        elif text == "ps": number *= 1e-12
-        elif text == "fs": number *= 1e-15
+        if text == "ms":
+            number *= 1e-3
+        elif text == "us":
+            number *= 1e-6
+        elif text == "ns":
+            number *= 1e-9
+        elif text == "ps":
+            number *= 1e-12
+        elif text == "fs":
+            number *= 1e-15
         else:
             self.print_log(type='F', msg=f"Invalid rtl_timeprecision unit: {val}. Allowed ms,us,ns,ps,fs")
         return number
@@ -320,7 +325,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 if not os.path.exists(self._rtlsimpath):
                     self.print_log(type='I', msg='Creating %s' % self._rtlsimpath)
                     os.makedirs(self._rtlsimpath)
-            except:
+            except Exception:
                 self.print_log(type='E', msg='Failed to create %s' % self.rtlsimpath)
         return self._rtlsimpath
 
@@ -340,14 +345,14 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                         else:
                             os.remove(targetpath)
                         self.print_log(type='I',msg='Removing %s' % targetpath)
-            except:
+            except Exception:
                 self.print_log(type='W',msg='Could not remove %s' % targetpath)
 
             if not self.preserve_rtlfiles:
                 try:
                     shutil.rmtree(self.rtlsimpath)
                     self.print_log(type='I',msg='Removing %s' % self.rtlsimpath)
-                except:
+                except Exception:
                     self.print_log(type='W',msg='Could not remove %s' %self.rtlsimpath)
 
     @property
@@ -417,7 +422,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             try:
                 shutil.rmtree(self.rtlworkpath)
                 self.print_log(type='D',msg='Removing %s' % self.rtlworkpath)
-            except:
+            except Exception:
                 self.print_log(type='W',msg='Could not remove %s' %self.rtlworkpath)
 
     @property
@@ -480,7 +485,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                                 self._vloglibfilemodules.extend(modulefiles)
                         except Exception as e:
                             self.print_log(type='F',msg='Could not read verilog module files from VLOGLIBFILE:\n\t%s' % e)
-            except:
+            except Exception:
                  self._vloglibfilemodules = []
         return self._vloglibfilemodules
     @vloglibfilemodules.setter
@@ -542,7 +547,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                                 self._vhdllibfileentities.extend(modulefiles)
                         except Exception as e:
                             self.print_log(type='F',msg='Could not read verilog module files from VHDLLIBFILE:\n\t%s' % e)
-            except:
+            except Exception:
                  self._vhdllibfileentities = []
         return self._vhdllibfileentities
 
@@ -915,7 +920,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 try:
                     #Still keep the file in the infiles list
                     os.remove(file.name)
-                except:
+                except Exception:
                     pass
 
         if self.interactive_rtl:

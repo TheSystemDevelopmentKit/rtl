@@ -10,11 +10,7 @@ Extends `testbench_common`.
 Initially written by Marko Kosunen 20190108, marko.kosunen@aalto.fi
 Refactored from 'testbench' by Marko Kosunen 20221119, marko.kosunen@aalto.fi
 """
-import os
-import sys
-import pdb
-from rtl import indent
-from rtl.connector import rtl_connector
+from rtl.connector import rtl_connector, indent
 from rtl.testbench_common import testbench_common
 
 class verilog_testbench(testbench_common):
@@ -244,7 +240,7 @@ class verilog_testbench(testbench_common):
                         # Connect them to DUT
                         try:
                             self.dut.ios.Members[connector.name].connect=connector
-                        except:
+                        except Exception:
                             pass
         # Copy iofile simulation parameters to testbench
         for name, val in self.iofile_bundle.Members.items():

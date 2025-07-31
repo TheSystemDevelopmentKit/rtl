@@ -7,8 +7,8 @@ Class containing common properties and methods for all language dependent module
 Initially written by Marko Kosunen, 28.10.2022
 """
 import os
-from thesdk import *
-from rtl import *
+from thesdk import thesdk
+from abc import abstractmethod
 from copy import deepcopy
 
 class module_common(thesdk):

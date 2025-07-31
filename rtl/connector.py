@@ -9,22 +9,25 @@ returns definition strings according to given 'lang' paramenter
 
 Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
 """
-import os
-from thesdk import *
+import time
+import regex as re
+from thesdk import thesdk
+from thesdk.bundle import Bundle
 from rtl.sv.verilog_connector import verilog_connector
 from rtl.vhdl.vhdl_connector import vhdl_connector
 
 class rtl_connector(thesdk):
-    def __init__(self, **kwargs):
-        ''' Executes init of module_common, thus having the same attributes and
-        parameters.
-
-        Parameters
-        ----------
-            **kwargs :
-               See module module_common
-
-        '''
+    # Not sure why this is here
+    # def __init__(self, **kwargs):
+    #     ''' Executes init of module_common, thus having the same attributes and
+    #     parameters.
+    #
+    #     Parameters
+    #     ----------
+    #         **kwargs :
+    #            See module module_common
+    #
+    #     '''
 
 
     def __init__(self,**kwargs):
@@ -113,11 +116,11 @@ class rtl_connector(thesdk):
         return self._ll
     @ll.setter
     def ll(self,value):
-        if type(value) == str:
+        if type(value) is str:
             #Try to evaluate string
             try:
                 self._ll = eval(value)
-            except:
+            except Exception:
                 self._ll = value
         else:
             self._ll = value
@@ -136,11 +139,11 @@ class rtl_connector(thesdk):
         return self._rl
     @rl.setter
     def rl(self,value):
-        if type(value) == str:
+        if type(value) is str:
             #Try to evaluate string
             try:
                 self._rl = eval(value)
-            except:
+            except Exception:
                 self._rl = value
         else:
             self._rl = value

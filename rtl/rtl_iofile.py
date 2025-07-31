@@ -8,20 +8,12 @@ for TheSyDeKick RTL intereface.
 
 Restructured from verilog_iofile by Marko Kosunen, marko.kosunen@aalto.fi 2023
 """
-import os
-import sys
-import pdb
-from abc import * 
-from thesdk import *
-from thesdk.iofile import iofile
 import numpy as np
-import pandas as pd
 import sortedcontainers as sc
 from rtl.rtl_iofile_common import rtl_iofile_common
 from rtl.sv.verilog_iofile import verilog_iofile
 from rtl.sv.verilog_iofile_obsoletes import verilog_iofile_obsoletes
 from rtl.vhdl.vhdl_iofile import vhdl_iofile
-from rtl.connector import indent
 
 class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     '''
@@ -59,7 +51,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
                    sets the ioformat attribute.
         '''
         #This is a redundant check, but does not hurt.to have it here too.
-        if parent==None:
+        if parent is None:
             self.print_log(type='F', msg="Parent of RTL input file not given")
         try:  
             super(rtl_iofile_common,self).__init__(parent=parent,**kwargs)
@@ -68,7 +60,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
 
             self._ioformat=kwargs.get('ioformat','%d') #by default, the io values are decimal integer numbers
 
-        except:
+        except Exception:
             self.print_log(type='F', msg="RTL IO file definition failed")
 
         self._DictData = None  # data structure for event-based IO data
@@ -305,7 +297,7 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     def Data(self, value):
         # convert value to equivalent SortedDict representation
         if self.iotype=='event':
-            if self.DictData == None:
+            if self.DictData is None:
                 self._DictData = sc.SortedDict()
             for row in value:
                 self.DictData[row[0]] = row[1:]
@@ -344,17 +336,6 @@ class rtl_iofile(verilog_iofile_obsoletes,rtl_iofile_common):
     @rtl_io_condition.setter
     def rtl_io_condition(self,value):
         self.langmodule.rtl_io_condition=value
-
-    def rtl_io_condition_append(self,**kwargs ):
-        '''Append new condition string to `rtl_io_condition`
-
-        Parameters
-        ----------
-        **kwargs :
-           cond : str
-
-        '''
-        self.langmodule.rtl_io_condition_append(**kwargs)
 
     @property 
     def rtl_io_sync(self):

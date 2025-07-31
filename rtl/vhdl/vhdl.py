@@ -9,10 +9,10 @@ are used by the simulator specific classes.
 Initially written by Marko Kosunen 30.10.20200, marko.kosunen@aalto.fi 
 """
 
-from thesdk import *
+from thesdk import thesdk, ABCMeta
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 
-class vhdl(thesdk,metaclass=abc.ABCMeta):
+class vhdl(thesdk,metaclass=ABCMeta):
     @property
     def vhdlsimtb(self):
         ''' Name of the VHDL testbench

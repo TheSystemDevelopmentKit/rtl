@@ -8,10 +8,10 @@ are used by simulator specific classes.
 
 Initially written by Marko Kosunen 30.10.20200, marko.kosunen@aalto.fi
 """
-from thesdk import *
+from thesdk import thesdk, ABCMeta 
 from rtl.rtl_iofile import rtl_iofile as rtl_iofile
 
-class sv(thesdk,metaclass=abc.ABCMeta):
+class sv(thesdk,metaclass=ABCMeta):
 
     @property
     def vlogsimtb(self):
@@ -133,14 +133,14 @@ class sv(thesdk,metaclass=abc.ABCMeta):
                     # Connect them to DUT
                     try:
                         self.dut.ios.Members[connector.name].connect=connector
-                    except:
+                    except Exception:
                         pass
             # If input is not a file, look for corresponding file definition
             elif ioname in self.iofile_bundle.Members:
                 val=self.iofile_bundle.Members[ioname]
                 for name in val.ionames:
                     # [TODO] Sanity check, only floating inputs make sense.
-                    if not name in self.tb.connectors.Members.keys():
+                    if name not in self.tb.connectors.Members.keys():
                         self.print_log(type='I',
                                 msg='Creating non-existent IO connector %s for testbench' %(name))
                         self.tb.connectors.new(name=name, cls='reg')
