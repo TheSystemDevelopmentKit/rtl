@@ -19,10 +19,13 @@ class xcelium(thesdk):
         all_files = sorted(self.vloglibfilemodules + verilog_files + systemverilog_files)
 
         module_string = " ".join(all_files)
-        gui_string = "-gui" if self.interactive_rtl else ""
         tb_string = f"tb_{self.name}"
 
-        self._rtlcmd = f"xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} {gui_string}"
+        if not self.interactive_rtl:
+            self._rtlcmd = f"{submission} xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string}"
+        else:
+            self._rtlcmd = f"xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} -gui"
+
         return self._rtlcmd
 
     @property
