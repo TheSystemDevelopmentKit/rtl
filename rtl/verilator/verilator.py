@@ -7,10 +7,8 @@ properties and methods for RTL class
 
 Initially written by Aleksi Korsman, 2022
 """
-from thesdk import *
-import pdb
-
-class verilator(thesdk,metaclass=abc.ABCMeta):
+from thesdk import thesdk, ABCMeta, os
+class verilator(thesdk,metaclass=ABCMeta):
     @property
     def verilator_rtlcmd(self):
         submission=self.lsf_submission

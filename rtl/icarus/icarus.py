@@ -7,10 +7,9 @@ properties and methods for RTL class
 
 Initially written by Marko Kosunen 20221030
 """
-from thesdk import *
-import pdb
+from thesdk import thesdk, ABCMeta, os
 
-class icarus(thesdk,metaclass=abc.ABCMeta):
+class icarus(thesdk,metaclass=ABCMeta):
     @property
     def icarus_rtlcmd(self):
         submission=self.lsf_submission

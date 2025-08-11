@@ -12,12 +12,8 @@ python environment.
 Initially written by Marko Kosunen, 2017
 
 """
-import os
-from thesdk import *
-from rtl import *
+from thesdk import thesdk
 from copy import deepcopy
-from rtl.connector import verilog_connector
-from rtl.connector import verilog_connector_bundle
 from rtl.module_common import module_common
 from rtl.sv.verilog_module import verilog_module
 from rtl.vhdl.vhdl_entity import vhdl_entity
