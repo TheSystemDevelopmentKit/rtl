@@ -21,6 +21,8 @@ import pandas as pd
 from functools import reduce
 import shutil
 import re
+import select
+import io
 
 #TheSyDeKick modules
 if not (os.path.abspath('../../thesdk') in sys.path):
@@ -924,6 +926,8 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 Add the probes in the simulation as you wish.
                 To finish the simulation, run the simulation to end and exit.""")
 
+        stdout = ""
+        stderr = ""
         try:
             if self.workdir:
                 self.print_log(type='I', msg=f"Executing in directory {self.workdir}")
@@ -933,12 +937,46 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 execpath=self.rtlsimpath
             self.print_log(type='I', msg="Running external command %s\n" %(self.rtlcmd) )
             rtlcmd = f"cd {execpath} && {self._rtlcmd}"
-            output = subprocess.check_output(rtlcmd, shell=True)
-            self.print_log(type='I', msg='Simulator output:\n'+output.decode('utf-8'))
+            proc = subprocess.Popen(rtlcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            # recode output streams to utf-8 so that we can read single unicode code points at a time. This should
+            # produce correct output character if a single character is encoded as multiple bytes.
+            try:
+                utf8_stdout = io.TextIOWrapper(proc.stdout, encoding='utf-8')
+                utf8_stderr = io.TextIOWrapper(proc.stderr, encoding='utf-8')
+            except Exception as e:
+                self.print_log(type='F', msg=f"Could not open simulator output stream: {e}")
+
+            # keep printing simulator output in real time until simulator process closes output streams
+            self.print_log(type='I', msg='Simulator output:\n')
+            while True:
+                # multiplex reads from stdout and stderr, print them, and append to respective variable
+                (rready, _, _) = select.select([utf8_stdout, utf8_stderr], [], [], 0.001)
+                for stream in rready:
+                    # not the most efficient way to print out stuff, but we want to be able to see individual characters
+                    # being printed out in real time, possibly without newlines, so print and flush one at a time.
+                    codepoint = stream.read(1)
+                    sys.stdout.write(codepoint)
+                    sys.stdout.flush()
+                    if stream == utf8_stdout:
+                        stdout += codepoint
+                    if stream == utf8_stderr:
+                        stderr += codepoint
+                
+                # wait for simulator process to terminate
+                try:
+                    status = proc.wait(timeout=1e-6)
+                    self.print_log(type='I', msg=f"Simulator exited with status code {status}")
+                    # read any remaining output
+                    stdout += utf8_stdout.read()
+                    stderr += utf8_stderr.read()
+                    break
+                except subprocess.TimeoutExpired:
+                    pass
+                    
         except subprocess.CalledProcessError as e:
             output = e.output
             self.print_log(type='F', msg='Simulator output:\n'+output.decode('utf-8'))
-
 
         count=0
         files_ok=False
@@ -951,6 +989,9 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
                 if file.dir=='out':
                     files_ok=True
                     files_ok=files_ok and os.path.isfile(file.file)
+
+        # return simulator stdout and stderr logs for later analysis
+        return (stdout, stderr)
 
 
     @property
@@ -1024,7 +1065,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self.tb.generate_contents()
             self.tb.export(force=True)
             self.write_infile()
-            self.execute_rtl_sim()
+            (stdout, stderr) = self.execute_rtl_sim()
             self.read_outfile()
             self.connect_outputs()
             # Save entity state
@@ -1034,6 +1075,7 @@ class rtl(questasim,icarus,verilator,ghdl,vhdl,sv,thesdk,metaclass=abc.ABCMeta):
             self.delete_iofile_bundle()
             self.delete_rtlworkpath()
             self.delete_rtlsimpath()
+            return (stdout, stderr)
 
     #This writes all infile
     def write_infile(self):
