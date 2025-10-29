@@ -219,11 +219,11 @@ class rtl(questasim,icarus,verilator,ghdl,xcelium,vhdl,sv,thesdk,metaclass=abc.A
                 self._sim_opt_dict = self.questasim_sim_opt_dict
             else:
                 self._sim_opt_dict = {
-                        'no-opt' : '',
-                        'opt-visible' : '',
-                        'full-opt' : '',
-                        'top-visible' : '',
-                        'top-dut-visible' : ''
+                        'no-opt' : [],
+                        'opt-visible' : [],
+                        'full-opt' : [],
+                        'top-visible' : [],
+                        'top-dut-visible' : []
                         }
 
         return self._sim_opt_dict
