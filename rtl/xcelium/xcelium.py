@@ -21,10 +21,11 @@ class xcelium(thesdk):
         module_string = " ".join(all_files)
         tb_string = f"tb_{self.name}"
 
+        vlogsimargs = ' '.join(self.vlogsimargs)
         if not self.interactive_rtl:
-            self._rtlcmd = f"{submission} xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string}"
+            self._rtlcmd = f"{submission} xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} {vlogsimargs}"
         else:
-            self._rtlcmd = f"xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} -gui"
+            self._rtlcmd = f"xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} -gui {vlogsimargs}"
 
         return self._rtlcmd
 
