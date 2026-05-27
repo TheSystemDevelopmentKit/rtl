@@ -39,7 +39,12 @@ class verilator(thesdk, metaclass=abc.ABCMeta):
             )
 
         vlogcompcmd = (
-            "verilator -Wall --Wno-lint --binary --trace --timing --Mdir "
+            "verilator -Wall --Wno-lint --binary --trace --timing "
+            + " ".join(self.vlogcompargs)
+            + " "
+            + " ".join(self.vlogsimargs)
+            + " "
+            + "--Mdir "
             + self.rtlworkpath
             + " "
             + self.simtb
@@ -54,9 +59,6 @@ class verilator(thesdk, metaclass=abc.ABCMeta):
                 for param, val in self.rtlparameters.items()
             ]
         )
-
-        # Still dont know what to do with these.
-        vlogsimargs = " ".join(self.vlogsimargs)
 
         fileparams = ""
         for name, file in self.iofile_bundle.Members.items():
