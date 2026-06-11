@@ -39,7 +39,7 @@ class verilator(thesdk, metaclass=abc.ABCMeta):
             )
 
         vlogcompcmd = (
-            "verilator -Wall --Wno-lint --binary --trace --timing "
+            "verilator -Wall --Wno-lint --binary --trace-fst --timing "
             + " ".join(self.vlogcompargs)
             + " "
             + " ".join(self.vlogsimargs)
@@ -81,13 +81,13 @@ class verilator(thesdk, metaclass=abc.ABCMeta):
                 + " && "
                 + "./Vtb_"
                 + self.name
-                + " && gtkwave "
-                + dostring
-                + " "
-                + self.rtlsimpath
-                + "/"
-                + self.name
-                + "_dump.vcd"
+                #+ " && gtkwave "
+                #+ dostring
+                #+ " "
+                #+ self.rtlsimpath
+                #+ "/"
+                #+ self.name
+                #+ "_dump.vcd"
             )
         else:
             rtlsimcmd = "cd " + self.rtlworkpath + " &&  ./Vtb_" + self.name

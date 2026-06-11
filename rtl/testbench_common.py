@@ -169,7 +169,7 @@ class testbench_common(module):
                 + self.parent.rtlsimpath
                 + "/"
                 + self.parent.name
-                + '_dump.vcd");\n'
+                + '_dump.fst");\n'
             )
             dump_str += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
         else:
