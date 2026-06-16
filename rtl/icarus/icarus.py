@@ -9,6 +9,7 @@ Initially written by Marko Kosunen 20221030
 """
 
 from thesdk import *
+import os
 import pdb
 
 
@@ -19,10 +20,9 @@ class icarus(thesdk, metaclass=abc.ABCMeta):
         if not os.path.exists(self.rtlworkpath):
             os.mkdir(self.rtlworkpath)
         vlogmodulesstring = " ".join(
-            self.vloglibfilemodules
-            + [
-                self.rtlsimpath + "/" + str(param)
-                for param in self.extract_vlogfiles()
+            [
+                os.path.join(self.rtlsimpath, modulepath)
+                for modulepath in self.rtlfiles
             ]
         )
         vhdlmodulesstring = " ".join(
