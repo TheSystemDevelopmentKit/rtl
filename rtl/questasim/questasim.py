@@ -104,11 +104,15 @@ class questasim(thesdk):
             fileparams += " " + file.simparam
 
         controlfile = self.simulator_controlfile
+        # `onbreak {quit -f}` makes vsim exit instead of dropping to the
+        # interactive VSIM> prompt if the batch simulation is interrupted.
+        # An orphaned vsim busy-loops on its dead stdin (100% CPU utilization)
+        controlstring = ' -do "onbreak {quit -f};'
         if os.path.isfile(controlfile):
-            controlstring = ' -do "' + controlfile + '"'
+            controlstring += ' do {' + controlfile + '}; quit -f"'
             self.print_log(type="I", msg="Using control file %s" % controlfile)
         else:
-            controlstring = ' -do "run -all; quit;"'
+            controlstring += ' run -all; quit -f"'
             self.print_log(type="I", msg="No simulator control file set.")
 
         interactive_controlfile = self.interactive_controlfile
