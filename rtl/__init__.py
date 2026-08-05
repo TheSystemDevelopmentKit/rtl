@@ -38,10 +38,19 @@ from rtl.icarus.icarus import icarus as icarus
 from rtl.questasim.questasim import questasim as questasim
 from rtl.ghdl.ghdl import ghdl as ghdl
 from rtl.verilator.verilator import verilator as verilator
+from rtl.xcelium.xcelium import xcelium as xcelium
 
 
 class rtl(
-    questasim, icarus, verilator, ghdl, vhdl, sv, thesdk, metaclass=abc.ABCMeta
+    questasim,
+    icarus,
+    verilator,
+    ghdl,
+    xcelium,
+    vhdl,
+    sv,
+    thesdk,
+    metaclass=abc.ABCMeta,
 ):
     """Adding this class as a superclass enforces the definitions
     for rtl simulations in the subclasses.
@@ -423,6 +432,8 @@ class rtl(
                 self._simdut = self.ghdl_simdut
             elif self.model == "verilator":
                 self._simdut = self.verilator_simdut
+            elif self.model == "xcelium":
+                self._simdut = self.xcelium_simdut
             else:
                 self.print_log(
                     type="F", msg="Unsupported model %s" % self.model
@@ -446,6 +457,8 @@ class rtl(
                 self._simtb = self.ghdl_simtb
             elif self.model == "verilator":
                 self._simtb = self.verilator_simtb
+            elif self.model == "xcelium":
+                self._simtb = self.xcelium_simtb
         return self._simtb
 
     @property
@@ -722,6 +735,10 @@ class rtl(
             (controlfiledir, controlfile, generatedcontrolfile) = (
                 self.verilator_controlfilepaths
             )
+        elif self.model == "xcelium":
+            (controlfiledir, controlfile, generatedcontrolfile) = (
+                self.xcelium_controlfilepaths
+            )
         else:
             self.print_log(type="F", msg="Unsupported model %s" % self.model)
 
@@ -788,6 +805,10 @@ class rtl(
         elif self.model == "verilator":
             (dofiledir, dofile, obsoletedofile, generateddofile) = (
                 self.verilator_dofilepaths
+            )
+        elif self.model == "xcelium":
+            (dofiledir, dofile, obsoletedofile, generateddofile) = (
+                self.xcelium_dofilepaths
             )
         else:
             self.print_log(type="F", msg="Unsupported model %s" % self.model)
@@ -890,6 +911,8 @@ class rtl(
                 return self.ghdl_rtlcmd
             elif self.model == "verilator":
                 return self.verilator_rtlcmd
+            elif self.model == "xcelium":
+                return self.xcelium_rtlcmd
             else:
                 self.print_log(
                     type="F", msg="Model %s not supported" % (self.model)
@@ -1012,7 +1035,7 @@ class rtl(
             type="I", msg="Copying rtl sources to %s" % self.rtlsimpath
         )
 
-        vlog_model = self.model in ["sv", "icarus", "verilator"]
+        vlog_model = self.model in ["sv", "icarus", "verilator", "xcelium"]
         vhdl_model = self.model in ["ghdl", "vhdl"]
 
         src = self.vlogsrc if vlog_model else self.vhdlsrc
