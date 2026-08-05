@@ -16,6 +16,7 @@ import os
 import sys
 import subprocess
 import shlex
+import signal
 from abc import *
 import numpy as np
 import pandas as pd
@@ -1088,6 +1089,44 @@ class rtl(
         if len(output) != 0:
             print(output)
 
+    def kill_rtl_sim(self, simproc, term_timeout=15):
+        """Terminates the simulator process and all of its descendants.
+        SIGTERM first, SIGKILL after `term_timeout` seconds.
+
+        """
+        # Snapshot the process tree before signaling anything, so that
+        # descendants (e.g. the vsimk kernel under the vish frontend)
+        # cannot escape by reparenting when their parent dies first.
+        children = {}
+        ps = subprocess.check_output(["ps", "-e", "-o", "pid=,ppid="], text=True)
+        for line in ps.splitlines():
+            pid, ppid = map(int, line.split())
+            children.setdefault(ppid, []).append(pid)
+        pids = [simproc.pid]
+        queue = [simproc.pid]
+        while queue:
+            for child in children.get(queue.pop(), []):
+                pids.append(child)
+                queue.append(child)
+
+        self.print_log(type="I", msg="Terminating simulator processes %s" % pids)
+        for pid in pids:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        try:
+            simproc.wait(timeout=term_timeout)
+        except subprocess.TimeoutExpired:
+            self.print_log(type="W", msg="Simulator did not exit on SIGTERM")
+        time.sleep(1)  # let SIGTERM take effect on the descendants
+        for pid in pids:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        simproc.wait()
+
     def execute_rtl_sim(self):
         """Runs the rtl simulation in external simulator"""
         filetimeout = 60  # File appearance timeout in seconds
@@ -1136,10 +1175,53 @@ class rtl(
                 type="I", msg="Running external command %s\n" % (self.rtlcmd)
             )
             rtlcmd = f"cd {execpath} && {self._rtlcmd}"
-            output = subprocess.check_output(rtlcmd, shell=True)
-            self.print_log(
-                type="I", msg="Simulator output:\n" + output.decode("utf-8")
+            # Batch runs: launch the simulator in its own session (and thus
+            # its own process group) with stdin detached. Terminal-generated
+            # SIGINT (Ctrl-C) then never reaches the simulator directly;
+            # termination is always performed by the process-group kill
+            # below, so the simulator cannot end up orphaned at an
+            # interactive prompt busy-looping on a dead stdin.
+            # Interactive runs: inherit the terminal (stdin and foreground
+            # group) so keyboard input can be forwarded to the simulator,
+            # e.g. to a console of a simulated processor.
+            if self.interactive_rtl:
+                sim_stdin = None
+                new_session = False
+            else:
+                sim_stdin = subprocess.DEVNULL
+                new_session = True
+            simproc = subprocess.Popen(
+                rtlcmd,
+                shell=True,
+                stdin=sim_stdin,
+                stdout=subprocess.PIPE,
+                start_new_session=new_session,
             )
+            try:
+                output = simproc.communicate()[0]
+            except KeyboardInterrupt:
+                # Ctrl+C: tear down the simulator and exit with a fatal message.
+                # Further Ctrl+C presses are ignored so they cannot interrupt
+                # the teardown itself and leave rogue processes behind.
+                signal.signal(signal.SIGINT, signal.SIG_IGN)
+                self.kill_rtl_sim(simproc)
+                self.print_log(type="F", msg="Simulation aborted")
+            except BaseException:
+                # thesdk timeout or any other abort: tear down the
+                # simulator, then propagate. Ctrl+C is ignored during
+                # the teardown for the same reason as above.
+                prev_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+                self.kill_rtl_sim(simproc)
+                signal.signal(signal.SIGINT, prev_handler)
+                raise
+            if simproc.returncode == 0:
+                self.print_log(
+                    type="I", msg="Simulator output:\n" + output.decode("utf-8")
+                )
+            else:
+                self.print_log(
+                    type="F", msg="Simulator output:\n" + output.decode("utf-8")
+                )
         except subprocess.CalledProcessError as e:
             output = e.output
             self.print_log(
