@@ -161,7 +161,7 @@ class testbench_common(module):
 
         if (
             self.parent.model == "icarus" or self.parent.model == "verilator"
-        ) and self.parent.interactive_rtl:
+        ) and (self.parent.interactive_rtl or self.parent.dump_waves):
             dump_str = "// Generates dumpfile\n"
             dump_str += "initial begin\n"
             dump_str += (

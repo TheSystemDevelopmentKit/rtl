@@ -104,6 +104,22 @@ class rtl(
         self._interactive_rtl = value
 
     @property
+    def dump_waves(self):
+        """True | False (default)
+
+        Generate a VCD waveform dumpfile without opening a waveform viewer.
+        If interactive_rtl is True, that takes precedence and this has
+        no effect."""
+
+        if not hasattr(self, "_dump_waves"):
+            self._dump_waves = False
+        return self._dump_waves
+
+    @dump_waves.setter
+    def dump_waves(self, value):
+        self._dump_waves = value
+
+    @property
     def lsf_submission(self):
         """
         Defines submission prefix from thesdk.GLOBALS['LSFSUBMISSION'].
