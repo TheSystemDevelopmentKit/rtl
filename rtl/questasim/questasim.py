@@ -126,10 +126,8 @@ class questasim(thesdk):
         if self.dump_waves and not self.interactive_rtl:
             vcdstring = (
                 ' -do "vcd file '
-                + self.rtlsimpath
-                + "/"
-                + self.name
-                + "_dump.vcd; vcd add -r /tb_"
+                + self.dumpfilepath
+                + "; vcd add -r /tb_"
                 + self.name
                 + '/*;"'
             )

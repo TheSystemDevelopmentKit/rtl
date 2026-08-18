@@ -165,11 +165,7 @@ class testbench_common(module):
             dump_str = "// Generates dumpfile\n"
             dump_str += "initial begin\n"
             dump_str += (
-                '  $dumpfile("'
-                + self.parent.rtlsimpath
-                + "/"
-                + self.parent.name
-                + '_dump.vcd");\n'
+                '  $dumpfile("' + self.parent.dumpfilepath + '");\n'
             )
             dump_str += "  $dumpvars(0, tb_" + self.parent.name + ");\nend \n"
         else:

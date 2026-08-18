@@ -84,10 +84,7 @@ class verilator(thesdk, metaclass=abc.ABCMeta):
                 + " && gtkwave "
                 + dostring
                 + " "
-                + self.rtlsimpath
-                + "/"
-                + self.name
-                + "_dump.vcd"
+                + self.dumpfilepath
             )
         else:
             rtlsimcmd = "cd " + self.rtlworkpath + " &&  ./Vtb_" + self.name
