@@ -414,12 +414,19 @@ class rtl(
         return self._rtlsimpath
 
     def delete_rtlsimpath(self):
-        """Deletes all files in rtlsimpath"""
+        """Deletes all files in rtlsimpath.
+
+        ``self.preserve_rtlfiles`` preserves all files under rtlsimpath from deletion.
+        ``self.dump_waves`` preserves the waveform dump file.
+        """
+        dumpfilename = self.dumpfile_name
         if os.path.exists(self.rtlsimpath):
             try:
                 for target in os.listdir(self.rtlsimpath):
                     targetpath = "%s/%s" % (self.rtlsimpath, target)
-                    if self.preserve_rtlfiles:
+                    if self.preserve_rtlfiles or (
+                        self.dump_waves and target == dumpfilename
+                    ):
                         self.print_log(
                             type="I", msg="Preserving %s" % targetpath
                         )
@@ -432,7 +439,7 @@ class rtl(
             except:
                 self.print_log(type="W", msg="Could not remove %s" % targetpath)
 
-            if not self.preserve_rtlfiles:
+            if not self.preserve_rtlfiles and not self.dump_waves:
                 try:
                     shutil.rmtree(self.rtlsimpath)
                     self.print_log(
