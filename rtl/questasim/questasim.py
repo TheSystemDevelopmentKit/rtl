@@ -127,9 +127,7 @@ class questasim(thesdk):
             vcdstring = (
                 ' -do "vcd file '
                 + self.dumpfilepath
-                + "; vcd add -r /tb_"
-                + self.name
-                + '/*;"'
+                + '; vcd add -r *;"'
             )
         else:
             vcdstring = ""
