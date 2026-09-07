@@ -77,10 +77,7 @@ class icarus(thesdk, metaclass=abc.ABCMeta):
                 + " && gtkwave "
                 + dostring
                 + " "
-                + self.rtlsimpath
-                + "/"
-                + self.name
-                + "_dump.vcd"
+                + self.dumpfilepath
             )
         else:
             rtlsimcmd = (

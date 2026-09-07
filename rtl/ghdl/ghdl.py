@@ -83,16 +83,9 @@ class ghdl(thesdk):
             interactive_string = ""
             self.print_log(type="I", msg="No interactive control file set.")
 
-        if not self.interactive_rtl:
-            rtlsimcmd = (
-                "ghdl -r --std=08 --workdir="
-                + self.rtlworkpath
-                + " tb_"
-                + self.name
-                + " "
-                + controlstring
-            )
-        else:
+        vcdstring = " --vcd=" + self.dumpfilepath
+
+        if self.interactive_rtl:
             submission = ""  # Local execution
             rtlsimcmd = (
                 "ghdl -r --std=08  --workdir="
@@ -101,18 +94,30 @@ class ghdl(thesdk):
                 + "tb_"
                 + self.name
                 + controlstring
-                + " --vcd="
-                + self.rtlsimpath
-                + "/"
-                + self.name
-                + "_dump.vcd"
+                + vcdstring
                 + " && gtkwave "
                 + interactive_string
                 + " "
-                + self.rtlsimpath
-                + "/"
+                + self.dumpfilepath
+            )
+        elif self.dump_waves:
+            rtlsimcmd = (
+                "ghdl -r --std=08 --workdir="
+                + self.rtlworkpath
+                + " "
+                + "tb_"
                 + self.name
-                + "_dump.vcd"
+                + controlstring
+                + vcdstring
+            )
+        else:
+            rtlsimcmd = (
+                "ghdl -r --std=08 --workdir="
+                + self.rtlworkpath
+                + " tb_"
+                + self.name
+                + " "
+                + controlstring
             )
 
         self._rtlcmd = (

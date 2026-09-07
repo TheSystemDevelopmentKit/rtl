@@ -127,6 +127,15 @@ class questasim(thesdk):
             interactive_string = ' -do "run -all; quit;"'
             self.print_log(type="I", msg="No interactive control file set.")
 
+        if self.dump_waves and not self.interactive_rtl:
+            vcdstring = (
+                ' -do "vcd file '
+                + self.dumpfilepath
+                + '; vcd add -r *;"'
+            )
+        else:
+            vcdstring = ""
+
         # Choose command
         if not self.interactive_rtl:
             rtlsimcmd = (
@@ -139,6 +148,7 @@ class questasim(thesdk):
                 + vlogsimargs
                 + " work.tb_"
                 + self.name
+                + vcdstring
                 + controlstring
             )
         else:
