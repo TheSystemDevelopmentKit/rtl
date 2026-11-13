@@ -27,10 +27,10 @@ class xcelium(thesdk):
         vlogsimargs = " ".join(self.vlogsimargs)
         if not self.interactive_rtl:
             submission = "bsub -q vsim -R \"select[hname==hactar] span[hosts=1]\""
-            self._rtlcmd = f"{submission} xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} {vlogsimargs}"
+            self._rtlcmd = f"{submission} xrun -64bit -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} {vlogsimargs}"
         else:
             submission = "bsub -I -XF -q vsim -R \"select[hname==hactar] span[hosts=1]\""
-            self._rtlcmd = f"{submission} xrun -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} -gui {vlogsimargs}"
+            self._rtlcmd = f"{submission} xrun -64bit -sv -access +rwc -input {self.interactive_controlfile} -timescale {self.rtl_timescale}/{self.rtl_timeprecision} {module_string} -top {tb_string} -gui {vlogsimargs}"
 
         return self._rtlcmd
 
