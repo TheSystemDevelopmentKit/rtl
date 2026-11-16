@@ -92,7 +92,7 @@ class verilog_module(module_common, thesdk):
             # playground: https://regex101.com/r/eiZDS0/1
             # TODO: add support for escaped identifiers
             def port_pattern(identifier):
-                return rf"\s*(input|output|inout)?\s*(wire|reg)?\s*(\[\s*([0-9]+)\s*:\s*([0-9]+)\s*\])?\s*({identifier})"
+                return rf"\s*(input|output|inout)?\s*(wire|reg|logic)?\s*(\[\s*([0-9]+)\s*:\s*([0-9]+)\s*\])?\s*({identifier})"
 
             port_identifier_pattern = r"[a-zA-Z_]+[a-zA-Z0-9_$]*"
             port_regex = re.compile(port_pattern(port_identifier_pattern))
@@ -107,14 +107,27 @@ class verilog_module(module_common, thesdk):
             # parse module IO definitions
             with open(self.file) as infile:
                 file_str = infile.read()
+                file_str = re.sub(r"//.*", "", file_str)
+                file_str = re.sub(r"/\*[\s\S]*?\*/", "", file_str)
                 module_match = re.search(module_regex, file_str)
                 if module_match is not None:
                     signals = []
                     port_list = module_match.group(2).split(",")
+                    last_cls = None
                     for port in port_list:
+                        port = port.strip()
+                        if not port:
+                            continue
                         port_match = re.search(port_regex, port)
+                        if port_match is None:
+                            continue
                         signal = rtl_connector(lang="sv")
-                        signal.cls = port_match.group(1)
+                        signal.cls = (
+                            port_match.group(1)
+                            if port_match.group(1) is not None
+                            else last_cls
+                        )
+                        last_cls = signal.cls
                         if port_match.group(3) is not None:
                             signal.ll = port_match.group(4)
                             signal.rl = port_match.group(5)
@@ -126,14 +139,23 @@ class verilog_module(module_common, thesdk):
                     # split between the module port list and the module body
                     for signal in signals:
                         # fill in IO information defined in module body
-                        signal_regex = re.compile(port_pattern(signal.name))
-                        match = re.search(signal_regex, module_match.group(3))
-                        if match is not None:
-                            if match.group(1) is not None:
-                                signal.cls = match.group(1)
-                            if match.group(3) is not None:
-                                signal.ll = match.group(4)
-                                signal.rl = match.group(5)
+                        if signal.cls is None or signal.ll is None:
+                            signal_regex = re.compile(port_pattern(signal.name))
+                            match = re.search(
+                                signal_regex, module_match.group(3)
+                            )
+                            if match is not None:
+                                if (
+                                    match.group(1) is not None
+                                    and signal.cls is None
+                                ):
+                                    signal.cls = match.group(1)
+                                if (
+                                    match.group(3) is not None
+                                    and signal.ll is None
+                                ):
+                                    signal.ll = match.group(4)
+                                    signal.rl = match.group(5)
 
                         # By default, we create a connector that is cross connected to the input
                         signal.connect = deepcopy(signal)
