@@ -114,6 +114,8 @@ class verilog_module(module_common, thesdk):
                     signals = []
                     port_list = module_match.group(2).split(",")
                     last_cls = None
+                    last_ll = None
+                    last_rl = None
                     for port in port_list:
                         port = port.strip()
                         if not port:
@@ -122,15 +124,25 @@ class verilog_module(module_common, thesdk):
                         if port_match is None:
                             continue
                         signal = rtl_connector(lang="sv")
-                        signal.cls = (
-                            port_match.group(1)
-                            if port_match.group(1) is not None
-                            else last_cls
-                        )
-                        last_cls = signal.cls
-                        if port_match.group(3) is not None:
-                            signal.ll = port_match.group(4)
-                            signal.rl = port_match.group(5)
+                        if port_match.group(1) is not None:
+                            signal.cls = port_match.group(1)
+                            last_cls = signal.cls
+                            if port_match.group(3) is not None:
+                                last_ll = port_match.group(4)
+                                last_rl = port_match.group(5)
+                            else:
+                                last_ll = None
+                                last_rl = None
+                        else:
+                            signal.cls = last_cls
+                            if port_match.group(3) is not None:
+                                last_ll = port_match.group(4)
+                                last_rl = port_match.group(5)
+
+                        if last_ll is not None:
+                            signal.ll = last_ll
+                            signal.rl = last_rl
+
                         signal.name = port_match.group(6)
                         signals.append(signal)
 
